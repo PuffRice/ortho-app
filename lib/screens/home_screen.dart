@@ -37,12 +37,12 @@ class _HomeScreenState extends State<HomeScreen> {
       body: Stack(
         children: [
           Positioned(
-            top: -180,
+            top: -360,
             left: -60,
             right: -60,
             child: IgnorePointer(
               child: Container(
-                height: 360,
+                height: 720,
                 decoration: BoxDecoration(
                   gradient: RadialGradient(
                     colors: [
@@ -272,54 +272,64 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Row(
-            children: [
-              const Spacer(),
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(0.2),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      'Active Balance',
+                      style: TextStyle(
+                        color: textSecondary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withOpacity(0.1),
+                      ),
+                      child: const Icon(Icons.visibility, color: textPrimary, size: 18),
+                    ),
+                  ],
                 ),
-                child: const Icon(Icons.wallet, color: textPrimary, size: 20),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Text(
-                'Active Balance',
-                style: TextStyle(
-                  color: textSecondary,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
+                const SizedBox(height: 8),
+                Text(
+                  '\$94,765.50',
+                  style: TextStyle(
+                    color: textPrimary,
+                    fontSize: 34,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(0.1),
-                ),
-                child: const Icon(Icons.visibility, color: textPrimary, size: 18),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '\$94,765.50',
-            style: TextStyle(
-              color: textPrimary,
-              fontSize: 34,
-              fontWeight: FontWeight.w600,
+              ],
             ),
+          ),
+          const SizedBox(width: 12),
+          Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              shape: BoxShape.rectangle,
+              borderRadius: BorderRadius.circular(16),
+              gradient: LinearGradient(
+                begin: AlignmentDirectional(-2,1),
+                end:  AlignmentDirectional(1,-1),
+                colors: [
+                  primaryViolet.withValues(alpha: 1),
+                  accentCoral.withValues(alpha: 1),
+                ],
+              ),
+            ),
+            child: const Icon(Icons.wallet, color: textPrimary, size: 24),
           ),
         ],
       ),
