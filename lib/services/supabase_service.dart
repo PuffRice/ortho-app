@@ -10,8 +10,10 @@ class SupabaseService {
   SupabaseService._internal();
 
   late SupabaseClient _client;
+  bool _isInitialized = false;
 
   SupabaseClient get client => _client;
+  bool get isInitialized => _isInitialized;
 
   Future<void> initialize({
     required String supabaseUrl,
@@ -22,6 +24,7 @@ class SupabaseService {
       anonKey: supabaseAnonKey,
     );
     _client = Supabase.instance.client;
+    _isInitialized = true;
   }
 
   // User methods

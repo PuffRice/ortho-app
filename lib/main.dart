@@ -4,9 +4,31 @@ import 'screens/home_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/credentials_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/add_transaction_screen.dart';
+import 'services/local_db.dart';
+import 'services/supabase_service.dart';
+import 'services/sync_service.dart';
+import 'config/supabase_config.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final isar = await LocalDb.instance.open();
+  if (_supabaseConfigured()) {
+    await SupabaseService().initialize(
+      supabaseUrl: SUPABASE_URL,
+      supabaseAnonKey: SUPABASE_ANON_KEY,
+    );
+    await SyncService.initialize(
+      isar: isar,
+      client: SupabaseService().client,
+    );
+  }
   runApp(const MainApp());
+}
+
+bool _supabaseConfigured() {
+  return SUPABASE_URL != 'YOUR_SUPABASE_URL' &&
+      SUPABASE_ANON_KEY != 'YOUR_SUPABASE_ANON_KEY';
 }
 
 class MainApp extends StatelessWidget {
@@ -52,6 +74,24 @@ class _MainNavigationState extends State<MainNavigation> {
         child: Stack(
           children: [
             _screens[_selectedIndex],
+            Positioned(
+              bottom: 72,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: FloatingActionButton(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const AddTransactionScreen(),
+                      ),
+                    );
+                  },
+                  backgroundColor: const Color(0xFF7c3aed),
+                  child: const Icon(Icons.add, color: Colors.white),
+                ),
+              ),
+            ),
             // Fixed glassmorphic navbar
             Positioned(
               bottom: 16,
