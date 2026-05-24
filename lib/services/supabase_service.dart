@@ -63,7 +63,7 @@ class SupabaseService {
         .select()
         .eq('user_id', userId ?? getCurrentUser()!.id)
         .order('created_at', ascending: false);
-    return response as List<Map<String, dynamic>>;
+    return response;
   }
 
   Future<void> addExpense({
@@ -86,7 +86,7 @@ class SupabaseService {
         .from('savings_goals')
         .select()
         .eq('user_id', userId ?? getCurrentUser()!.id);
-    return response as List<Map<String, dynamic>>;
+    return response;
   }
 
   Future<void> addSavingsGoal({
@@ -109,7 +109,7 @@ class SupabaseService {
         .from('budgets')
         .select()
         .eq('user_id', userId ?? getCurrentUser()!.id);
-    return response as List<Map<String, dynamic>>;
+    return response;
   }
 
   Future<void> addBudget({
