@@ -26,8 +26,20 @@ class CqrsService {
     bus.registerCommandHandler<CreateAccountCommand>(
       CreateAccountHandler(isar, outboxWriter),
     );
+    bus.registerCommandHandler<UpdateAccountCommand>(
+      UpdateAccountHandler(isar, outboxWriter),
+    );
+    bus.registerCommandHandler<DeleteAccountCommand>(
+      DeleteAccountHandler(isar, outboxWriter),
+    );
     bus.registerCommandHandler<CreateCategoryCommand>(
       CreateCategoryHandler(isar, outboxWriter),
+    );
+    bus.registerCommandHandler<UpdateCategoryCommand>(
+      UpdateCategoryHandler(isar, outboxWriter),
+    );
+    bus.registerCommandHandler<DeleteCategoryCommand>(
+      DeleteCategoryHandler(isar, outboxWriter),
     );
     bus.registerCommandHandler<CreateTransactionCommand>(
       CreateTransactionHandler(isar, summaryWriter, outboxWriter),
@@ -60,7 +72,8 @@ class CqrsService {
     bus.registerQueryHandler<GetBudgetsQuery, List<BudgetEntity>>(
       GetBudgetsHandler(isar),
     );
-    bus.registerQueryHandler<GetRecurringQuery, List<RecurringTransactionEntity>>(
+    bus.registerQueryHandler<GetRecurringQuery,
+        List<RecurringTransactionEntity>>(
       GetRecurringHandler(isar),
     );
     bus.registerQueryHandler<GetTransfersQuery, List<TransferEntity>>(

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:percent_indicator/linear_percent_indicator.dart';
 
+import '../config/app_colors.dart';
+
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
@@ -13,31 +15,58 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: const Color(0xFF0F172A),
-      child: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+    return Scaffold(
+      backgroundColor: AppColors.bgPrimary,
+      body: Stack(
+        children: [
+          Positioned(
+            top: -360,
+            left: -60,
+            right: -60,
+            child: IgnorePointer(
+              child: Container(
+                height: 720,
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    colors: [
+                      AppColors.primaryViolet.withOpacity(0.35),
+                      AppColors.primaryDeep.withOpacity(0.0),
+                    ],
+                    radius: 0.8,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          SafeArea(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                 // Header
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Icon(Icons.arrow_back, color: Colors.white54),
+                    const Icon(
+                      Icons.arrow_back,
+                      color: AppColors.textSecondary,
+                    ),
                     const Text(
                       'Your Progress',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: Colors.white,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                     IconButton(
                       onPressed: () {},
-                      icon: const Icon(Icons.more_vert, color: Colors.white54),
+                      icon: const Icon(
+                        Icons.more_vert,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   ],
                 ),
@@ -46,7 +75,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   '10% ahead of you goal today',
                   style: TextStyle(
                     fontSize: 13,
-                    color: Colors.grey.shade500,
+                    color: AppColors.textMuted,
                   ),
                 ),
 
@@ -55,9 +84,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 // Goal Saver Card
                 Container(
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1E293B),
+                    color: Colors.white.withOpacity(0.06),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.grey.shade800, width: 1),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.08),
+                      width: 1,
+                    ),
                   ),
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -72,12 +104,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               Row(
                                 children: [
                                   const Icon(Icons.savings,
-                                      color: Colors.white, size: 20),
+                                      color: AppColors.textPrimary, size: 20),
                                   const SizedBox(width: 8),
                                   const Text(
                                     'Goal Saver',
                                     style: TextStyle(
-                                      color: Colors.white,
+                                      color: AppColors.textPrimary,
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
@@ -87,7 +119,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               Text(
                                 'Top 3% of users',
                                 style: TextStyle(
-                                  color: Colors.white.withOpacity(0.7),
+                                  color: AppColors.textSecondary,
                                   fontSize: 12,
                                 ),
                               ),
@@ -103,7 +135,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             child: const Text(
                               '7 Day',
                               style: TextStyle(
-                                color: Colors.white,
+                                color: AppColors.textPrimary,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -118,7 +150,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             child: LinearPercentIndicator(
                               lineHeight: 8,
                               percent: 0.68,
-                              progressColor: Colors.yellow.shade600,
+                              progressColor: AppColors.accentOrange,
                               backgroundColor:
                                   Colors.white.withOpacity(0.2),
                               barRadius: const Radius.circular(4),
@@ -128,7 +160,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           Text(
                             '68%',
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.8),
+                              color: AppColors.textSecondary,
                               fontSize: 12,
                             ),
                           ),
@@ -138,7 +170,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Text(
                         '\$1,240 saved',
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.7),
+                          color: AppColors.textSecondary,
                           fontSize: 12,
                         ),
                       ),
@@ -160,14 +192,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
-                            color: Colors.white,
+                            color: AppColors.textPrimary,
                           ),
                         ),
                         Text(
                           'View All',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.blue.shade400,
+                            color: AppColors.accentCoral,
                           ),
                         ),
                       ],
@@ -199,7 +231,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
-                            color: Colors.white,
+                            color: AppColors.textPrimary,
                           ),
                         ),
                         Row(
@@ -219,7 +251,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: Colors.grey.shade400,
+                        color: AppColors.textSecondary,
                       ),
                     ),
                   ],
@@ -255,10 +287,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   color: Colors.purple,
                 ),
                 const SizedBox(height: 100), // Space for floating navbar
-              ],
+                  ],
+                ),
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -281,7 +315,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           style: const TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.w500,
-            color: Colors.white,
+            color: AppColors.textPrimary,
           ),
           textAlign: TextAlign.center,
         ),
@@ -299,14 +333,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.grey.shade800 : Colors.transparent,
+          color: isSelected
+              ? Colors.white.withOpacity(0.08)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
           label,
           style: TextStyle(
             fontSize: 12,
-            color: isSelected ? Colors.white : Colors.grey.shade500,
+            color: isSelected
+                ? AppColors.textPrimary
+                : AppColors.textMuted,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -324,9 +362,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: Colors.white.withOpacity(0.06),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade800, width: 1),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.08),
+          width: 1,
+        ),
       ),
       padding: const EdgeInsets.all(12),
       child: Column(
@@ -352,14 +393,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
-                        color: Colors.white,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                     Text(
                       'Almost at limit',
                       style: TextStyle(
                         fontSize: 11,
-                        color: Colors.grey.shade500,
+                        color: AppColors.textMuted,
                       ),
                     ),
                   ],
@@ -370,7 +411,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: Colors.grey.shade400,
+                  color: AppColors.textSecondary,
                 ),
               ),
             ],
@@ -380,7 +421,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             lineHeight: 6,
             percent: percent,
             progressColor: color,
-            backgroundColor: Colors.grey.shade800,
+            backgroundColor: Colors.white.withOpacity(0.12),
             barRadius: const Radius.circular(3),
           ),
         ],

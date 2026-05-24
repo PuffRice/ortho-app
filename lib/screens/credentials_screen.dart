@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'dart:ui';
+
+import '../config/app_colors.dart';
 
 class CredentialsScreen extends StatefulWidget {
   const CredentialsScreen({super.key});
@@ -21,32 +22,45 @@ class _CredentialsScreenState extends State<CredentialsScreen> {
   final TextEditingController _bankNameController = TextEditingController();
   final TextEditingController _accountHolderController = TextEditingController();
 
-  // Design system colors
-  static const Color bgBase = Color(0xFF0B1326);
-  static const Color surfaceContainer = Color(0xFF171F33);
-  static const Color surfaceContainerHigh = Color(0xFF222A3D);
-  static const Color primary = Color(0xFF7c3aed); // Violet
-  static const Color onSurface = Color(0xFFDAE2FD);
-  static const Color onSurfaceVariant = Color(0xFF94A3B8);
-
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: bgBase,
-      child: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+    return Scaffold(
+      backgroundColor: AppColors.bgPrimary,
+      body: Stack(
+        children: [
+          Positioned(
+            top: -360,
+            left: -60,
+            right: -60,
+            child: IgnorePointer(
+              child: Container(
+                height: 720,
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    colors: [
+                      AppColors.primaryViolet.withOpacity(0.35),
+                      AppColors.primaryDeep.withOpacity(0.0),
+                    ],
+                    radius: 0.8,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          SafeArea(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                 // Header
                 Text(
                   'Credentials',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w600,
-                    color: onSurface,
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -54,7 +68,7 @@ class _CredentialsScreenState extends State<CredentialsScreen> {
                   'Manage your card and bank details',
                   style: TextStyle(
                     fontSize: 14,
-                    color: onSurfaceVariant,
+                    color: AppColors.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 28),
@@ -153,10 +167,12 @@ class _CredentialsScreenState extends State<CredentialsScreen> {
                   ],
                 ),
                 const SizedBox(height: 100), // Space for floating navbar
-              ],
+                  ],
+                ),
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -167,7 +183,7 @@ class _CredentialsScreenState extends State<CredentialsScreen> {
       style: const TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w600,
-        color: onSurface,
+        color: AppColors.textPrimary,
       ),
     );
   }
@@ -187,7 +203,7 @@ class _CredentialsScreenState extends State<CredentialsScreen> {
           style: const TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: onSurfaceVariant,
+            color: AppColors.textSecondary,
             letterSpacing: 0.05,
           ),
         ),
@@ -196,22 +212,22 @@ class _CredentialsScreenState extends State<CredentialsScreen> {
           controller: controller,
           obscureText: isPassword,
           style: const TextStyle(
-            color: onSurface,
+            color: AppColors.textPrimary,
             fontSize: 14,
           ),
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: TextStyle(
-              color: onSurfaceVariant.withOpacity(0.5),
+              color: AppColors.textMuted.withOpacity(0.7),
               fontSize: 14,
             ),
             prefixIcon: Icon(
               icon,
-              color: onSurfaceVariant.withOpacity(0.6),
+              color: AppColors.textMuted.withOpacity(0.7),
               size: 18,
             ),
             filled: true,
-            fillColor: surfaceContainer.withOpacity(0.6),
+            fillColor: AppColors.bgCard.withOpacity(0.6),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
@@ -229,7 +245,7 @@ class _CredentialsScreenState extends State<CredentialsScreen> {
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: primary.withOpacity(0.5),
+                color: AppColors.primaryViolet.withOpacity(0.6),
                 width: 1.5,
               ),
             ),
@@ -253,9 +269,11 @@ class _CredentialsScreenState extends State<CredentialsScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: isOutlined ? Colors.transparent : primary,
+          color: isOutlined ? Colors.transparent : AppColors.primaryViolet,
           border: Border.all(
-            color: isOutlined ? primary.withOpacity(0.5) : Colors.transparent,
+            color: isOutlined
+                ? AppColors.primaryViolet.withOpacity(0.6)
+                : Colors.transparent,
             width: 1.5,
           ),
           borderRadius: BorderRadius.circular(12),
@@ -264,7 +282,7 @@ class _CredentialsScreenState extends State<CredentialsScreen> {
           child: Text(
             label,
             style: TextStyle(
-              color: isOutlined ? primary : Colors.white,
+              color: isOutlined ? AppColors.primaryViolet : Colors.white,
               fontSize: 14,
               fontWeight: FontWeight.w600,
             ),

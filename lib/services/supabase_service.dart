@@ -130,7 +130,7 @@ class SupabaseService {
   Future<List<Map<String, dynamic>>> getRewards() async {
     final response =
         await _client.from('rewards').select().order('created_at', ascending: false);
-    return response as List<Map<String, dynamic>>;
+    return response;
   }
 
   Future<void> claimReward({

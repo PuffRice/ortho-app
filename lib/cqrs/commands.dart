@@ -36,6 +36,38 @@ class CreateAccountCommand extends Command {
   final DateTime? now;
 }
 
+class UpdateAccountCommand extends Command {
+  const UpdateAccountCommand({
+    required this.userId,
+    required this.accountId,
+    required this.name,
+    required this.type,
+    required this.currency,
+    required this.openingBalance,
+    this.now,
+  });
+
+  final String userId;
+  final String accountId;
+  final String name;
+  final String type;
+  final String currency;
+  final double openingBalance;
+  final DateTime? now;
+}
+
+class DeleteAccountCommand extends Command {
+  const DeleteAccountCommand({
+    required this.userId,
+    required this.accountId,
+    this.now,
+  });
+
+  final String userId;
+  final String accountId;
+  final DateTime? now;
+}
+
 class CreateCategoryCommand extends Command {
   const CreateCategoryCommand({
     required this.userId,
@@ -54,6 +86,40 @@ class CreateCategoryCommand extends Command {
   final int? color;
   final int sortOrder;
   final String? categoryId;
+}
+
+class UpdateCategoryCommand extends Command {
+  const UpdateCategoryCommand({
+    required this.userId,
+    required this.categoryId,
+    required this.name,
+    required this.type,
+    this.icon,
+    this.color,
+    this.sortOrder = 0,
+    this.now,
+  });
+
+  final String userId;
+  final String categoryId;
+  final String name;
+  final String type;
+  final String? icon;
+  final int? color;
+  final int sortOrder;
+  final DateTime? now;
+}
+
+class DeleteCategoryCommand extends Command {
+  const DeleteCategoryCommand({
+    required this.userId,
+    required this.categoryId,
+    this.now,
+  });
+
+  final String userId;
+  final String categoryId;
+  final DateTime? now;
 }
 
 class CreateTransactionCommand extends Command {

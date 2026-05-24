@@ -1,14 +1,19 @@
-import 'package:flutter/material.dart';
 import 'dart:ui';
-import 'screens/home_screen.dart';
-import 'screens/dashboard_screen.dart';
-import 'screens/credentials_screen.dart';
-import 'screens/profile_screen.dart';
+
+import 'package:flutter/material.dart';
+
+import 'config/app_routes.dart';
+import 'config/supabase_config.dart';
 import 'screens/add_transaction_screen.dart';
+import 'screens/credentials_screen.dart';
+import 'screens/dashboard_screen.dart';
+import 'screens/home_screen.dart';
+import 'screens/manage_accounts_screen.dart';
+import 'screens/manage_categories_screen.dart';
+import 'screens/profile_screen.dart';
 import 'services/local_db.dart';
 import 'services/supabase_service.dart';
 import 'services/sync_service.dart';
-import 'config/supabase_config.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,6 +49,11 @@ class MainApp extends StatelessWidget {
         scaffoldBackgroundColor: const Color(0xFF0F172A),
         fontFamily: 'Inter',
       ),
+      routes: {
+        AppRoutes.addTransaction: (_) => const AddTransactionScreen(),
+        AppRoutes.manageAccounts: (_) => const ManageAccountsScreen(),
+        AppRoutes.manageCategories: (_) => const ManageCategoriesScreen(),
+      },
       home: const MainNavigation(),
     );
   }
@@ -81,11 +91,7 @@ class _MainNavigationState extends State<MainNavigation> {
               child: Center(
                 child: FloatingActionButton(
                   onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const AddTransactionScreen(),
-                      ),
-                    );
+                    Navigator.of(context).pushNamed(AppRoutes.addTransaction);
                   },
                   backgroundColor: const Color(0xFF7c3aed),
                   child: const Icon(Icons.add, color: Colors.white),
@@ -160,9 +166,7 @@ class _MainNavigationState extends State<MainNavigation> {
         ),
         child: Icon(
           icon,
-          color: isSelected
-              ? Colors.white
-              : Colors.grey.shade500,
+          color: isSelected ? Colors.white : Colors.grey.shade500,
           size: 24,
         ),
       ),

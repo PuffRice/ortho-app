@@ -93,6 +93,93 @@ class CreateAccountHandler implements CommandHandler<CreateAccountCommand> {
   }
 }
 
+class UpdateAccountHandler implements CommandHandler<UpdateAccountCommand> {
+  UpdateAccountHandler(this._isar, this._outboxWriter);
+
+  final Isar _isar;
+  final SyncOutboxWriter _outboxWriter;
+
+  @override
+  Future<void> handle(UpdateAccountCommand command) async {
+    final now = command.now ?? DateTime.now();
+    AccountEntity? account;
+
+    await _isar.writeTxn(() async {
+      account = await _isar.accountEntitys
+          .filter()
+          .userIdEqualTo(command.userId)
+          .accountIdEqualTo(command.accountId)
+          .findFirst();
+
+      if (account == null) {
+        return;
+      }
+
+      final openingDelta = command.openingBalance - account!.openingBalance;
+      account!
+        ..name = command.name
+        ..type = command.type
+        ..currency = command.currency
+        ..openingBalance = command.openingBalance
+        ..currentBalance = account!.currentBalance + openingDelta
+        ..updatedAt = now;
+
+      await _isar.accountEntitys.put(account!);
+      await _outboxWriter.enqueueInTxn(
+        userId: command.userId,
+        entityType: 'accounts',
+        entityId: account!.accountId,
+        payload: SyncPayloadMapper.account(account!),
+      );
+    });
+
+    if (account != null) {
+      SyncService.instance?.requestSync();
+    }
+  }
+}
+
+class DeleteAccountHandler implements CommandHandler<DeleteAccountCommand> {
+  DeleteAccountHandler(this._isar, this._outboxWriter);
+
+  final Isar _isar;
+  final SyncOutboxWriter _outboxWriter;
+
+  @override
+  Future<void> handle(DeleteAccountCommand command) async {
+    final now = command.now ?? DateTime.now();
+    AccountEntity? account;
+
+    await _isar.writeTxn(() async {
+      account = await _isar.accountEntitys
+          .filter()
+          .userIdEqualTo(command.userId)
+          .accountIdEqualTo(command.accountId)
+          .findFirst();
+
+      if (account == null) {
+        return;
+      }
+
+      account!
+        ..deletedAt = now
+        ..updatedAt = now;
+
+      await _isar.accountEntitys.put(account!);
+      await _outboxWriter.enqueueInTxn(
+        userId: command.userId,
+        entityType: 'accounts',
+        entityId: account!.accountId,
+        payload: SyncPayloadMapper.account(account!),
+      );
+    });
+
+    if (account != null) {
+      SyncService.instance?.requestSync();
+    }
+  }
+}
+
 class CreateCategoryHandler implements CommandHandler<CreateCategoryCommand> {
   CreateCategoryHandler(this._isar, this._outboxWriter);
 
@@ -123,6 +210,92 @@ class CreateCategoryHandler implements CommandHandler<CreateCategoryCommand> {
       );
     });
     SyncService.instance?.requestSync();
+  }
+}
+
+class UpdateCategoryHandler implements CommandHandler<UpdateCategoryCommand> {
+  UpdateCategoryHandler(this._isar, this._outboxWriter);
+
+  final Isar _isar;
+  final SyncOutboxWriter _outboxWriter;
+
+  @override
+  Future<void> handle(UpdateCategoryCommand command) async {
+    final now = command.now ?? DateTime.now();
+    CategoryEntity? category;
+
+    await _isar.writeTxn(() async {
+      category = await _isar.categoryEntitys
+          .filter()
+          .userIdEqualTo(command.userId)
+          .categoryIdEqualTo(command.categoryId)
+          .findFirst();
+
+      if (category == null) {
+        return;
+      }
+
+      category!
+        ..name = command.name
+        ..type = command.type
+        ..icon = command.icon
+        ..color = command.color
+        ..sortOrder = command.sortOrder
+        ..updatedAt = now;
+
+      await _isar.categoryEntitys.put(category!);
+      await _outboxWriter.enqueueInTxn(
+        userId: command.userId,
+        entityType: 'categories',
+        entityId: category!.categoryId,
+        payload: SyncPayloadMapper.category(category!),
+      );
+    });
+
+    if (category != null) {
+      SyncService.instance?.requestSync();
+    }
+  }
+}
+
+class DeleteCategoryHandler implements CommandHandler<DeleteCategoryCommand> {
+  DeleteCategoryHandler(this._isar, this._outboxWriter);
+
+  final Isar _isar;
+  final SyncOutboxWriter _outboxWriter;
+
+  @override
+  Future<void> handle(DeleteCategoryCommand command) async {
+    final now = command.now ?? DateTime.now();
+    CategoryEntity? category;
+
+    await _isar.writeTxn(() async {
+      category = await _isar.categoryEntitys
+          .filter()
+          .userIdEqualTo(command.userId)
+          .categoryIdEqualTo(command.categoryId)
+          .findFirst();
+
+      if (category == null) {
+        return;
+      }
+
+      category!
+        ..deletedAt = now
+        ..updatedAt = now;
+
+      await _isar.categoryEntitys.put(category!);
+      await _outboxWriter.enqueueInTxn(
+        userId: command.userId,
+        entityType: 'categories',
+        entityId: category!.categoryId,
+        payload: SyncPayloadMapper.category(category!),
+      );
+    });
+
+    if (category != null) {
+      SyncService.instance?.requestSync();
+    }
   }
 }
 
@@ -418,7 +591,8 @@ class CreateRecurringTransactionHandler
   }
 }
 
-class GetAccountsHandler implements QueryHandler<GetAccountsQuery, List<AccountEntity>> {
+class GetAccountsHandler
+    implements QueryHandler<GetAccountsQuery, List<AccountEntity>> {
   GetAccountsHandler(this._isar);
 
   final Isar _isar;
@@ -485,7 +659,8 @@ class GetTransactionsHandler
   }
 }
 
-class GetBudgetsHandler implements QueryHandler<GetBudgetsQuery, List<BudgetEntity>> {
+class GetBudgetsHandler
+    implements QueryHandler<GetBudgetsQuery, List<BudgetEntity>> {
   GetBudgetsHandler(this._isar);
 
   final Isar _isar;
@@ -501,7 +676,8 @@ class GetBudgetsHandler implements QueryHandler<GetBudgetsQuery, List<BudgetEnti
 }
 
 class GetRecurringHandler
-    implements QueryHandler<GetRecurringQuery, List<RecurringTransactionEntity>> {
+    implements
+        QueryHandler<GetRecurringQuery, List<RecurringTransactionEntity>> {
   GetRecurringHandler(this._isar);
 
   final Isar _isar;
@@ -588,7 +764,9 @@ class SummaryCacheWriter {
   DateTime? periodEnd(String period, DateTime startDate) {
     switch (period) {
       case 'weekly':
-        return startDate.add(const Duration(days: 7)).subtract(const Duration(milliseconds: 1));
+        return startDate
+            .add(const Duration(days: 7))
+            .subtract(const Duration(milliseconds: 1));
       case 'monthly':
         return DateTime(startDate.year, startDate.month + 1, 1)
             .subtract(const Duration(milliseconds: 1));
@@ -603,9 +781,11 @@ class SummaryCacheWriter {
 
   Future<void> rebuildForDate(String userId, DateTime date) async {
     await rebuildForRange(userId, 'weekly', _weekStart(date), _weekEnd(date));
-    await rebuildForRange(userId, 'monthly', _monthStart(date), _monthEnd(date));
+    await rebuildForRange(
+        userId, 'monthly', _monthStart(date), _monthEnd(date));
     await rebuildForRange(userId, 'yearly', _yearStart(date), _yearEnd(date));
-    await rebuildForRange(userId, 'lifetime', DateTime.fromMillisecondsSinceEpoch(0), null);
+    await rebuildForRange(
+        userId, 'lifetime', DateTime.fromMillisecondsSinceEpoch(0), null);
   }
 
   Future<void> rebuildForRange(
@@ -664,9 +844,9 @@ class SummaryCacheWriter {
     var builder = _isar.transactionEntitys
         .filter()
         .userIdEqualTo(userId)
-      .deletedAtIsNull()
-      .not()
-      .typeEqualTo('transfer')
+        .deletedAtIsNull()
+        .not()
+        .typeEqualTo('transfer')
         .dateGreaterThan(startDate, include: true);
 
     if (endDate != null) {
@@ -682,7 +862,9 @@ class SummaryCacheWriter {
   }
 
   DateTime _weekEnd(DateTime date) {
-    return _weekStart(date).add(const Duration(days: 7)).subtract(const Duration(milliseconds: 1));
+    return _weekStart(date)
+        .add(const Duration(days: 7))
+        .subtract(const Duration(milliseconds: 1));
   }
 
   DateTime _monthStart(DateTime date) => DateTime(date.year, date.month, 1);

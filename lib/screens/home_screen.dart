@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
 
+import '../config/app_colors.dart';
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -9,31 +11,10 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // Design system colors from DESIGN.md
-  static const Color bgPrimary = Color(0xFF050711);
-  static const Color bgSecondary = Color(0xFF0B0D1A);
-  static const Color bgCard = Color(0xFF0F0F19); // rgba(255,255,255,0.06)
-  static const Color bgNav = Color(0xFF0F1123); // rgba(15,17,35,0.88)
-  
-  static const Color primaryPurple = Color(0xFF7C3AED);
-  static const Color primaryViolet = Color(0xFF8B5CF6);
-  static const Color primaryDeep = Color(0xFF4C1D95);
-  
-  static const Color accentCoral = Color(0xFFFF6B5F);
-  static const Color accentPink = Color(0xFFEC4899);
-  static const Color accentOrange = Color(0xFFFF8A3D);
-  
-  static const Color textPrimary = Color(0xFFFFFFFF);
-  static const Color textSecondary = Color(0xFFB8B8C8);
-  static const Color textMuted = Color(0xFF7E8095);
-  
-  static const Color incomePositive = Color(0xFFA78BFA);
-  static const Color expenseNegative = Color(0xFFFF6B5F);
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: bgPrimary,
+      backgroundColor: AppColors.bgPrimary,
       body: Stack(
         children: [
           Positioned(
@@ -46,8 +27,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 decoration: BoxDecoration(
                   gradient: RadialGradient(
                     colors: [
-                      primaryViolet.withOpacity(0.35),
-                      primaryDeep.withOpacity(0.0),
+                      AppColors.primaryViolet.withOpacity(0.35),
+                      AppColors.primaryDeep.withOpacity(0.0),
                     ],
                     radius: 0.8,
                   ),
@@ -76,22 +57,22 @@ class _HomeScreenState extends State<HomeScreen> {
                         Expanded(
                           child: _buildFinancialCard(
                             icon: Icons.arrow_downward,
-                            iconColor: incomePositive,
+                            iconColor: AppColors.incomePositive,
                             label: 'Inflow this month',
                             amount: '\$6,240.00',
                             change: '+18.7%',
-                            changeColor: incomePositive,
+                            changeColor: AppColors.incomePositive,
                           ),
                         ),
                         const SizedBox(width: 14),
                         Expanded(
                           child: _buildFinancialCard(
                             icon: Icons.arrow_upward,
-                            iconColor: expenseNegative,
+                            iconColor: AppColors.expenseNegative,
                             label: 'Outflow this month',
                             amount: '\$3,860.00',
                             change: '-12.4%',
-                            changeColor: expenseNegative,
+                            changeColor: AppColors.expenseNegative,
                           ),
                         ),
                       ],
@@ -105,7 +86,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         Text(
                           'Transaction History',
                           style: TextStyle(
-                            color: textPrimary,
+                            color: AppColors.textPrimary,
                             fontSize: 20,
                             fontWeight: FontWeight.w600,
                           ),
@@ -115,7 +96,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: Text(
                             'View all',
                             style: TextStyle(
-                              color: accentCoral,
+                              color: AppColors.accentCoral,
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
                             ),
@@ -188,14 +169,14 @@ class _HomeScreenState extends State<HomeScreen> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: primaryViolet.withOpacity(0.75),
+                  color: AppColors.primaryViolet.withOpacity(0.75),
                   width: 2,
                 ),
                 color: Colors.transparent,
               ),
               child: const CircleAvatar(
                 backgroundColor: Colors.transparent,
-                child: Icon(Icons.person, color: textPrimary, size: 28),
+                child: Icon(Icons.person, color: AppColors.textPrimary, size: 28),
               ),
             ),
             const SizedBox(width: 12),
@@ -205,7 +186,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Text(
                   'Good morning 👋',
                   style: TextStyle(
-                    color: textSecondary,
+                    color: AppColors.textSecondary,
                     fontSize: 14,
                     fontWeight: FontWeight.w400,
                   ),
@@ -213,7 +194,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Text(
                   'Leslie Alexander',
                   style: TextStyle(
-                    color: textPrimary,
+                    color: AppColors.textPrimary,
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
@@ -236,7 +217,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Center(
             child: Icon(
               Icons.notifications_none,
-              color: textPrimary,
+              color: AppColors.textPrimary,
               size: 24,
             ),
           ),
@@ -266,7 +247,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: primaryPurple.withOpacity(0.25),
+            color: AppColors.primaryPurple.withOpacity(0.25),
             blurRadius: 60,
             offset: const Offset(0, 20),
           ),
@@ -284,7 +265,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Text(
                       'Active Balance',
                       style: TextStyle(
-                        color: textSecondary,
+                        color: AppColors.textSecondary,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                       ),
@@ -297,7 +278,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         shape: BoxShape.circle,
                         color: Colors.white.withOpacity(0.1),
                       ),
-                      child: const Icon(Icons.visibility, color: textPrimary, size: 18),
+                      child: const Icon(
+                        Icons.visibility,
+                        color: AppColors.textPrimary,
+                        size: 18,
+                      ),
                     ),
                   ],
                 ),
@@ -305,7 +290,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Text(
                   '\$94,765.50',
                   style: TextStyle(
-                    color: textPrimary,
+                    color: AppColors.textPrimary,
                     fontSize: 34,
                     fontWeight: FontWeight.w600,
                   ),
@@ -324,12 +309,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 begin: AlignmentDirectional(-2,1),
                 end:  AlignmentDirectional(1,-1),
                 colors: [
-                  primaryViolet.withValues(alpha: 1),
-                  accentCoral.withValues(alpha: 1),
+                  AppColors.primaryViolet.withValues(alpha: 1),
+                  AppColors.accentCoral.withValues(alpha: 1),
                 ],
               ),
             ),
-            child: const Icon(Icons.wallet, color: textPrimary, size: 24),
+            child: const Icon(Icons.wallet, color: AppColors.textPrimary, size: 24),
           ),
         ],
       ),
@@ -371,7 +356,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Text(
             label,
             style: TextStyle(
-              color: textMuted,
+              color: AppColors.textMuted,
               fontSize: 13,
               fontWeight: FontWeight.w400,
             ),
@@ -380,7 +365,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Text(
             amount,
             style: TextStyle(
-              color: textPrimary,
+              color: AppColors.textPrimary,
               fontSize: 20,
               fontWeight: FontWeight.w600,
             ),
@@ -415,7 +400,9 @@ class _HomeScreenState extends State<HomeScreen> {
     required String avatarText,
     bool isPositive = false,
   }) {
-    final amountColor = isPositive ? incomePositive : expenseNegative;
+    final amountColor = isPositive
+      ? AppColors.incomePositive
+      : AppColors.expenseNegative;
     
     return Container(
       padding: const EdgeInsets.all(14),
@@ -441,7 +428,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Text(
                 avatarText,
                 style: TextStyle(
-                  color: textPrimary,
+                  color: AppColors.textPrimary,
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
@@ -457,7 +444,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Text(
                   name,
                   style: TextStyle(
-                    color: textPrimary,
+                    color: AppColors.textPrimary,
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
@@ -465,7 +452,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Text(
                   time,
                   style: TextStyle(
-                    color: textMuted,
+                    color: AppColors.textMuted,
                     fontSize: 13,
                     fontWeight: FontWeight.w400,
                   ),
@@ -488,7 +475,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Text(
                 category,
                 style: TextStyle(
-                  color: textMuted,
+                  color: AppColors.textMuted,
                   fontSize: 12,
                   fontWeight: FontWeight.w400,
                 ),
