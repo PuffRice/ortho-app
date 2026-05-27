@@ -5,6 +5,7 @@ import '../cqrs/commands.dart';
 import '../cqrs/queries.dart';
 import '../models/isar_models.dart';
 import '../services/cqrs_service.dart';
+import '../services/user_identity.dart';
 
 class AddTransactionScreen extends StatefulWidget {
   const AddTransactionScreen({super.key});
@@ -14,8 +15,6 @@ class AddTransactionScreen extends StatefulWidget {
 }
 
 class _AddTransactionScreenState extends State<AddTransactionScreen> {
-  static const String localUserId = 'local-user';
-
   final _amountController = TextEditingController();
   final _noteController = TextEditingController();
   AccountEntity? _selectedAccount;
@@ -25,11 +24,17 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   DateTime _date = DateTime.now();
   bool _saving = false;
   late Future<CqrsService> _cqrsFuture;
+  late Future<UserIdentityProfile> _profileFuture;
+  UserIdentityProfile? _profile;
 
   @override
   void initState() {
     super.initState();
     _cqrsFuture = CqrsService.create();
+    _profileFuture = UserIdentityService.instance.getProfile().then((profile) {
+      _profile = profile;
+      return profile;
+    });
   }
 
   @override
@@ -55,7 +60,16 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
             return const Center(child: CircularProgressIndicator());
           }
 
-          return _buildForm(context, snapshot.data!);
+          return FutureBuilder<UserIdentityProfile>(
+            future: _profileFuture,
+            builder: (context, userSnapshot) {
+              if (!userSnapshot.hasData) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              return _buildForm(context, snapshot.data!);
+            },
+          );
         },
       ),
     );
@@ -229,8 +243,12 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   }
 
   Widget _buildAccountPicker(CqrsService cqrs) {
+    final userId = _profile?.userId;
+    if (userId == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
     return FutureBuilder<List<AccountEntity>>(
-      future: cqrs.bus.query(GetAccountsQuery(userId: localUserId)),
+      future: cqrs.bus.query(GetAccountsQuery(userId: userId)),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
@@ -274,9 +292,13 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   }
 
   Widget _buildCategoryPicker(CqrsService cqrs) {
+    final userId = _profile?.userId;
+    if (userId == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
     return FutureBuilder<List<CategoryEntity>>(
       future: cqrs.bus.query(
-        GetCategoriesQuery(userId: localUserId, type: _type),
+        GetCategoriesQuery(userId: userId, type: _type),
       ),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
@@ -336,6 +358,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   }
 
   Future<void> _save(CqrsService cqrs) async {
+    final profile = _profile;
+    if (profile == null) {
+      _showError('User profile not ready yet.');
+      return;
+    }
     final amount = double.tryParse(_amountController.text.trim());
     final account = _selectedAccount;
     final category = _selectedCategory;
@@ -357,16 +384,16 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     try {
       await cqrs.bus.execute(
         CreateUserCommand(
-          userId: localUserId,
-          email: 'local@device',
-          displayName: 'Local User',
+          userId: profile.userId,
+          email: profile.email,
+          displayName: profile.displayName,
           now: DateTime.now(),
         ),
       );
 
       await cqrs.bus.execute(
         CreateTransactionCommand(
-          userId: localUserId,
+          userId: profile.userId,
           accountId: account.accountId,
           categoryId: category.categoryId,
           type: _type,

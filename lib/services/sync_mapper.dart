@@ -108,5 +108,5 @@ class SyncPayloadMapper {
     };
   }
 
-  static String? _iso(DateTime? value) => value?.toIso8601String();
+  static String? _iso(DateTime? value) => value?.toUtc().toIso8601String();
 }

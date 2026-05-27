@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'config/app_routes.dart';
 import 'config/supabase_config.dart';
@@ -12,12 +13,18 @@ import 'screens/manage_accounts_screen.dart';
 import 'screens/manage_categories_screen.dart';
 import 'screens/profile_screen.dart';
 import 'services/local_db.dart';
+import 'services/local_user_migration.dart';
 import 'services/supabase_service.dart';
 import 'services/sync_service.dart';
+import 'services/timestamp_repair_service.dart';
+import 'services/user_identity.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final isar = await LocalDb.instance.open();
+  final profile = await UserIdentityService.instance.getProfile();
+  await LocalUserMigration(isar).migrateTo(profile.userId);
+  await TimestampRepairService(isar: isar).repairLocal(userId: profile.userId);
   if (_supabaseConfigured()) {
     await SupabaseService().initialize(
       supabaseUrl: SUPABASE_URL,
@@ -68,6 +75,7 @@ class MainNavigation extends StatefulWidget {
 
 class _MainNavigationState extends State<MainNavigation> {
   int _selectedIndex = 0;
+  late final PageController _pageController;
 
   final List<Widget> _screens = [
     const HomeScreen(),
@@ -77,13 +85,34 @@ class _MainNavigationState extends State<MainNavigation> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: ScrollConfiguration(
         behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
         child: Stack(
           children: [
-            _screens[_selectedIndex],
+            PageView(
+              controller: _pageController,
+              physics: const NeverScrollableScrollPhysics(),
+              onPageChanged: (index) {
+                setState(() {
+                  _selectedIndex = index;
+                });
+              },
+              children: _screens,
+            ),
             Positioned(
               bottom: 72,
               left: 0,
@@ -150,24 +179,56 @@ class _MainNavigationState extends State<MainNavigation> {
   Widget _buildNavBarItem(int index, IconData icon, String label) {
     final isSelected = _selectedIndex == index;
     return GestureDetector(
-      onTap: () {
+      onTap: () async {
+        if (_selectedIndex == index) return;
+        HapticFeedback.selectionClick();
         setState(() {
           _selectedIndex = index;
         });
+        await _pageController.animateToPage(
+          index,
+          duration: const Duration(milliseconds: 520),
+          curve: Curves.easeOutCubic,
+        );
       },
-      child: Container(
-        width: 48,
-        height: 48,
-        decoration: BoxDecoration(
-          color: isSelected
-              ? const Color(0xFF7c3aed).withOpacity(0.3)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Icon(
-          icon,
-          color: isSelected ? Colors.white : Colors.grey.shade500,
-          size: 24,
+      child: AnimatedScale(
+        scale: isSelected ? 1.08 : 1,
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOutCubic,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 320),
+          curve: Curves.easeOutCubic,
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: isSelected
+                ? const Color(0xFF7c3aed).withOpacity(0.3)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 240),
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            transitionBuilder: (child, animation) {
+              return FadeTransition(
+                opacity: animation,
+                child: ScaleTransition(
+                  scale: Tween<double>(
+                    begin: 0.88,
+                    end: 1,
+                  ).animate(animation),
+                  child: child,
+                ),
+              );
+            },
+            child: Icon(
+              icon,
+              key: ValueKey('$label-$isSelected'),
+              color: isSelected ? Colors.white : Colors.grey.shade500,
+              size: 24,
+            ),
+          ),
         ),
       ),
     );

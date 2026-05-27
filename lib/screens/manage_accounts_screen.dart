@@ -5,6 +5,7 @@ import '../cqrs/commands.dart';
 import '../cqrs/queries.dart';
 import '../models/isar_models.dart';
 import '../services/cqrs_service.dart';
+import '../services/user_identity.dart';
 
 class ManageAccountsScreen extends StatefulWidget {
   const ManageAccountsScreen({super.key});
@@ -14,15 +15,21 @@ class ManageAccountsScreen extends StatefulWidget {
 }
 
 class _ManageAccountsScreenState extends State<ManageAccountsScreen> {
-  static const String localUserId = 'local-user';
-
   late Future<CqrsService> _cqrsFuture;
   Future<List<AccountEntity>>? _accountsFuture;
+  late Future<String> _userIdFuture;
+  String? _userId;
 
   @override
   void initState() {
     super.initState();
     _cqrsFuture = CqrsService.create();
+    _userIdFuture = UserIdentityService.instance
+        .getProfile()
+        .then((profile) {
+      _userId = profile.userId;
+      return profile.userId;
+    });
   }
 
   @override
@@ -68,7 +75,19 @@ class _ManageAccountsScreenState extends State<ManageAccountsScreen> {
                 return const Center(child: CircularProgressIndicator());
               }
 
-              return _buildAccountsList(snapshot.data!);
+              return FutureBuilder<String>(
+                future: _userIdFuture,
+                builder: (context, userSnapshot) {
+                  if (!userSnapshot.hasData) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  return _buildAccountsList(
+                    snapshot.data!,
+                    userSnapshot.data!,
+                  );
+                },
+              );
             },
           ),
         ],
@@ -76,8 +95,8 @@ class _ManageAccountsScreenState extends State<ManageAccountsScreen> {
     );
   }
 
-  Widget _buildAccountsList(CqrsService cqrs) {
-    _accountsFuture ??= cqrs.bus.query(GetAccountsQuery(userId: localUserId));
+  Widget _buildAccountsList(CqrsService cqrs, String userId) {
+    _accountsFuture ??= cqrs.bus.query(GetAccountsQuery(userId: userId));
     return FutureBuilder<List<AccountEntity>>(
       future: _accountsFuture,
       builder: (context, snapshot) {
@@ -182,6 +201,11 @@ class _ManageAccountsScreenState extends State<ManageAccountsScreen> {
   }
 
   Future<void> _showCreateAccountDialog(CqrsService cqrs) async {
+    final userId = _userId;
+    if (userId == null) {
+      _showError('User profile not ready yet.');
+      return;
+    }
     final nameController = TextEditingController();
     final currencyController = TextEditingController(text: 'USD');
     final openingBalanceController = TextEditingController(text: '0');
@@ -273,7 +297,7 @@ class _ManageAccountsScreenState extends State<ManageAccountsScreen> {
 
     try {
       await cqrs.bus.execute(CreateAccountCommand(
-        userId: localUserId,
+        userId: userId,
         name: name,
         type: selectedType,
         currency: currency,
@@ -289,6 +313,11 @@ class _ManageAccountsScreenState extends State<ManageAccountsScreen> {
     CqrsService cqrs,
     AccountEntity account,
   ) async {
+    final userId = _userId;
+    if (userId == null) {
+      _showError('User profile not ready yet.');
+      return;
+    }
     final nameController = TextEditingController(text: account.name);
     final currencyController = TextEditingController(text: account.currency);
     final openingBalanceController =
@@ -381,7 +410,7 @@ class _ManageAccountsScreenState extends State<ManageAccountsScreen> {
 
     try {
       await cqrs.bus.execute(UpdateAccountCommand(
-        userId: localUserId,
+        userId: userId,
         accountId: account.accountId,
         name: name,
         type: selectedType,
@@ -398,6 +427,11 @@ class _ManageAccountsScreenState extends State<ManageAccountsScreen> {
     CqrsService cqrs,
     AccountEntity account,
   ) async {
+    final userId = _userId;
+    if (userId == null) {
+      _showError('User profile not ready yet.');
+      return;
+    }
     final blockedReason = await _accountDeleteBlockedReason(cqrs, account);
     if (blockedReason != null) {
       _showError(blockedReason);
@@ -437,7 +471,7 @@ class _ManageAccountsScreenState extends State<ManageAccountsScreen> {
 
     try {
       await cqrs.bus.execute(DeleteAccountCommand(
-        userId: localUserId,
+        userId: userId,
         accountId: account.accountId,
       ));
       _reloadAccounts(cqrs);
@@ -447,8 +481,12 @@ class _ManageAccountsScreenState extends State<ManageAccountsScreen> {
   }
 
   void _reloadAccounts(CqrsService cqrs) {
+    final userId = _userId;
+    if (userId == null) {
+      return;
+    }
     setState(() {
-      _accountsFuture = cqrs.bus.query(GetAccountsQuery(userId: localUserId));
+      _accountsFuture = cqrs.bus.query(GetAccountsQuery(userId: userId));
     });
   }
 
@@ -456,8 +494,12 @@ class _ManageAccountsScreenState extends State<ManageAccountsScreen> {
     CqrsService cqrs,
     AccountEntity account,
   ) async {
+    final userId = _userId;
+    if (userId == null) {
+      return 'User profile not ready yet.';
+    }
     final transactions = await cqrs.bus.query(GetTransactionsQuery(
-      userId: localUserId,
+      userId: userId,
       accountId: account.accountId,
       limit: 1,
     ));
@@ -465,8 +507,7 @@ class _ManageAccountsScreenState extends State<ManageAccountsScreen> {
       return 'Account is used by existing transactions.';
     }
 
-    final transfers =
-        await cqrs.bus.query(GetTransfersQuery(userId: localUserId));
+    final transfers = await cqrs.bus.query(GetTransfersQuery(userId: userId));
     final hasTransfers = transfers.any(
       (transfer) =>
           transfer.fromAccountId == account.accountId ||
@@ -476,8 +517,7 @@ class _ManageAccountsScreenState extends State<ManageAccountsScreen> {
       return 'Account is used by transfers.';
     }
 
-    final recurring =
-        await cqrs.bus.query(GetRecurringQuery(userId: localUserId));
+    final recurring = await cqrs.bus.query(GetRecurringQuery(userId: userId));
     final hasRecurring =
         recurring.any((entry) => entry.accountId == account.accountId);
     if (hasRecurring) {

@@ -5,6 +5,7 @@ import '../cqrs/commands.dart';
 import '../cqrs/queries.dart';
 import '../models/isar_models.dart';
 import '../services/cqrs_service.dart';
+import '../services/user_identity.dart';
 
 class ManageCategoriesScreen extends StatefulWidget {
   const ManageCategoriesScreen({super.key});
@@ -14,8 +15,6 @@ class ManageCategoriesScreen extends StatefulWidget {
 }
 
 class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
-  static const String localUserId = 'local-user';
-
   static const List<Color> _presetColors = [
     Color(0xFF8B5CF6),
     Color(0xFFEC4899),
@@ -40,11 +39,19 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
 
   late Future<CqrsService> _cqrsFuture;
   Future<List<CategoryEntity>>? _categoriesFuture;
+  late Future<String> _userIdFuture;
+  String? _userId;
 
   @override
   void initState() {
     super.initState();
     _cqrsFuture = CqrsService.create();
+    _userIdFuture = UserIdentityService.instance
+        .getProfile()
+        .then((profile) {
+      _userId = profile.userId;
+      return profile.userId;
+    });
   }
 
   @override
@@ -90,7 +97,19 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
                 return const Center(child: CircularProgressIndicator());
               }
 
-              return _buildCategoriesList(snapshot.data!);
+              return FutureBuilder<String>(
+                future: _userIdFuture,
+                builder: (context, userSnapshot) {
+                  if (!userSnapshot.hasData) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  return _buildCategoriesList(
+                    snapshot.data!,
+                    userSnapshot.data!,
+                  );
+                },
+              );
             },
           ),
         ],
@@ -98,9 +117,9 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
     );
   }
 
-  Widget _buildCategoriesList(CqrsService cqrs) {
+  Widget _buildCategoriesList(CqrsService cqrs, String userId) {
     _categoriesFuture ??=
-        cqrs.bus.query(GetCategoriesQuery(userId: localUserId));
+        cqrs.bus.query(GetCategoriesQuery(userId: userId));
     return FutureBuilder<List<CategoryEntity>>(
       future: _categoriesFuture,
       builder: (context, snapshot) {
@@ -205,6 +224,11 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
   }
 
   Future<void> _showCreateCategoryDialog(CqrsService cqrs) async {
+    final userId = _userId;
+    if (userId == null) {
+      _showError('User profile not ready yet.');
+      return;
+    }
     final nameController = TextEditingController();
     final sortOrderController = TextEditingController(text: '0');
     var selectedType = 'expense';
@@ -312,7 +336,7 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
 
     try {
       await cqrs.bus.execute(CreateCategoryCommand(
-        userId: localUserId,
+        userId: userId,
         name: name,
         type: selectedType,
         icon: selectedIconName,
@@ -329,6 +353,11 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
     CqrsService cqrs,
     CategoryEntity category,
   ) async {
+    final userId = _userId;
+    if (userId == null) {
+      _showError('User profile not ready yet.');
+      return;
+    }
     final nameController = TextEditingController(text: category.name);
     final sortOrderController =
         TextEditingController(text: category.sortOrder.toString());
@@ -437,7 +466,7 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
 
     try {
       await cqrs.bus.execute(UpdateCategoryCommand(
-        userId: localUserId,
+        userId: userId,
         categoryId: category.categoryId,
         name: name,
         type: selectedType,
@@ -455,6 +484,11 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
     CqrsService cqrs,
     CategoryEntity category,
   ) async {
+    final userId = _userId;
+    if (userId == null) {
+      _showError('User profile not ready yet.');
+      return;
+    }
     final blockedReason = await _categoryDeleteBlockedReason(cqrs, category);
     if (blockedReason != null) {
       _showError(blockedReason);
@@ -494,7 +528,7 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
 
     try {
       await cqrs.bus.execute(DeleteCategoryCommand(
-        userId: localUserId,
+        userId: userId,
         categoryId: category.categoryId,
       ));
       _reloadCategories(cqrs);
@@ -504,9 +538,13 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
   }
 
   void _reloadCategories(CqrsService cqrs) {
+    final userId = _userId;
+    if (userId == null) {
+      return;
+    }
     setState(() {
       _categoriesFuture = cqrs.bus.query(
-        GetCategoriesQuery(userId: localUserId),
+        GetCategoriesQuery(userId: userId),
       );
     });
   }
@@ -515,8 +553,12 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
     CqrsService cqrs,
     CategoryEntity category,
   ) async {
+    final userId = _userId;
+    if (userId == null) {
+      return 'User profile not ready yet.';
+    }
     final transactions = await cqrs.bus.query(GetTransactionsQuery(
-      userId: localUserId,
+      userId: userId,
       categoryId: category.categoryId,
       limit: 1,
     ));
@@ -524,7 +566,7 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
       return 'Category is used by existing transactions.';
     }
 
-    final budgets = await cqrs.bus.query(GetBudgetsQuery(userId: localUserId));
+    final budgets = await cqrs.bus.query(GetBudgetsQuery(userId: userId));
     final hasBudgets = budgets.any(
       (budget) => budget.categoryId == category.categoryId,
     );
@@ -532,8 +574,7 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
       return 'Category is used by budgets.';
     }
 
-    final recurring =
-        await cqrs.bus.query(GetRecurringQuery(userId: localUserId));
+    final recurring = await cqrs.bus.query(GetRecurringQuery(userId: userId));
     final hasRecurring =
         recurring.any((entry) => entry.categoryId == category.categoryId);
     if (hasRecurring) {
