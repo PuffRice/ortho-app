@@ -15,18 +15,28 @@ class ManageAccountsScreen extends StatefulWidget {
 }
 
 class _ManageAccountsScreenState extends State<ManageAccountsScreen> {
-  late Future<CqrsService> _cqrsFuture;
+  Future<CqrsService>? _cqrsFuture;
   Future<List<AccountEntity>>? _accountsFuture;
-  late Future<String> _userIdFuture;
+  Future<String>? _userIdFuture;
   String? _userId;
+
+  Future<CqrsService> get _cqrs {
+    return _cqrsFuture ??= CqrsService.create();
+  }
+
+  Future<String> get _userIdLoad {
+    return _userIdFuture ??=
+        UserIdentityService.instance.getProfile().then((profile) {
+      _userId = profile.userId;
+      return profile.userId;
+    });
+  }
 
   @override
   void initState() {
     super.initState();
     _cqrsFuture = CqrsService.create();
-    _userIdFuture = UserIdentityService.instance
-        .getProfile()
-        .then((profile) {
+    _userIdFuture = UserIdentityService.instance.getProfile().then((profile) {
       _userId = profile.userId;
       return profile.userId;
     });
@@ -69,14 +79,14 @@ class _ManageAccountsScreenState extends State<ManageAccountsScreen> {
             ),
           ),
           FutureBuilder<CqrsService>(
-            future: _cqrsFuture,
+            future: _cqrs,
             builder: (context, snapshot) {
               if (!snapshot.hasData) {
                 return const Center(child: CircularProgressIndicator());
               }
 
               return FutureBuilder<String>(
-                future: _userIdFuture,
+                future: _userIdLoad,
                 builder: (context, userSnapshot) {
                   if (!userSnapshot.hasData) {
                     return const Center(child: CircularProgressIndicator());
@@ -193,7 +203,7 @@ class _ManageAccountsScreenState extends State<ManageAccountsScreen> {
   }
 
   Future<void> _openCreateAccount() async {
-    final cqrs = await _cqrsFuture;
+    final cqrs = await _cqrs;
     if (!mounted) {
       return;
     }
@@ -230,7 +240,7 @@ class _ManageAccountsScreenState extends State<ManageAccountsScreen> {
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      value: selectedType,
+                      initialValue: selectedType,
                       items: const [
                         DropdownMenuItem(value: 'cash', child: Text('Cash')),
                         DropdownMenuItem(value: 'bank', child: Text('Bank')),
@@ -343,7 +353,7 @@ class _ManageAccountsScreenState extends State<ManageAccountsScreen> {
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      value: selectedType,
+                      initialValue: selectedType,
                       items: const [
                         DropdownMenuItem(value: 'cash', child: Text('Cash')),
                         DropdownMenuItem(value: 'bank', child: Text('Bank')),

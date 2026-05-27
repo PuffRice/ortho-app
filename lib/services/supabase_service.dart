@@ -9,10 +9,17 @@ class SupabaseService {
 
   SupabaseService._internal();
 
-  late SupabaseClient _client;
+  SupabaseClient? _client;
   bool _isInitialized = false;
 
-  SupabaseClient get client => _client;
+  SupabaseClient get client {
+    final current = _client;
+    if (current == null) {
+      throw StateError('SupabaseService has not been initialized.');
+    }
+    return current;
+  }
+
   bool get isInitialized => _isInitialized;
 
   Future<void> initialize({
@@ -32,7 +39,7 @@ class SupabaseService {
     required String email,
     required String password,
   }) async {
-    return await _client.auth.signUp(
+    return await client.auth.signUp(
       email: email,
       password: password,
     );
@@ -42,23 +49,26 @@ class SupabaseService {
     required String email,
     required String password,
   }) async {
-    return await _client.auth.signInWithPassword(
+    return await client.auth.signInWithPassword(
       email: email,
       password: password,
     );
   }
 
   Future<void> signOut() async {
-    await _client.auth.signOut();
+    await client.auth.signOut();
   }
 
   User? getCurrentUser() {
-    return _client.auth.currentUser;
+    if (!isInitialized) {
+      return null;
+    }
+    return client.auth.currentUser;
   }
 
   // Expense methods
   Future<List<Map<String, dynamic>>> getExpenses({String? userId}) async {
-    final response = await _client
+    final response = await client
         .from('expenses')
         .select()
         .eq('user_id', userId ?? getCurrentUser()!.id)
@@ -71,7 +81,7 @@ class SupabaseService {
     required double amount,
     required String description,
   }) async {
-    await _client.from('expenses').insert({
+    await client.from('expenses').insert({
       'user_id': getCurrentUser()!.id,
       'category': category,
       'amount': amount,
@@ -82,7 +92,7 @@ class SupabaseService {
 
   // Savings goals methods
   Future<List<Map<String, dynamic>>> getSavingsGoals({String? userId}) async {
-    final response = await _client
+    final response = await client
         .from('savings_goals')
         .select()
         .eq('user_id', userId ?? getCurrentUser()!.id);
@@ -94,7 +104,7 @@ class SupabaseService {
     required double target,
     required double current,
   }) async {
-    await _client.from('savings_goals').insert({
+    await client.from('savings_goals').insert({
       'user_id': getCurrentUser()!.id,
       'name': name,
       'target': target,
@@ -105,7 +115,7 @@ class SupabaseService {
 
   // Budget methods
   Future<List<Map<String, dynamic>>> getBudgets({String? userId}) async {
-    final response = await _client
+    final response = await client
         .from('budgets')
         .select()
         .eq('user_id', userId ?? getCurrentUser()!.id);
@@ -117,7 +127,7 @@ class SupabaseService {
     required double limit,
     required String period,
   }) async {
-    await _client.from('budgets').insert({
+    await client.from('budgets').insert({
       'user_id': getCurrentUser()!.id,
       'category': category,
       'limit': limit,
@@ -128,8 +138,10 @@ class SupabaseService {
 
   // Rewards methods
   Future<List<Map<String, dynamic>>> getRewards() async {
-    final response =
-        await _client.from('rewards').select().order('created_at', ascending: false);
+    final response = await client
+        .from('rewards')
+        .select()
+        .order('created_at', ascending: false);
     return response;
   }
 
@@ -138,14 +150,14 @@ class SupabaseService {
     required int pointsCost,
   }) async {
     final userId = getCurrentUser()!.id;
-    
+
     // Update user points
-    await _client.from('user_profiles').update({
-      'points': _client.rpc('decrement_points', params: {'amount': pointsCost})
+    await client.from('user_profiles').update({
+      'points': client.rpc('decrement_points', params: {'amount': pointsCost})
     }).eq('user_id', userId);
 
     // Record reward claim
-    await _client.from('reward_claims').insert({
+    await client.from('reward_claims').insert({
       'user_id': userId,
       'reward_id': rewardId,
       'claimed_at': DateTime.now().toIso8601String(),
@@ -154,7 +166,7 @@ class SupabaseService {
 
   // User profile methods
   Future<Map<String, dynamic>?> getUserProfile({String? userId}) async {
-    final response = await _client
+    final response = await client
         .from('user_profiles')
         .select()
         .eq('user_id', userId ?? getCurrentUser()!.id)
@@ -166,7 +178,7 @@ class SupabaseService {
     required String name,
     String? avatarUrl,
   }) async {
-    await _client.from('user_profiles').update({
+    await client.from('user_profiles').update({
       'name': name,
       if (avatarUrl != null) 'avatar_url': avatarUrl,
       'updated_at': DateTime.now().toIso8601String(),

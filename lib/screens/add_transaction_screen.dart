@@ -15,6 +15,17 @@ class AddTransactionScreen extends StatefulWidget {
 }
 
 class _AddTransactionScreenState extends State<AddTransactionScreen> {
+  static const Map<String, IconData> _categoryIcons = {
+    'shopping_bag': Icons.shopping_bag,
+    'restaurant': Icons.restaurant,
+    'directions_car': Icons.directions_car,
+    'flight': Icons.flight,
+    'home': Icons.home,
+    'fitness_center': Icons.fitness_center,
+    'movie': Icons.movie,
+    'school': Icons.school,
+  };
+
   final _amountController = TextEditingController();
   final _noteController = TextEditingController();
   AccountEntity? _selectedAccount;
@@ -23,9 +34,21 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   String _type = 'expense';
   DateTime _date = DateTime.now();
   bool _saving = false;
-  late Future<CqrsService> _cqrsFuture;
-  late Future<UserIdentityProfile> _profileFuture;
+  Future<CqrsService>? _cqrsFuture;
+  Future<UserIdentityProfile>? _profileFuture;
   UserIdentityProfile? _profile;
+
+  Future<CqrsService> get _cqrs {
+    return _cqrsFuture ??= CqrsService.create();
+  }
+
+  Future<UserIdentityProfile> get _profileLoad {
+    return _profileFuture ??=
+        UserIdentityService.instance.getProfile().then((profile) {
+      _profile = profile;
+      return profile;
+    });
+  }
 
   @override
   void initState() {
@@ -54,14 +77,14 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         title: const Text('Add Transaction'),
       ),
       body: FutureBuilder<CqrsService>(
-        future: _cqrsFuture,
+        future: _cqrs,
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
 
           return FutureBuilder<UserIdentityProfile>(
-            future: _profileFuture,
+            future: _profileLoad,
             builder: (context, userSnapshot) {
               if (!userSnapshot.hasData) {
                 return const Center(child: CircularProgressIndicator());
@@ -98,31 +121,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           label: 'Note (optional)',
         ),
         const SizedBox(height: 16),
-        ListTile(
-          contentPadding: EdgeInsets.zero,
-          title: const Text(
-            'Date',
-            style: TextStyle(color: Colors.white),
-          ),
-          subtitle: Text(
-            _date.toIso8601String().split('T').first,
-            style: const TextStyle(color: Colors.white70),
-          ),
-          trailing: const Icon(Icons.calendar_today, color: Colors.white70),
-          onTap: () async {
-            final picked = await showDatePicker(
-              context: context,
-              initialDate: _date,
-              firstDate: DateTime(2000),
-              lastDate: DateTime(2100),
-            );
-            if (picked != null) {
-              setState(() {
-                _date = picked;
-              });
-            }
-          },
-        ),
+        _buildDatePicker(context),
         const SizedBox(height: 24),
         ElevatedButton(
           onPressed: _saving ? null : () => _save(cqrs),
@@ -144,22 +143,22 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               borderRadius: BorderRadius.circular(30),
             ),
             child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              alignment: Alignment.center,
-              child: _saving
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Save',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w500,
-                      ),
-                  )
-            ),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                alignment: Alignment.center,
+                child: _saving
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text(
+                        'Save',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      )),
           ),
         ),
       ],
@@ -177,11 +176,18 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           _selectedCategory = null;
         });
       },
+      showCheckmark: false,
       selectedColor: AppColors.primaryViolet,
-      labelStyle: TextStyle(
-        color: isSelected ? Colors.white : Colors.white70,
+      backgroundColor: const Color(0xFF101323),
+      side: BorderSide(
+        color: isSelected
+            ? AppColors.primaryViolet
+            : Colors.white.withOpacity(0.14),
       ),
-      backgroundColor: Colors.white12,
+      labelStyle: TextStyle(
+        color: isSelected ? Colors.white : AppColors.textSecondary,
+        fontWeight: FontWeight.w600,
+      ),
     );
   }
 
@@ -218,27 +224,137 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           style: TextStyle(color: Colors.white70, fontSize: 14),
         ),
         const SizedBox(height: 8),
-        TextField(
-          controller: _amountController,
-          keyboardType: TextInputType.number,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 36,
-            fontWeight: FontWeight.w600,
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(color: Colors.white.withOpacity(0.2)),
+            ),
           ),
-          decoration: InputDecoration(
-            hintText: '0',
-            hintStyle: TextStyle(color: Colors.white.withOpacity(0.35)),
-            enabledBorder: UnderlineInputBorder(
-              borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
-            ),
-            focusedBorder: const UnderlineInputBorder(
-              borderSide: BorderSide(color: AppColors.primaryViolet, width: 2),
-            ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              const Text(
+                'BDT',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextField(
+                  controller: _amountController,
+                  keyboardType: TextInputType.number,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 36,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: '0',
+                    hintStyle: TextStyle(color: Colors.white.withOpacity(0.35)),
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    contentPadding: const EdgeInsets.only(bottom: 8),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildDatePicker(BuildContext context) {
+    return InkWell(
+      onTap: () async {
+        final picked = await showDatePicker(
+          context: context,
+          initialDate: _date,
+          firstDate: DateTime(2000),
+          lastDate: DateTime(2100),
+          builder: (context, child) {
+            return Theme(
+              data: ThemeData.dark().copyWith(
+                colorScheme: const ColorScheme.dark(
+                  primary: AppColors.primaryViolet,
+                  onPrimary: Colors.white,
+                  surface: AppColors.bgSecondary,
+                  onSurface: Colors.white,
+                ),
+                dialogBackgroundColor: AppColors.bgSecondary,
+              ),
+              child: child!,
+            );
+          },
+        );
+        if (picked != null) {
+          setState(() {
+            _date = picked;
+          });
+        }
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.06),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withOpacity(0.12)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: AppColors.primaryViolet.withOpacity(0.18),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.calendar_today_rounded,
+                color: AppColors.primaryViolet,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Date',
+                    style: TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    MaterialLocalizations.of(context).formatMediumDate(_date),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: AppColors.textMuted,
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -265,29 +381,93 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           }
         }
 
-        return DropdownButtonFormField<AccountEntity>(
-          value: selectedAccount,
-          items: accounts
-              .map(
-                (account) => DropdownMenuItem<AccountEntity>(
-                  value: account,
-                  child: Text(account.name),
-                ),
-              )
-              .toList(),
-          onChanged: accounts.isEmpty
-              ? null
-              : (value) {
-                  setState(() {
-                    _selectedAccount = value;
-                  });
-                },
-          decoration: _buildSelectDecoration('Account'),
-          iconEnabledColor: Colors.white70,
-          dropdownColor: const Color(0xFF0F0F19),
-          style: const TextStyle(color: Colors.white),
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Account',
+              style: TextStyle(color: Colors.white70, fontSize: 14),
+            ),
+            const SizedBox(height: 10),
+            if (accounts.isEmpty)
+              _buildEmptySelectionBox('No accounts yet')
+            else
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: accounts
+                    .map(
+                      (account) => _buildAccountOption(
+                        account,
+                        selectedAccount?.accountId == account.accountId,
+                      ),
+                    )
+                    .toList(),
+              ),
+          ],
         );
       },
+    );
+  }
+
+  Widget _buildAccountOption(AccountEntity account, bool isSelected) {
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _selectedAccount = account;
+        });
+      },
+      borderRadius: BorderRadius.circular(14),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        constraints: const BoxConstraints(minWidth: 142),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primaryViolet.withOpacity(0.22)
+              : Colors.white.withOpacity(0.06),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isSelected
+                ? AppColors.primaryViolet
+                : Colors.white.withOpacity(0.12),
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isSelected
+                  ? Icons.radio_button_checked
+                  : Icons.radio_button_unchecked,
+              color: isSelected ? AppColors.primaryViolet : Colors.white54,
+              size: 18,
+            ),
+            const SizedBox(width: 10),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  account.name,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${account.type} - ${account.currentBalance.toStringAsFixed(2)}',
+                  style: const TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -317,12 +497,17 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         }
 
         return DropdownButtonFormField<CategoryEntity>(
-          value: selectedCategory,
+          initialValue: selectedCategory,
+          selectedItemBuilder: (context) {
+            return categories
+                .map((category) => _buildCategoryOption(category))
+                .toList();
+          },
           items: categories
               .map(
                 (category) => DropdownMenuItem<CategoryEntity>(
                   value: category,
-                  child: Text(category.name),
+                  child: _buildCategoryOption(category),
                 ),
               )
               .toList(),
@@ -340,6 +525,63 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         );
       },
     );
+  }
+
+  Widget _buildCategoryOption(CategoryEntity category) {
+    final color = _categoryColor(category);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.22),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            _categoryIcon(category.icon),
+            color: color,
+            size: 16,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Flexible(
+          child: Text(
+            category.name,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEmptySelectionBox(String message) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withOpacity(0.12)),
+      ),
+      child: Text(
+        message,
+        style: const TextStyle(color: AppColors.textMuted),
+      ),
+    );
+  }
+
+  Color _categoryColor(CategoryEntity category) {
+    final value = category.color;
+    if (value == null) {
+      return AppColors.primaryViolet;
+    }
+    return Color(value);
+  }
+
+  IconData _categoryIcon(String? iconName) {
+    return _categoryIcons[iconName] ?? Icons.category;
   }
 
   InputDecoration _buildSelectDecoration(String label) {

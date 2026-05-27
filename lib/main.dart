@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'config/app_routes.dart';
 import 'config/supabase_config.dart';
@@ -54,7 +55,15 @@ class MainApp extends StatelessWidget {
         useMaterial3: false,
         primaryColor: const Color(0xFF0F172A),
         scaffoldBackgroundColor: const Color(0xFF0F172A),
-        fontFamily: 'Inter',
+        textTheme: GoogleFonts.interTextTheme(),
+        primaryTextTheme: GoogleFonts.interTextTheme(),
+        appBarTheme: AppBarTheme(
+          titleTextStyle: GoogleFonts.inter(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ),
       routes: {
         AppRoutes.addTransaction: (_) => const AddTransactionScreen(),
@@ -192,7 +201,7 @@ class _MainNavigationState extends State<MainNavigation> {
         );
       },
       child: AnimatedScale(
-        scale: isSelected ? 1.08 : 1,
+        scale: isSelected ? 1.08 : 1.0,
         duration: const Duration(milliseconds: 280),
         curve: Curves.easeOutCubic,
         child: AnimatedContainer(
@@ -201,9 +210,17 @@ class _MainNavigationState extends State<MainNavigation> {
           width: 48,
           height: 48,
           decoration: BoxDecoration(
-            color: isSelected
-                ? const Color(0xFF7c3aed).withOpacity(0.3)
-                : Colors.transparent,
+            color: isSelected ? null : Colors.transparent,
+            gradient: isSelected
+                ? const LinearGradient(
+                    begin: AlignmentDirectional(-2, 1),
+                    end: AlignmentDirectional(1, -1),
+                    colors: [
+                      Color(0xFF6f2eaf),
+                      Color(0xFFFF6B5F),
+                    ],
+                  )
+                : null,
             borderRadius: BorderRadius.circular(12),
           ),
           child: AnimatedSwitcher(

@@ -37,18 +37,28 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
     'school': Icons.school,
   };
 
-  late Future<CqrsService> _cqrsFuture;
+  Future<CqrsService>? _cqrsFuture;
   Future<List<CategoryEntity>>? _categoriesFuture;
-  late Future<String> _userIdFuture;
+  Future<String>? _userIdFuture;
   String? _userId;
+
+  Future<CqrsService> get _cqrs {
+    return _cqrsFuture ??= CqrsService.create();
+  }
+
+  Future<String> get _userIdLoad {
+    return _userIdFuture ??=
+        UserIdentityService.instance.getProfile().then((profile) {
+      _userId = profile.userId;
+      return profile.userId;
+    });
+  }
 
   @override
   void initState() {
     super.initState();
     _cqrsFuture = CqrsService.create();
-    _userIdFuture = UserIdentityService.instance
-        .getProfile()
-        .then((profile) {
+    _userIdFuture = UserIdentityService.instance.getProfile().then((profile) {
       _userId = profile.userId;
       return profile.userId;
     });
@@ -91,14 +101,14 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
             ),
           ),
           FutureBuilder<CqrsService>(
-            future: _cqrsFuture,
+            future: _cqrs,
             builder: (context, snapshot) {
               if (!snapshot.hasData) {
                 return const Center(child: CircularProgressIndicator());
               }
 
               return FutureBuilder<String>(
-                future: _userIdFuture,
+                future: _userIdLoad,
                 builder: (context, userSnapshot) {
                   if (!userSnapshot.hasData) {
                     return const Center(child: CircularProgressIndicator());
@@ -118,8 +128,7 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
   }
 
   Widget _buildCategoriesList(CqrsService cqrs, String userId) {
-    _categoriesFuture ??=
-        cqrs.bus.query(GetCategoriesQuery(userId: userId));
+    _categoriesFuture ??= cqrs.bus.query(GetCategoriesQuery(userId: userId));
     return FutureBuilder<List<CategoryEntity>>(
       future: _categoriesFuture,
       builder: (context, snapshot) {
@@ -216,7 +225,7 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
   }
 
   Future<void> _openCreateCategory() async {
-    final cqrs = await _cqrsFuture;
+    final cqrs = await _cqrs;
     if (!mounted) {
       return;
     }
@@ -254,7 +263,7 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      value: selectedType,
+                      initialValue: selectedType,
                       items: const [
                         DropdownMenuItem(
                             value: 'expense', child: Text('Expense')),
@@ -384,7 +393,7 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      value: selectedType,
+                      initialValue: selectedType,
                       items: const [
                         DropdownMenuItem(
                             value: 'expense', child: Text('Expense')),

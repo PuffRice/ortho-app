@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import 'dart:ui';
-
 import '../config/app_colors.dart';
+import '../cqrs/queries.dart';
+import '../models/isar_models.dart';
+import '../services/cqrs_service.dart';
+import '../services/user_identity.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -11,6 +13,30 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  static const Map<String, IconData> _categoryIcons = {
+    'shopping_bag': Icons.shopping_bag,
+    'restaurant': Icons.restaurant,
+    'directions_car': Icons.directions_car,
+    'flight': Icons.flight,
+    'home': Icons.home,
+    'fitness_center': Icons.fitness_center,
+    'movie': Icons.movie,
+    'school': Icons.school,
+  };
+
+  bool _isBalanceVisible = true;
+  Future<_HomeData>? _homeDataFuture;
+
+  Future<_HomeData> get _homeData {
+    return _homeDataFuture ??= _loadHomeData();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _homeDataFuture = _loadHomeData();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -37,118 +63,17 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           SafeArea(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 120),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header with profile and notification
-                    _buildHeader(),
-                    const SizedBox(height: 24),
-
-                    // Active Balance Card
-                    _buildActiveBalanceCard(),
-                    const SizedBox(height: 14),
-
-                    // Inflow and Outflow Cards in Grid
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildFinancialCard(
-                            icon: Icons.arrow_downward,
-                            iconColor: AppColors.incomePositive,
-                            label: 'Inflow this month',
-                            amount: '\$6,240.00',
-                            change: '+18.7%',
-                            changeColor: AppColors.incomePositive,
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: _buildFinancialCard(
-                            icon: Icons.arrow_upward,
-                            iconColor: AppColors.expenseNegative,
-                            label: 'Outflow this month',
-                            amount: '\$3,860.00',
-                            change: '-12.4%',
-                            changeColor: AppColors.expenseNegative,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 32),
-
-                    // Transaction History Section
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Transaction History',
-                          style: TextStyle(
-                            color: AppColors.textPrimary,
-                            fontSize: 20,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: () {},
-                          child: Text(
-                            'View all',
-                            style: TextStyle(
-                              color: AppColors.accentCoral,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    _buildTransactionItem(
-                      name: 'Kristin Watson',
-                      time: '09:40 AM',
-                      amount: '-\$125.00',
-                      category: 'Traveling',
-                      avatarText: 'K',
-                    ),
-                    const SizedBox(height: 12),
-                    _buildTransactionItem(
-                      name: 'Jane Cooper',
-                      time: '10:30 AM',
-                      amount: '+\$200.00',
-                      category: 'Traveling',
-                      avatarText: 'J',
-                      isPositive: true,
-                    ),
-                    const SizedBox(height: 12),
-                    _buildTransactionItem(
-                      name: 'Wade Warren',
-                      time: '11:55 AM',
-                      amount: '-\$325.00',
-                      category: 'Traveling',
-                      avatarText: 'W',
-                    ),
-                    const SizedBox(height: 12),
-                    _buildTransactionItem(
-                      name: 'Annette Black',
-                      time: '11:20 AM',
-                      amount: '+\$280.00',
-                      category: 'Traveling',
-                      avatarText: 'A',
-                      isPositive: true,
-                    ),
-                    const SizedBox(height: 12),
-                    _buildTransactionItem(
-                      name: 'Cody Fisher',
-                      time: '12:00 PM',
-                      amount: '-\$225.00',
-                      category: 'Traveling',
-                      avatarText: 'C',
-                    ),
-                  ],
-                ),
-              ),
+            child: FutureBuilder<_HomeData>(
+              future: _homeData,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return _buildLoadError(snapshot.error);
+                }
+                return _buildHomeContent(context, snapshot.data!);
+              },
             ),
           ),
         ],
@@ -156,8 +81,359 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Header with greeting and notification
-  Widget _buildHeader() {
+  Widget _buildLoadError(Object? error) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Unable to load local data.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            if (error != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                error.toString(),
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: AppColors.textMuted,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
+            TextButton(
+              onPressed: _reloadHomeData,
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadWarning(String message) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: AppColors.accentCoral.withOpacity(0.10),
+        border: Border.all(
+          color: AppColors.accentCoral.withOpacity(0.24),
+        ),
+      ),
+      child: Text(
+        message,
+        style: const TextStyle(
+          color: AppColors.textSecondary,
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHomeContent(BuildContext context, _HomeData data) {
+    return RefreshIndicator(
+      onRefresh: () async {
+        final next = _loadHomeData();
+        setState(() {
+          _homeDataFuture = next;
+        });
+        await next;
+      },
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 120),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(data.displayName),
+              if (data.loadWarning != null) ...[
+                const SizedBox(height: 14),
+                _buildLoadWarning(data.loadWarning!),
+              ],
+              const SizedBox(height: 24),
+              _buildActiveBalanceCard(data.activeBalanceLabel),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildFinancialCard(
+                      icon: Icons.arrow_downward,
+                      iconColor: AppColors.incomePositive,
+                      label: 'Inflow this month',
+                      amount: data.inflowLabel,
+                      change: data.inflowChangeLabel,
+                      changeColor: AppColors.incomePositive,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: _buildFinancialCard(
+                      icon: Icons.arrow_upward,
+                      iconColor: AppColors.expenseNegative,
+                      label: 'Outflow this month',
+                      amount: data.outflowLabel,
+                      change: data.outflowChangeLabel,
+                      changeColor: AppColors.expenseNegative,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 32),
+              _buildTransactionHeader(),
+              const SizedBox(height: 16),
+              if (data.transactions.isEmpty)
+                _buildEmptyTransactions()
+              else
+                for (final transaction in data.transactions) ...[
+                  _buildTransactionItem(
+                    description: transaction.description,
+                    time: MaterialLocalizations.of(context).formatTimeOfDay(
+                      TimeOfDay.fromDateTime(transaction.date),
+                    ),
+                    date: MaterialLocalizations.of(context)
+                        .formatMediumDate(transaction.date),
+                    amount: transaction.amountLabel,
+                    category: transaction.categoryName,
+                    categoryIcon: transaction.categoryIcon,
+                    categoryColor: transaction.categoryColor,
+                    isPositive: transaction.isPositive,
+                  ),
+                  const SizedBox(height: 12),
+                ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<_HomeData> _loadHomeData() async {
+    final profile = await UserIdentityService.instance.getProfile();
+    final cqrs = await CqrsService.create();
+    final now = DateTime.now();
+    final monthStart = DateTime(now.year, now.month, 1);
+    final nextMonthStart = DateTime(now.year, now.month + 1, 1);
+    final previousMonthStart = DateTime(now.year, now.month - 1, 1);
+
+    final accounts = await _loadSection<List<AccountEntity>>(
+      () => cqrs.bus.query<GetAccountsQuery, List<AccountEntity>>(
+        GetAccountsQuery(userId: profile.userId),
+      ),
+      fallback: const <AccountEntity>[],
+      label: 'accounts',
+    );
+    final categories = await _loadSection<List<CategoryEntity>>(
+      () => cqrs.bus.query<GetCategoriesQuery, List<CategoryEntity>>(
+        GetCategoriesQuery(userId: profile.userId),
+      ),
+      fallback: const <CategoryEntity>[],
+      label: 'categories',
+    );
+    final recentTransactions = await _loadSection<List<TransactionEntity>>(
+      () => cqrs.bus.query<GetTransactionsQuery, List<TransactionEntity>>(
+        GetTransactionsQuery(userId: profile.userId, limit: 5),
+      ),
+      fallback: const <TransactionEntity>[],
+      label: 'recent transactions',
+    );
+    final monthTransactions = await _loadSection<List<TransactionEntity>>(
+      () => cqrs.bus.query<GetTransactionsQuery, List<TransactionEntity>>(
+        GetTransactionsQuery(
+          userId: profile.userId,
+          start: monthStart,
+          end: nextMonthStart.subtract(const Duration(milliseconds: 1)),
+        ),
+      ),
+      fallback: const <TransactionEntity>[],
+      label: 'monthly transactions',
+    );
+    final previousMonthTransactions =
+        await _loadSection<List<TransactionEntity>>(
+      () => cqrs.bus.query<GetTransactionsQuery, List<TransactionEntity>>(
+        GetTransactionsQuery(
+          userId: profile.userId,
+          start: previousMonthStart,
+          end: monthStart.subtract(const Duration(milliseconds: 1)),
+        ),
+      ),
+      fallback: const <TransactionEntity>[],
+      label: 'previous month transactions',
+    );
+    final failedSections = <String>[
+      if (accounts.failed) accounts.label,
+      if (categories.failed) categories.label,
+      if (recentTransactions.failed) recentTransactions.label,
+      if (monthTransactions.failed) monthTransactions.label,
+      if (previousMonthTransactions.failed) previousMonthTransactions.label,
+    ];
+
+    final categoryById = <String, CategoryEntity>{
+      for (final category in categories.value) category.categoryId: category,
+    };
+    final currency = _firstCurrency(accounts.value);
+    final activeBalance = _sumAccountBalances(accounts.value);
+    final inflow = _sumTransactions(monthTransactions.value, 'income');
+    final outflow = _sumTransactions(monthTransactions.value, 'expense');
+    final previousInflow =
+        _sumTransactions(previousMonthTransactions.value, 'income');
+    final previousOutflow =
+        _sumTransactions(previousMonthTransactions.value, 'expense');
+
+    return _HomeData(
+      displayName: profile.displayName,
+      activeBalanceLabel: _formatMoney(activeBalance, currency),
+      inflowLabel: _formatMoney(inflow, currency),
+      outflowLabel: _formatMoney(outflow, currency),
+      inflowChangeLabel: _formatChange(inflow, previousInflow),
+      outflowChangeLabel: _formatChange(outflow, previousOutflow),
+      loadWarning: failedSections.isEmpty
+          ? null
+          : 'Some local data could not be loaded: ${failedSections.join(', ')}.',
+      transactions: recentTransactions.value
+          .map((transaction) => _safeTransactionView(transaction, categoryById))
+          .whereType<_TransactionViewData>()
+          .toList(),
+    );
+  }
+
+  Future<_SectionLoad<T>> _loadSection<T>(
+    Future<T> Function() loader, {
+    required T fallback,
+    required String label,
+  }) async {
+    try {
+      return _SectionLoad(value: await loader(), label: label);
+    } catch (_) {
+      return _SectionLoad(value: fallback, label: label, failed: true);
+    }
+  }
+
+  String _firstCurrency(List<AccountEntity> accounts) {
+    for (final account in accounts) {
+      try {
+        return account.currency;
+      } catch (_) {
+        continue;
+      }
+    }
+    return 'BDT';
+  }
+
+  double _sumAccountBalances(List<AccountEntity> accounts) {
+    var total = 0.0;
+    for (final account in accounts) {
+      try {
+        total += account.currentBalance;
+      } catch (_) {
+        continue;
+      }
+    }
+    return total;
+  }
+
+  double _sumTransactions(List<TransactionEntity> transactions, String type) {
+    var total = 0.0;
+    for (final transaction in transactions) {
+      try {
+        if (transaction.type == type) {
+          total += transaction.amount;
+        }
+      } catch (_) {
+        continue;
+      }
+    }
+    return total;
+  }
+
+  _TransactionViewData? _safeTransactionView(
+    TransactionEntity transaction,
+    Map<String, CategoryEntity> categoryById,
+  ) {
+    try {
+      return _transactionView(transaction, categoryById);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  _TransactionViewData _transactionView(
+    TransactionEntity transaction,
+    Map<String, CategoryEntity> categoryById,
+  ) {
+    final category = categoryById[transaction.categoryId];
+    final isPositive = transaction.type == 'income';
+    final signedAmount = isPositive ? transaction.amount : -transaction.amount;
+    final categoryName = category?.name ?? transaction.type;
+    return _TransactionViewData(
+      description: _transactionDescription(transaction, categoryName),
+      date: transaction.date,
+      amountLabel: _formatSignedMoney(signedAmount, transaction.currency),
+      categoryName: categoryName,
+      categoryIcon: _categoryIcon(category?.icon),
+      categoryColor: _categoryColor(category, isPositive),
+      isPositive: isPositive,
+    );
+  }
+
+  String _transactionDescription(
+    TransactionEntity transaction,
+    String categoryName,
+  ) {
+    final note = transaction.note?.trim();
+    if (note != null && note.isNotEmpty) {
+      return note;
+    }
+    return categoryName;
+  }
+
+  String _formatMoney(double amount, String currency) {
+    return '$currency ${amount.toStringAsFixed(2)}';
+  }
+
+  String _formatSignedMoney(double amount, String currency) {
+    final sign = amount >= 0 ? '+' : '-';
+    return '$sign$currency ${amount.abs().toStringAsFixed(2)}';
+  }
+
+  String _formatChange(double current, double previous) {
+    if (previous == 0) {
+      return current == 0 ? '0.0%' : '+100.0%';
+    }
+    final change = ((current - previous) / previous.abs()) * 100;
+    final sign = change >= 0 ? '+' : '';
+    return '$sign${change.toStringAsFixed(1)}%';
+  }
+
+  IconData _categoryIcon(String? iconName) {
+    return _categoryIcons[iconName] ?? Icons.category;
+  }
+
+  Color _categoryColor(CategoryEntity? category, bool isPositive) {
+    if (category?.color != null) {
+      return Color(category!.color!);
+    }
+    return isPositive ? AppColors.incomePositive : AppColors.expenseNegative;
+  }
+
+  void _reloadHomeData() {
+    setState(() {
+      _homeDataFuture = _loadHomeData();
+    });
+  }
+
+  Widget _buildHeader(String displayName) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -176,7 +452,8 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               child: const CircleAvatar(
                 backgroundColor: Colors.transparent,
-                child: Icon(Icons.person, color: AppColors.textPrimary, size: 28),
+                child:
+                    Icon(Icons.person, color: AppColors.textPrimary, size: 28),
               ),
             ),
             const SizedBox(width: 12),
@@ -184,7 +461,7 @@ class _HomeScreenState extends State<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Good morning 👋',
+                  _greeting(),
                   style: TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 14,
@@ -192,7 +469,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 Text(
-                  'Leslie Alexander',
+                  displayName,
                   style: TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 16,
@@ -226,8 +503,18 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Active Balance Card
-  Widget _buildActiveBalanceCard() {
+  String _greeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) {
+      return 'Good morning';
+    }
+    if (hour < 17) {
+      return 'Good afternoon';
+    }
+    return 'Good evening';
+  }
+
+  Widget _buildActiveBalanceCard(String activeBalanceLabel) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -271,24 +558,33 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white.withOpacity(0.1),
-                      ),
-                      child: const Icon(
-                        Icons.visibility,
-                        color: AppColors.textPrimary,
-                        size: 18,
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _isBalanceVisible = !_isBalanceVisible;
+                        });
+                      },
+                      child: Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.1),
+                        ),
+                        child: Icon(
+                          _isBalanceVisible
+                              ? Icons.visibility
+                              : Icons.visibility_off,
+                          color: AppColors.textPrimary,
+                          size: 18,
+                        ),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '\$94,765.50',
+                  _isBalanceVisible ? activeBalanceLabel : '••••••••',
                   style: TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 34,
@@ -306,22 +602,25 @@ class _HomeScreenState extends State<HomeScreen> {
               shape: BoxShape.rectangle,
               borderRadius: BorderRadius.circular(16),
               gradient: LinearGradient(
-                begin: AlignmentDirectional(-2,1),
-                end:  AlignmentDirectional(1,-1),
+                begin: AlignmentDirectional(-2, 1),
+                end: AlignmentDirectional(1, -1),
                 colors: [
                   AppColors.primaryViolet.withValues(alpha: 1),
                   AppColors.accentCoral.withValues(alpha: 1),
                 ],
               ),
             ),
-            child: const Icon(Icons.wallet, color: AppColors.textPrimary, size: 24),
+            child: const Icon(
+              Icons.wallet,
+              color: AppColors.textPrimary,
+              size: 24,
+            ),
           ),
         ],
       ),
     );
   }
 
-  // Financial Card (Inflow/Outflow)
   Widget _buildFinancialCard({
     required IconData icon,
     required Color iconColor,
@@ -391,28 +690,66 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Transaction Item
+  Widget _buildTransactionHeader() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          'Transaction History',
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        GestureDetector(
+          onTap: () {},
+          child: Text(
+            'View all',
+            style: TextStyle(
+              color: AppColors.accentCoral,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEmptyTransactions() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        color: Colors.white.withOpacity(0.055),
+      ),
+      child: const Text(
+        'No transactions yet.',
+        style: TextStyle(color: AppColors.textMuted),
+      ),
+    );
+  }
+
   Widget _buildTransactionItem({
-    required String name,
+    required String description,
     required String time,
+    required String date,
     required String amount,
     required String category,
-    required String avatarText,
+    required IconData categoryIcon,
+    required Color categoryColor,
     bool isPositive = false,
   }) {
-    final amountColor = isPositive
-      ? AppColors.incomePositive
-      : AppColors.expenseNegative;
-    
+    final amountColor =
+        isPositive ? AppColors.incomePositive : AppColors.expenseNegative;
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
         color: Colors.white.withOpacity(0.055),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.07),
-          width: 1,
-        ),
       ),
       height: 74,
       child: Row(
@@ -422,16 +759,13 @@ class _HomeScreenState extends State<HomeScreen> {
             height: 44,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.white.withOpacity(0.15),
+              color: categoryColor.withOpacity(0.18),
             ),
             child: Center(
-              child: Text(
-                avatarText,
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
+              child: Icon(
+                categoryIcon,
+                color: categoryColor,
+                size: 22,
               ),
             ),
           ),
@@ -442,15 +776,18 @@ class _HomeScreenState extends State<HomeScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  name,
+                  description,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: AppColors.textPrimary,
-                    fontSize: 14,
+                    fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
+                const SizedBox(height: 6),
                 Text(
-                  time,
+                  '$time | $date',
                   style: TextStyle(
                     color: AppColors.textMuted,
                     fontSize: 13,
@@ -468,7 +805,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 amount,
                 style: TextStyle(
                   color: amountColor,
-                  fontSize: 14,
+                  fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -486,4 +823,58 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+}
+
+class _HomeData {
+  const _HomeData({
+    required this.displayName,
+    required this.activeBalanceLabel,
+    required this.inflowLabel,
+    required this.outflowLabel,
+    required this.inflowChangeLabel,
+    required this.outflowChangeLabel,
+    required this.loadWarning,
+    required this.transactions,
+  });
+
+  final String displayName;
+  final String activeBalanceLabel;
+  final String inflowLabel;
+  final String outflowLabel;
+  final String inflowChangeLabel;
+  final String outflowChangeLabel;
+  final String? loadWarning;
+  final List<_TransactionViewData> transactions;
+}
+
+class _SectionLoad<T> {
+  const _SectionLoad({
+    required this.value,
+    required this.label,
+    this.failed = false,
+  });
+
+  final T value;
+  final String label;
+  final bool failed;
+}
+
+class _TransactionViewData {
+  const _TransactionViewData({
+    required this.description,
+    required this.date,
+    required this.amountLabel,
+    required this.categoryName,
+    required this.categoryIcon,
+    required this.categoryColor,
+    required this.isPositive,
+  });
+
+  final String description;
+  final DateTime date;
+  final String amountLabel;
+  final String categoryName;
+  final IconData categoryIcon;
+  final Color categoryColor;
+  final bool isPositive;
 }
