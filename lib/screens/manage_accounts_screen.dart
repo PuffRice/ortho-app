@@ -1,4 +1,8 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../config/app_colors.dart';
 import '../cqrs/commands.dart';
@@ -15,6 +19,8 @@ class ManageAccountsScreen extends StatefulWidget {
 }
 
 class _ManageAccountsScreenState extends State<ManageAccountsScreen> {
+  final _imagePicker = ImagePicker();
+
   Future<CqrsService>? _cqrsFuture;
   Future<List<AccountEntity>>? _accountsFuture;
   Future<String>? _userIdFuture;
@@ -154,8 +160,7 @@ class _ManageAccountsScreenState extends State<ManageAccountsScreen> {
               color: Colors.white.withOpacity(0.08),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.account_balance_wallet,
-                color: AppColors.textSecondary),
+            child: _accountLogo(account.logoBase64, radius: 12),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -220,6 +225,7 @@ class _ManageAccountsScreenState extends State<ManageAccountsScreen> {
     final currencyController = TextEditingController(text: 'USD');
     final openingBalanceController = TextEditingController(text: '0');
     var selectedType = 'cash';
+    String? logoBase64;
 
     final result = await showDialog<bool>(
       context: context,
@@ -270,6 +276,26 @@ class _ManageAccountsScreenState extends State<ManageAccountsScreen> {
                       label: 'Opening Balance',
                       keyboardType: TextInputType.number,
                     ),
+                    const SizedBox(height: 12),
+                    _buildLogoPicker(
+                      logoBase64: logoBase64,
+                      onPick: () async {
+                        final value = await _pickLogoBase64();
+                        if (value == null) {
+                          return;
+                        }
+                        setDialogState(() {
+                          logoBase64 = value;
+                        });
+                      },
+                      onRemove: logoBase64 == null
+                          ? null
+                          : () {
+                              setDialogState(() {
+                                logoBase64 = null;
+                              });
+                            },
+                    ),
                   ],
                 ),
               ),
@@ -312,6 +338,7 @@ class _ManageAccountsScreenState extends State<ManageAccountsScreen> {
         type: selectedType,
         currency: currency,
         openingBalance: openingBalance,
+        logoBase64: logoBase64,
       ));
       _reloadAccounts(cqrs);
     } catch (error) {
@@ -333,6 +360,7 @@ class _ManageAccountsScreenState extends State<ManageAccountsScreen> {
     final openingBalanceController =
         TextEditingController(text: account.openingBalance.toStringAsFixed(2));
     var selectedType = account.type;
+    var logoBase64 = account.logoBase64;
 
     final result = await showDialog<bool>(
       context: context,
@@ -383,6 +411,26 @@ class _ManageAccountsScreenState extends State<ManageAccountsScreen> {
                       label: 'Opening Balance',
                       keyboardType: TextInputType.number,
                     ),
+                    const SizedBox(height: 12),
+                    _buildLogoPicker(
+                      logoBase64: logoBase64,
+                      onPick: () async {
+                        final value = await _pickLogoBase64();
+                        if (value == null) {
+                          return;
+                        }
+                        setDialogState(() {
+                          logoBase64 = value;
+                        });
+                      },
+                      onRemove: logoBase64 == null
+                          ? null
+                          : () {
+                              setDialogState(() {
+                                logoBase64 = null;
+                              });
+                            },
+                    ),
                   ],
                 ),
               ),
@@ -426,6 +474,7 @@ class _ManageAccountsScreenState extends State<ManageAccountsScreen> {
         type: selectedType,
         currency: currency,
         openingBalance: openingBalance,
+        logoBase64: logoBase64,
       ));
       _reloadAccounts(cqrs);
     } catch (error) {
@@ -556,6 +605,124 @@ class _ManageAccountsScreenState extends State<ManageAccountsScreen> {
         borderSide: const BorderSide(color: AppColors.primaryViolet),
       ),
     );
+  }
+
+  Future<String?> _pickLogoBase64() async {
+    final image = await _imagePicker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 512,
+      maxHeight: 512,
+      imageQuality: 72,
+    );
+    if (image == null) {
+      return null;
+    }
+
+    final bytes = await image.readAsBytes();
+    return base64Encode(bytes);
+  }
+
+  Widget _buildLogoPicker({
+    required String? logoBase64,
+    required VoidCallback onPick,
+    required VoidCallback? onRemove,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withOpacity(0.1)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: _accountLogo(logoBase64, radius: 14),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                Text(
+                  'Account Logo',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Stored locally as base64',
+                  style: TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: onPick,
+            icon: const Icon(
+              Icons.photo_library_outlined,
+              color: AppColors.primaryViolet,
+            ),
+          ),
+          if (onRemove != null)
+            IconButton(
+              onPressed: onRemove,
+              icon: const Icon(
+                Icons.close,
+                color: AppColors.textMuted,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _accountLogo(String? logoBase64, {required double radius}) {
+    final bytes = _decodeLogo(logoBase64);
+    if (bytes == null) {
+      return const Icon(
+        Icons.account_balance_wallet,
+        color: AppColors.textSecondary,
+      );
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(radius),
+      child: Image.memory(
+        bytes,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return const Icon(
+            Icons.account_balance_wallet,
+            color: AppColors.textSecondary,
+          );
+        },
+      ),
+    );
+  }
+
+  Uint8List? _decodeLogo(String? logoBase64) {
+    if (logoBase64 == null || logoBase64.isEmpty) {
+      return null;
+    }
+    try {
+      return base64Decode(logoBase64);
+    } catch (_) {
+      return null;
+    }
   }
 
   Widget _buildDialogField({

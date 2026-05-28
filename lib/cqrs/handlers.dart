@@ -77,6 +77,7 @@ class CreateAccountHandler implements CommandHandler<CreateAccountCommand> {
       ..name = command.name
       ..type = command.type
       ..currency = command.currency
+      ..logoBase64 = command.logoBase64
       ..openingBalance = command.openingBalance
       ..currentBalance = command.openingBalance
       ..createdAt = now
@@ -122,6 +123,7 @@ class UpdateAccountHandler implements CommandHandler<UpdateAccountCommand> {
         ..name = command.name
         ..type = command.type
         ..currency = command.currency
+        ..logoBase64 = command.logoBase64
         ..openingBalance = command.openingBalance
         ..currentBalance = account!.currentBalance + openingDelta
         ..updatedAt = now;

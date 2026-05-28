@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../config/app_colors.dart';
+import '../config/app_routes.dart';
+import '../config/category_icons.dart';
 import '../cqrs/queries.dart';
 import '../models/isar_models.dart';
 import '../services/cqrs_service.dart';
@@ -13,17 +15,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  static const Map<String, IconData> _categoryIcons = {
-    'shopping_bag': Icons.shopping_bag,
-    'restaurant': Icons.restaurant,
-    'directions_car': Icons.directions_car,
-    'flight': Icons.flight,
-    'home': Icons.home,
-    'fitness_center': Icons.fitness_center,
-    'movie': Icons.movie,
-    'school': Icons.school,
-  };
-
   bool _isBalanceVisible = true;
   Future<_HomeData>? _homeDataFuture;
 
@@ -417,7 +408,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   IconData _categoryIcon(String? iconName) {
-    return _categoryIcons[iconName] ?? Icons.category;
+    return CategoryIcons.iconForName(iconName);
   }
 
   Color _categoryColor(CategoryEntity? category, bool isPositive) {
@@ -703,7 +694,9 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         GestureDetector(
-          onTap: () {},
+          onTap: () => Navigator.of(context).pushNamed(
+            AppRoutes.transactionHistory,
+          ),
           child: Text(
             'View all',
             style: TextStyle(

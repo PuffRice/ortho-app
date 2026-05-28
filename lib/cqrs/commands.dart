@@ -24,6 +24,7 @@ class CreateAccountCommand extends Command {
     required this.currency,
     required this.openingBalance,
     this.accountId,
+    this.logoBase64,
     this.now,
   });
 
@@ -33,6 +34,7 @@ class CreateAccountCommand extends Command {
   final String currency;
   final double openingBalance;
   final String? accountId;
+  final String? logoBase64;
   final DateTime? now;
 }
 
@@ -44,6 +46,7 @@ class UpdateAccountCommand extends Command {
     required this.type,
     required this.currency,
     required this.openingBalance,
+    this.logoBase64,
     this.now,
   });
 
@@ -53,6 +56,7 @@ class UpdateAccountCommand extends Command {
   final String type;
   final String currency;
   final double openingBalance;
+  final String? logoBase64;
   final DateTime? now;
 }
 

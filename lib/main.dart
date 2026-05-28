@@ -15,6 +15,7 @@ import 'screens/manage_accounts_screen.dart';
 import 'screens/manage_categories_screen.dart';
 import 'screens/personal_information_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/transaction_history_screen.dart';
 import 'services/local_db.dart';
 import 'services/local_user_migration.dart';
 import 'services/supabase_service.dart';
@@ -97,6 +98,7 @@ class _MainAppState extends State<MainApp> {
       ),
       routes: {
         AppRoutes.addTransaction: (_) => const AddTransactionScreen(),
+        AppRoutes.transactionHistory: (_) => const TransactionHistoryScreen(),
         AppRoutes.manageAccounts: (_) => const ManageAccountsScreen(),
         AppRoutes.manageCategories: (_) => const ManageCategoriesScreen(),
         AppRoutes.personalInformation: (_) => const PersonalInformationScreen(),

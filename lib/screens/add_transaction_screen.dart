@@ -1,4 +1,5 @@
 import 'package:financetracker/config/app_colors.dart';
+import 'package:financetracker/config/category_icons.dart';
 import 'package:flutter/material.dart';
 
 import '../cqrs/commands.dart';
@@ -15,17 +16,6 @@ class AddTransactionScreen extends StatefulWidget {
 }
 
 class _AddTransactionScreenState extends State<AddTransactionScreen> {
-  static const Map<String, IconData> _categoryIcons = {
-    'shopping_bag': Icons.shopping_bag,
-    'restaurant': Icons.restaurant,
-    'directions_car': Icons.directions_car,
-    'flight': Icons.flight,
-    'home': Icons.home,
-    'fitness_center': Icons.fitness_center,
-    'movie': Icons.movie,
-    'school': Icons.school,
-  };
-
   final _amountController = TextEditingController();
   final _noteController = TextEditingController();
   AccountEntity? _selectedAccount;
@@ -273,33 +263,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
   Widget _buildDatePicker(BuildContext context) {
     return InkWell(
-      onTap: () async {
-        final picked = await showDatePicker(
-          context: context,
-          initialDate: _date,
-          firstDate: DateTime(2000),
-          lastDate: DateTime(2100),
-          builder: (context, child) {
-            return Theme(
-              data: ThemeData.dark().copyWith(
-                colorScheme: const ColorScheme.dark(
-                  primary: AppColors.primaryViolet,
-                  onPrimary: Colors.white,
-                  surface: AppColors.bgSecondary,
-                  onSurface: Colors.white,
-                ),
-                dialogBackgroundColor: AppColors.bgSecondary,
-              ),
-              child: child!,
-            );
-          },
-        );
-        if (picked != null) {
-          setState(() {
-            _date = picked;
-          });
-        }
-      },
+      onTap: () => _pickTransactionDateTime(context),
       borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
@@ -329,7 +293,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Date',
+                    'Date & Time',
                     style: TextStyle(
                       color: AppColors.textMuted,
                       fontSize: 12,
@@ -338,7 +302,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    MaterialLocalizations.of(context).formatMediumDate(_date),
+                    _formatDateTime(context, _date),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 15,
@@ -356,6 +320,75 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _pickTransactionDateTime(BuildContext context) async {
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: _date,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.dark().copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: AppColors.primaryViolet,
+              onPrimary: Colors.white,
+              surface: AppColors.bgSecondary,
+              onSurface: Colors.white,
+            ),
+            dialogBackgroundColor: AppColors.bgSecondary,
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (pickedDate == null || !mounted) {
+      return;
+    }
+
+    final initialTime = TimeOfDay.fromDateTime(_date);
+    final pickedTime = await showTimePicker(
+      context: context,
+      initialTime: initialTime,
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.dark().copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: AppColors.primaryViolet,
+              onPrimary: Colors.white,
+              surface: AppColors.bgSecondary,
+              onSurface: Colors.white,
+            ),
+            dialogBackgroundColor: AppColors.bgSecondary,
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (!mounted) {
+      return;
+    }
+
+    final selectedTime = pickedTime ?? initialTime;
+    setState(() {
+      _date = DateTime(
+        pickedDate.year,
+        pickedDate.month,
+        pickedDate.day,
+        selectedTime.hour,
+        selectedTime.minute,
+      );
+    });
+  }
+
+  String _formatDateTime(BuildContext context, DateTime dateTime) {
+    final localizations = MaterialLocalizations.of(context);
+    final dateLabel = localizations.formatMediumDate(dateTime);
+    final timeLabel = localizations.formatTimeOfDay(
+      TimeOfDay.fromDateTime(dateTime),
+    );
+    return '$dateLabel, $timeLabel';
   }
 
   Widget _buildAccountPicker(CqrsService cqrs) {
@@ -581,7 +614,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   }
 
   IconData _categoryIcon(String? iconName) {
-    return _categoryIcons[iconName] ?? Icons.category;
+    return CategoryIcons.iconForName(iconName);
   }
 
   InputDecoration _buildSelectDecoration(String label) {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../config/app_colors.dart';
+import '../config/category_icons.dart';
 import '../cqrs/commands.dart';
 import '../cqrs/queries.dart';
 import '../models/isar_models.dart';
@@ -25,17 +26,6 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
     Color(0xFFF472B6),
     Color(0xFFFFB86B),
   ];
-
-  static const Map<String, IconData> _iconOptions = {
-    'shopping_bag': Icons.shopping_bag,
-    'restaurant': Icons.restaurant,
-    'directions_car': Icons.directions_car,
-    'flight': Icons.flight,
-    'home': Icons.home,
-    'fitness_center': Icons.fitness_center,
-    'movie': Icons.movie,
-    'school': Icons.school,
-  };
 
   Future<CqrsService>? _cqrsFuture;
   Future<List<CategoryEntity>>? _categoriesFuture;
@@ -242,7 +232,7 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
     final sortOrderController = TextEditingController(text: '0');
     var selectedType = 'expense';
     var selectedColor = _presetColors.first;
-    var selectedIconName = _iconOptions.keys.first;
+    var selectedIconName = CategoryIcons.fixedNames.first;
 
     final result = await showDialog<bool>(
       context: context,
@@ -299,6 +289,17 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
                     _buildIconPicker(
                       selectedIconName: selectedIconName,
                       onSelected: (value) {
+                        setDialogState(() {
+                          selectedIconName = value;
+                        });
+                      },
+                      onBrowse: () async {
+                        final value = await _showIconSearchDialog(
+                          selectedIconName,
+                        );
+                        if (value == null) {
+                          return;
+                        }
                         setDialogState(() {
                           selectedIconName = value;
                         });
@@ -429,6 +430,17 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
                     _buildIconPicker(
                       selectedIconName: selectedIconName,
                       onSelected: (value) {
+                        setDialogState(() {
+                          selectedIconName = value;
+                        });
+                      },
+                      onBrowse: () async {
+                        final value = await _showIconSearchDialog(
+                          selectedIconName,
+                        );
+                        if (value == null) {
+                          return;
+                        }
                         setDialogState(() {
                           selectedIconName = value;
                         });
@@ -605,17 +617,11 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
   }
 
   String _resolveCategoryIconName(String? iconName) {
-    if (iconName == null || !_iconOptions.containsKey(iconName)) {
-      return _iconOptions.keys.first;
-    }
-    return iconName;
+    return CategoryIcons.resolveName(iconName);
   }
 
   IconData _iconForName(String? iconName) {
-    if (iconName == null) {
-      return Icons.category;
-    }
-    return _iconOptions[iconName] ?? Icons.category;
+    return CategoryIcons.iconForName(iconName);
   }
 
   void _showError(String message) {
@@ -693,14 +699,46 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
   Widget _buildIconPicker({
     required String selectedIconName,
     required ValueChanged<String> onSelected,
+    required VoidCallback onBrowse,
   }) {
+    final selectedIsFixed = CategoryIcons.fixedNames.contains(selectedIconName);
+    final visibleOptions = [
+      if (!selectedIsFixed) CategoryIcons.optionForName(selectedIconName),
+      ...CategoryIcons.fixedOptions,
+    ].whereType<CategoryIconOption>().toList();
+
     return Wrap(
       spacing: 10,
       runSpacing: 10,
-      children: _iconOptions.entries.map((entry) {
-        final isSelected = entry.key == selectedIconName;
-        return InkWell(
-          onTap: () => onSelected(entry.key),
+      children: [
+        ...visibleOptions.map((entry) {
+          final isSelected = entry.name == selectedIconName;
+          return InkWell(
+            onTap: () => onSelected(entry.name),
+            borderRadius: BorderRadius.circular(14),
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: isSelected
+                      ? AppColors.primaryViolet
+                      : Colors.white.withOpacity(0.1),
+                  width: isSelected ? 2 : 1,
+                ),
+              ),
+              child: Icon(
+                entry.icon,
+                color:
+                    isSelected ? AppColors.primaryViolet : AppColors.textMuted,
+              ),
+            ),
+          );
+        }),
+        InkWell(
+          onTap: onBrowse,
           borderRadius: BorderRadius.circular(14),
           child: Container(
             width: 44,
@@ -709,19 +747,119 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
               color: Colors.white.withOpacity(0.08),
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: isSelected
-                    ? AppColors.primaryViolet
-                    : Colors.white.withOpacity(0.1),
-                width: isSelected ? 2 : 1,
+                color: Colors.white.withOpacity(0.1),
               ),
             ),
-            child: Icon(
-              entry.value,
-              color: isSelected ? AppColors.primaryViolet : AppColors.textMuted,
+            child: const Icon(
+              Icons.add,
+              color: AppColors.textMuted,
             ),
           ),
+        ),
+      ],
+    );
+  }
+
+  Future<String?> _showIconSearchDialog(String selectedIconName) async {
+    return showDialog<String>(
+      context: context,
+      builder: (context) {
+        var query = '';
+        var results = CategoryIcons.search(query);
+
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: AppColors.bgSecondary,
+              title: const Text(
+                'Choose Icon',
+                style: TextStyle(color: AppColors.textPrimary),
+              ),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      autofocus: true,
+                      style: const TextStyle(color: AppColors.textPrimary),
+                      decoration: _dialogDecoration('Search icons').copyWith(
+                        prefixIcon: const Icon(
+                          Icons.search,
+                          color: AppColors.textMuted,
+                        ),
+                      ),
+                      onChanged: (value) {
+                        setDialogState(() {
+                          query = value;
+                          results = CategoryIcons.search(query);
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 14),
+                    SizedBox(
+                      height: 320,
+                      child: results.isEmpty
+                          ? const Center(
+                              child: Text(
+                                'No icons found.',
+                                style: TextStyle(color: AppColors.textMuted),
+                              ),
+                            )
+                          : GridView.builder(
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 4,
+                                mainAxisSpacing: 10,
+                                crossAxisSpacing: 10,
+                              ),
+                              itemCount: results.length,
+                              itemBuilder: (context, index) {
+                                final option = results[index];
+                                final isSelected =
+                                    option.name == selectedIconName;
+                                return InkWell(
+                                  onTap: () =>
+                                      Navigator.pop(context, option.name),
+                                  borderRadius: BorderRadius.circular(14),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.08),
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(
+                                        color: isSelected
+                                            ? AppColors.primaryViolet
+                                            : Colors.white.withOpacity(0.1),
+                                        width: isSelected ? 2 : 1,
+                                      ),
+                                    ),
+                                    child: Icon(
+                                      option.icon,
+                                      color: isSelected
+                                          ? AppColors.primaryViolet
+                                          : AppColors.textSecondary,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(color: AppColors.textSecondary),
+                  ),
+                ),
+              ],
+            );
+          },
         );
-      }).toList(),
+      },
     );
   }
 
