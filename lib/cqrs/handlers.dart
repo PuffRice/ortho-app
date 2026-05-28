@@ -28,7 +28,9 @@ class CreateUserHandler implements CommandHandler<CreateUserCommand> {
       if (existing != null) {
         existing.email = command.email;
         existing.displayName = command.displayName;
-        existing.photoUrl = command.photoUrl;
+        if (command.photoUrl != null) {
+          existing.photoUrl = command.photoUrl;
+        }
         existing.updatedAt = now;
         await _isar.userEntitys.put(existing);
         await _outboxWriter.enqueueInTxn(

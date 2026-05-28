@@ -1,13 +1,41 @@
 import 'package:flutter/material.dart';
+import 'package:isar/isar.dart';
 
 import '../config/app_colors.dart';
 import '../config/app_routes.dart';
+import '../models/isar_models.dart';
+import '../services/local_db.dart';
 import '../services/supabase_service.dart';
 import '../services/sync_service.dart';
 import '../services/user_identity.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  late Future<UserEntity?> _userFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _userFuture = _loadUser();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _userFuture = _loadUser();
+  }
+
+  Future<UserEntity?> _loadUser() async {
+    final isar = await LocalDb.instance.open();
+    final profile = await UserIdentityService.instance.getProfile();
+    return isar.userEntitys.filter().userIdEqualTo(profile.userId).findFirst();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -70,33 +98,45 @@ class ProfileScreen extends StatelessWidget {
                     const SizedBox(height: 24),
 
                     // Profile Section
-                    Center(
-                      child: Column(
-                        children: [
-                          CircleAvatar(
-                            radius: 50,
-                            backgroundColor: Colors.white.withOpacity(0.08),
-                            child: const Icon(Icons.person,
-                                size: 50, color: AppColors.textSecondary),
+                    FutureBuilder<UserEntity?>(
+                      future: _userFuture,
+                      builder: (context, snapshot) {
+                        final user = snapshot.data;
+                        return Center(
+                          child: Column(
+                            children: [
+                              CircleAvatar(
+                                radius: 50,
+                                backgroundColor: Colors.white.withOpacity(0.08),
+                                backgroundImage: _profileImage(user?.photoUrl),
+                                child: user?.photoUrl == null
+                                    ? const Icon(
+                                        Icons.person,
+                                        size: 50,
+                                        color: AppColors.textSecondary,
+                                      )
+                                    : null,
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                user?.displayName ?? 'Your Profile',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              Text(
+                                user?.email ?? 'Premium Member',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textMuted,
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 12),
-                          const Text(
-                            'John Doe',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          Text(
-                            'Premium Member',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textMuted,
-                            ),
-                          ),
-                        ],
-                      ),
+                        );
+                      },
                     ),
 
                     const SizedBox(height: 28),
@@ -108,7 +148,15 @@ class ProfileScreen extends StatelessWidget {
                       icon: Icons.person_outline,
                       title: 'Personal Information',
                       subtitle: 'Update your profile details',
-                      onTap: () {},
+                      onTap: () async {
+                        await Navigator.of(context)
+                            .pushNamed(AppRoutes.personalInformation);
+                        if (mounted) {
+                          setState(() {
+                            _userFuture = _loadUser();
+                          });
+                        }
+                      },
                     ),
                     _buildProfileMenuItem(
                       icon: Icons.lock_outline,
@@ -233,6 +281,13 @@ class ProfileScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  ImageProvider? _profileImage(String? photoUrl) {
+    if (photoUrl == null || photoUrl.isEmpty) {
+      return null;
+    }
+    return NetworkImage(photoUrl);
   }
 
   Widget _buildSectionHeader(String title) {

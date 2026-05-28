@@ -46,6 +46,15 @@ class UserIdentityService {
     );
   }
 
+  Future<void> updateProfile({
+    required String email,
+    required String displayName,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_emailKey, email);
+    await prefs.setString(_displayNameKey, displayName);
+  }
+
   String _buildEmail(String userId) {
     final suffix = userId.split('-').first;
     return 'device-$suffix@local';
