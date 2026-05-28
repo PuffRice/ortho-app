@@ -32,6 +32,7 @@ class AccountEntity {
   late String name;
   late String type; // cash, bank, card, other
   late String currency;
+  String? logoBase64;
   double openingBalance = 0;
   double currentBalance = 0;
   late DateTime createdAt;
