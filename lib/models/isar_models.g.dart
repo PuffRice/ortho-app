@@ -1702,28 +1702,33 @@ const AccountEntitySchema = CollectionSchema(
       name: r'deletedAt',
       type: IsarType.dateTime,
     ),
-    r'name': PropertySchema(
+    r'logoBase64': PropertySchema(
       id: 5,
+      name: r'logoBase64',
+      type: IsarType.string,
+    ),
+    r'name': PropertySchema(
+      id: 6,
       name: r'name',
       type: IsarType.string,
     ),
     r'openingBalance': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'openingBalance',
       type: IsarType.double,
     ),
     r'type': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'type',
       type: IsarType.string,
     ),
     r'updatedAt': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
     r'userId': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'userId',
       type: IsarType.string,
     )
@@ -1790,6 +1795,12 @@ int _accountEntityEstimateSize(
   var bytesCount = offsets.last;
   bytesCount += 3 + object.accountId.length * 3;
   bytesCount += 3 + object.currency.length * 3;
+  {
+    final value = object.logoBase64;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.name.length * 3;
   bytesCount += 3 + object.type.length * 3;
   bytesCount += 3 + object.userId.length * 3;
@@ -1807,11 +1818,12 @@ void _accountEntitySerialize(
   writer.writeString(offsets[2], object.currency);
   writer.writeDouble(offsets[3], object.currentBalance);
   writer.writeDateTime(offsets[4], object.deletedAt);
-  writer.writeString(offsets[5], object.name);
-  writer.writeDouble(offsets[6], object.openingBalance);
-  writer.writeString(offsets[7], object.type);
-  writer.writeDateTime(offsets[8], object.updatedAt);
-  writer.writeString(offsets[9], object.userId);
+  writer.writeString(offsets[5], object.logoBase64);
+  writer.writeString(offsets[6], object.name);
+  writer.writeDouble(offsets[7], object.openingBalance);
+  writer.writeString(offsets[8], object.type);
+  writer.writeDateTime(offsets[9], object.updatedAt);
+  writer.writeString(offsets[10], object.userId);
 }
 
 AccountEntity _accountEntityDeserialize(
@@ -1827,11 +1839,12 @@ AccountEntity _accountEntityDeserialize(
   object.currentBalance = reader.readDouble(offsets[3]);
   object.deletedAt = reader.readDateTimeOrNull(offsets[4]);
   object.id = id;
-  object.name = reader.readString(offsets[5]);
-  object.openingBalance = reader.readDouble(offsets[6]);
-  object.type = reader.readString(offsets[7]);
-  object.updatedAt = reader.readDateTime(offsets[8]);
-  object.userId = reader.readString(offsets[9]);
+  object.logoBase64 = reader.readStringOrNull(offsets[5]);
+  object.name = reader.readString(offsets[6]);
+  object.openingBalance = reader.readDouble(offsets[7]);
+  object.type = reader.readString(offsets[8]);
+  object.updatedAt = reader.readDateTime(offsets[9]);
+  object.userId = reader.readString(offsets[10]);
   return object;
 }
 
@@ -1853,14 +1866,16 @@ P _accountEntityDeserializeProp<P>(
     case 4:
       return (reader.readDateTimeOrNull(offset)) as P;
     case 5:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 6:
-      return (reader.readDouble(offset)) as P;
-    case 7:
       return (reader.readString(offset)) as P;
+    case 7:
+      return (reader.readDouble(offset)) as P;
     case 8:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 9:
+      return (reader.readDateTime(offset)) as P;
+    case 10:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
