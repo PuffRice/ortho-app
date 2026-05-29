@@ -188,9 +188,19 @@ Run this command inside the project folder:
 flutter pub get
 ```
 
-This downloads the Flutter packages the app needs.
+### 6. Create Supabase Config File
 
-### 6. Connect a Device or Start an Emulator
+Open a Supabase Project and then copy the below details and paste it in lib/config/supabase_config.dart
+Run this command inside the project folder:
+
+```
+const String SUPABASE_URL = 'YOUR_PROJECT_URL_HERE';
+const String SUPABASE_ANON_KEY = 'YOUR_ANON_KEY_HERE';
+
+```
+
+
+### 7. Connect a Device or Start an Emulator
 
 You can run the app on:
 
@@ -204,7 +214,7 @@ Check available devices:
 flutter devices
 ```
 
-### 7. Run the App
+### 8. Run the App
 
 Start the app with:
 
