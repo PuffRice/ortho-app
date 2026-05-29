@@ -59,6 +59,18 @@ class CqrsService {
     bus.registerCommandHandler<CreateRecurringTransactionCommand>(
       CreateRecurringTransactionHandler(isar, outboxWriter),
     );
+    bus.registerCommandHandler<UpsertPaymentCardCredentialCommand>(
+      UpsertPaymentCardCredentialHandler(isar, outboxWriter),
+    );
+    bus.registerCommandHandler<DeletePaymentCardCredentialCommand>(
+      DeletePaymentCardCredentialHandler(isar, outboxWriter),
+    );
+    bus.registerCommandHandler<UpsertBankAccountCredentialCommand>(
+      UpsertBankAccountCredentialHandler(isar, outboxWriter),
+    );
+    bus.registerCommandHandler<DeleteBankAccountCredentialCommand>(
+      DeleteBankAccountCredentialHandler(isar, outboxWriter),
+    );
 
     bus.registerQueryHandler<GetAccountsQuery, List<AccountEntity>>(
       GetAccountsHandler(isar),
@@ -81,6 +93,14 @@ class CqrsService {
     );
     bus.registerQueryHandler<GetSummaryQuery, SummaryCacheEntity?>(
       GetSummaryHandler(isar, summaryWriter),
+    );
+    bus.registerQueryHandler<GetPaymentCardCredentialsQuery,
+        List<PaymentCardCredentialEntity>>(
+      GetPaymentCardCredentialsHandler(isar),
+    );
+    bus.registerQueryHandler<GetBankAccountCredentialsQuery,
+        List<BankAccountCredentialEntity>>(
+      GetBankAccountCredentialsHandler(isar),
     );
 
     return CqrsService._(bus, isar);

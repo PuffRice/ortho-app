@@ -170,6 +170,53 @@ class RecurringTransactionEntity {
 }
 
 @collection
+class PaymentCardCredentialEntity {
+  Id id = Isar.autoIncrement;
+
+  @Index()
+  late String userId;
+
+  @Index()
+  late String cardCredentialId;
+
+  late String bankName;
+  String? bankLogoBase64;
+  late String cardType; // credit, debit, prepaid
+  late String network; // visa, mastercard, other
+  late String cardholderName;
+  late String cardNumber;
+  late String expiry;
+  bool hasNfc = false;
+  late DateTime createdAt;
+  late DateTime updatedAt;
+  @Index()
+  DateTime? deletedAt;
+}
+
+@collection
+class BankAccountCredentialEntity {
+  Id id = Isar.autoIncrement;
+
+  @Index()
+  late String userId;
+
+  @Index()
+  late String bankCredentialId;
+
+  late String bankName;
+  String? bankLogoBase64;
+  late String branchName;
+  late String accountName;
+  late String accountNumber;
+  late String routingNumber;
+  late String swiftCode;
+  late DateTime createdAt;
+  late DateTime updatedAt;
+  @Index()
+  DateTime? deletedAt;
+}
+
+@collection
 class SummaryCacheEntity {
   Id id = Isar.autoIncrement;
 

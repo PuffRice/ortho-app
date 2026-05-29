@@ -251,3 +251,81 @@ class CreateRecurringTransactionCommand extends Command {
   final bool isActive;
   final String? recurringId;
 }
+
+class UpsertPaymentCardCredentialCommand extends Command {
+  const UpsertPaymentCardCredentialCommand({
+    required this.userId,
+    required this.bankName,
+    required this.cardType,
+    required this.network,
+    required this.cardholderName,
+    required this.cardNumber,
+    required this.expiry,
+    required this.hasNfc,
+    this.cardCredentialId,
+    this.bankLogoBase64,
+    this.now,
+  });
+
+  final String userId;
+  final String bankName;
+  final String? bankLogoBase64;
+  final String cardType;
+  final String network;
+  final String cardholderName;
+  final String cardNumber;
+  final String expiry;
+  final bool hasNfc;
+  final String? cardCredentialId;
+  final DateTime? now;
+}
+
+class DeletePaymentCardCredentialCommand extends Command {
+  const DeletePaymentCardCredentialCommand({
+    required this.userId,
+    required this.cardCredentialId,
+    this.now,
+  });
+
+  final String userId;
+  final String cardCredentialId;
+  final DateTime? now;
+}
+
+class UpsertBankAccountCredentialCommand extends Command {
+  const UpsertBankAccountCredentialCommand({
+    required this.userId,
+    required this.bankName,
+    required this.branchName,
+    required this.accountName,
+    required this.accountNumber,
+    required this.routingNumber,
+    required this.swiftCode,
+    this.bankCredentialId,
+    this.bankLogoBase64,
+    this.now,
+  });
+
+  final String userId;
+  final String bankName;
+  final String? bankLogoBase64;
+  final String branchName;
+  final String accountName;
+  final String accountNumber;
+  final String routingNumber;
+  final String swiftCode;
+  final String? bankCredentialId;
+  final DateTime? now;
+}
+
+class DeleteBankAccountCredentialCommand extends Command {
+  const DeleteBankAccountCredentialCommand({
+    required this.userId,
+    required this.bankCredentialId,
+    this.now,
+  });
+
+  final String userId;
+  final String bankCredentialId;
+  final DateTime? now;
+}

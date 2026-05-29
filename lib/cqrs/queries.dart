@@ -65,3 +65,17 @@ class GetSummaryQuery extends Query<SummaryCacheEntity?> {
   final String period; // weekly, monthly, yearly, lifetime
   final DateTime startDate;
 }
+
+class GetPaymentCardCredentialsQuery
+    extends Query<List<PaymentCardCredentialEntity>> {
+  const GetPaymentCardCredentialsQuery({required this.userId});
+
+  final String userId;
+}
+
+class GetBankAccountCredentialsQuery
+    extends Query<List<BankAccountCredentialEntity>> {
+  const GetBankAccountCredentialsQuery({required this.userId});
+
+  final String userId;
+}

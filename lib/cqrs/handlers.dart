@@ -595,6 +595,171 @@ class CreateRecurringTransactionHandler
   }
 }
 
+class UpsertPaymentCardCredentialHandler
+    implements CommandHandler<UpsertPaymentCardCredentialCommand> {
+  UpsertPaymentCardCredentialHandler(this._isar, this._outboxWriter);
+
+  final Isar _isar;
+  final SyncOutboxWriter _outboxWriter;
+
+  @override
+  Future<void> handle(UpsertPaymentCardCredentialCommand command) async {
+    final now = command.now ?? DateTime.now();
+    PaymentCardCredentialEntity? credential;
+    await _isar.writeTxn(() async {
+      if (command.cardCredentialId != null) {
+        credential = await _isar.paymentCardCredentialEntitys
+            .filter()
+            .userIdEqualTo(command.userId)
+            .cardCredentialIdEqualTo(command.cardCredentialId!)
+            .findFirst();
+      }
+      credential ??= PaymentCardCredentialEntity()
+        ..userId = command.userId
+        ..cardCredentialId = command.cardCredentialId ?? generateId()
+        ..createdAt = now;
+
+      credential!
+        ..bankName = command.bankName
+        ..bankLogoBase64 = command.bankLogoBase64
+        ..cardType = command.cardType
+        ..network = command.network
+        ..cardholderName = command.cardholderName
+        ..cardNumber = command.cardNumber
+        ..expiry = command.expiry
+        ..hasNfc = command.hasNfc
+        ..updatedAt = now
+        ..deletedAt = null;
+
+      await _isar.paymentCardCredentialEntitys.put(credential!);
+      await _outboxWriter.enqueueInTxn(
+        userId: command.userId,
+        entityType: 'payment_card_credentials',
+        entityId: credential!.cardCredentialId,
+        payload: SyncPayloadMapper.paymentCardCredential(credential!),
+      );
+    });
+    SyncService.instance?.requestSync();
+  }
+}
+
+class DeletePaymentCardCredentialHandler
+    implements CommandHandler<DeletePaymentCardCredentialCommand> {
+  DeletePaymentCardCredentialHandler(this._isar, this._outboxWriter);
+
+  final Isar _isar;
+  final SyncOutboxWriter _outboxWriter;
+
+  @override
+  Future<void> handle(DeletePaymentCardCredentialCommand command) async {
+    final now = command.now ?? DateTime.now();
+    PaymentCardCredentialEntity? credential;
+    await _isar.writeTxn(() async {
+      credential = await _isar.paymentCardCredentialEntitys
+          .filter()
+          .userIdEqualTo(command.userId)
+          .cardCredentialIdEqualTo(command.cardCredentialId)
+          .findFirst();
+      if (credential == null) {
+        return;
+      }
+      credential!
+        ..deletedAt = now
+        ..updatedAt = now;
+      await _isar.paymentCardCredentialEntitys.put(credential!);
+      await _outboxWriter.enqueueInTxn(
+        userId: command.userId,
+        entityType: 'payment_card_credentials',
+        entityId: credential!.cardCredentialId,
+        payload: SyncPayloadMapper.paymentCardCredential(credential!),
+      );
+    });
+    SyncService.instance?.requestSync();
+  }
+}
+
+class UpsertBankAccountCredentialHandler
+    implements CommandHandler<UpsertBankAccountCredentialCommand> {
+  UpsertBankAccountCredentialHandler(this._isar, this._outboxWriter);
+
+  final Isar _isar;
+  final SyncOutboxWriter _outboxWriter;
+
+  @override
+  Future<void> handle(UpsertBankAccountCredentialCommand command) async {
+    final now = command.now ?? DateTime.now();
+    BankAccountCredentialEntity? credential;
+    await _isar.writeTxn(() async {
+      if (command.bankCredentialId != null) {
+        credential = await _isar.bankAccountCredentialEntitys
+            .filter()
+            .userIdEqualTo(command.userId)
+            .bankCredentialIdEqualTo(command.bankCredentialId!)
+            .findFirst();
+      }
+      credential ??= BankAccountCredentialEntity()
+        ..userId = command.userId
+        ..bankCredentialId = command.bankCredentialId ?? generateId()
+        ..createdAt = now;
+
+      credential!
+        ..bankName = command.bankName
+        ..bankLogoBase64 = command.bankLogoBase64
+        ..branchName = command.branchName
+        ..accountName = command.accountName
+        ..accountNumber = command.accountNumber
+        ..routingNumber = command.routingNumber
+        ..swiftCode = command.swiftCode
+        ..updatedAt = now
+        ..deletedAt = null;
+
+      await _isar.bankAccountCredentialEntitys.put(credential!);
+      await _outboxWriter.enqueueInTxn(
+        userId: command.userId,
+        entityType: 'bank_account_credentials',
+        entityId: credential!.bankCredentialId,
+        payload: SyncPayloadMapper.bankAccountCredential(credential!),
+      );
+    });
+    SyncService.instance?.requestSync();
+  }
+}
+
+class DeleteBankAccountCredentialHandler
+    implements CommandHandler<DeleteBankAccountCredentialCommand> {
+  DeleteBankAccountCredentialHandler(this._isar, this._outboxWriter);
+
+  final Isar _isar;
+  final SyncOutboxWriter _outboxWriter;
+
+  @override
+  Future<void> handle(DeleteBankAccountCredentialCommand command) async {
+    final now = command.now ?? DateTime.now();
+    BankAccountCredentialEntity? credential;
+    await _isar.writeTxn(() async {
+      credential = await _isar.bankAccountCredentialEntitys
+          .filter()
+          .userIdEqualTo(command.userId)
+          .bankCredentialIdEqualTo(command.bankCredentialId)
+          .findFirst();
+      if (credential == null) {
+        return;
+      }
+      credential!
+        ..deletedAt = now
+        ..updatedAt = now;
+      await _isar.bankAccountCredentialEntitys.put(credential!);
+      await _outboxWriter.enqueueInTxn(
+        userId: command.userId,
+        entityType: 'bank_account_credentials',
+        entityId: credential!.bankCredentialId,
+        payload: SyncPayloadMapper.bankAccountCredential(credential!),
+      );
+    });
+    SyncService.instance?.requestSync();
+  }
+}
+
 class GetAccountsHandler
     implements QueryHandler<GetAccountsQuery, List<AccountEntity>> {
   GetAccountsHandler(this._isar);
@@ -753,6 +918,48 @@ class GetSummaryHandler
         .filter()
         .summaryKeyEqualTo(key)
         .findFirst();
+  }
+}
+
+class GetPaymentCardCredentialsHandler
+    implements
+        QueryHandler<GetPaymentCardCredentialsQuery,
+            List<PaymentCardCredentialEntity>> {
+  GetPaymentCardCredentialsHandler(this._isar);
+
+  final Isar _isar;
+
+  @override
+  Future<List<PaymentCardCredentialEntity>> handle(
+    GetPaymentCardCredentialsQuery query,
+  ) {
+    return _isar.paymentCardCredentialEntitys
+        .filter()
+        .userIdEqualTo(query.userId)
+        .deletedAtIsNull()
+        .sortByUpdatedAtDesc()
+        .findAll();
+  }
+}
+
+class GetBankAccountCredentialsHandler
+    implements
+        QueryHandler<GetBankAccountCredentialsQuery,
+            List<BankAccountCredentialEntity>> {
+  GetBankAccountCredentialsHandler(this._isar);
+
+  final Isar _isar;
+
+  @override
+  Future<List<BankAccountCredentialEntity>> handle(
+    GetBankAccountCredentialsQuery query,
+  ) {
+    return _isar.bankAccountCredentialEntitys
+        .filter()
+        .userIdEqualTo(query.userId)
+        .deletedAtIsNull()
+        .sortByUpdatedAtDesc()
+        .findAll();
   }
 }
 

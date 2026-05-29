@@ -9,7 +9,12 @@ import '../services/cqrs_service.dart';
 import '../services/user_identity.dart';
 
 class AddTransactionScreen extends StatefulWidget {
-  const AddTransactionScreen({super.key});
+  const AddTransactionScreen({
+    super.key,
+    this.initialTransaction,
+  });
+
+  final TransactionEntity? initialTransaction;
 
   @override
   State<AddTransactionScreen> createState() => _AddTransactionScreenState();
@@ -18,8 +23,8 @@ class AddTransactionScreen extends StatefulWidget {
 class _AddTransactionScreenState extends State<AddTransactionScreen> {
   final _amountController = TextEditingController();
   final _noteController = TextEditingController();
-  AccountEntity? _selectedAccount;
-  CategoryEntity? _selectedCategory;
+  String? _selectedAccountId;
+  String? _selectedCategoryId;
 
   String _type = 'expense';
   DateTime _date = DateTime.now();
@@ -40,9 +45,20 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     });
   }
 
+  bool get _isEditing => widget.initialTransaction != null;
+
   @override
   void initState() {
     super.initState();
+    final initialTransaction = widget.initialTransaction;
+    if (initialTransaction != null) {
+      _type = initialTransaction.type;
+      _date = initialTransaction.date;
+      _selectedAccountId = initialTransaction.accountId;
+      _selectedCategoryId = initialTransaction.categoryId;
+      _amountController.text = initialTransaction.amount.toStringAsFixed(2);
+      _noteController.text = initialTransaction.note ?? '';
+    }
     _cqrsFuture = CqrsService.create();
     _profileFuture = UserIdentityService.instance.getProfile().then((profile) {
       _profile = profile;
@@ -64,7 +80,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF050711),
         elevation: 0,
-        title: const Text('Add Transaction'),
+        title: Text(_isEditing ? 'Edit Transaction' : 'Add Transaction'),
       ),
       body: FutureBuilder<CqrsService>(
         future: _cqrs,
@@ -141,8 +157,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                         height: 18,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Text(
-                        'Save',
+                    : Text(
+                        _isEditing ? 'Update' : 'Save',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 18,
@@ -163,7 +179,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       onSelected: (_) {
         setState(() {
           _type = value;
-          _selectedCategory = null;
+          _selectedCategoryId = null;
         });
       },
       showCheckmark: false,
@@ -404,15 +420,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         }
 
         final accounts = snapshot.data!;
-        AccountEntity? selectedAccount;
-        if (_selectedAccount != null) {
-          for (final account in accounts) {
-            if (account.accountId == _selectedAccount!.accountId) {
-              selectedAccount = account;
-              break;
-            }
-          }
-        }
+        final selectedAccountId = accounts.any(
+          (account) => account.accountId == _selectedAccountId,
+        )
+            ? _selectedAccountId
+            : null;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -432,7 +444,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                     .map(
                       (account) => _buildAccountOption(
                         account,
-                        selectedAccount?.accountId == account.accountId,
+                        selectedAccountId == account.accountId,
                       ),
                     )
                     .toList(),
@@ -447,7 +459,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     return InkWell(
       onTap: () {
         setState(() {
-          _selectedAccount = account;
+          _selectedAccountId = account.accountId;
         });
       },
       borderRadius: BorderRadius.circular(14),
@@ -519,15 +531,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         }
 
         final categories = snapshot.data!;
-        CategoryEntity? selectedCategory;
-        if (_selectedCategory != null) {
-          for (final category in categories) {
-            if (category.categoryId == _selectedCategory!.categoryId) {
-              selectedCategory = category;
-              break;
-            }
-          }
-        }
+        final selectedCategory = _categoryById(
+          categories,
+          _selectedCategoryId,
+        );
 
         return DropdownButtonFormField<CategoryEntity>(
           initialValue: selectedCategory,
@@ -548,7 +555,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               ? null
               : (value) {
                   setState(() {
-                    _selectedCategory = value;
+                    _selectedCategoryId = value?.categoryId;
                   });
                 },
           decoration: _buildSelectDecoration('Category'),
@@ -639,9 +646,17 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       return;
     }
     final amount = double.tryParse(_amountController.text.trim());
-    final account = _selectedAccount;
-    final category = _selectedCategory;
-    const currency = 'BDT';
+    final accounts =
+        await cqrs.bus.query<GetAccountsQuery, List<AccountEntity>>(
+      GetAccountsQuery(userId: profile.userId),
+    );
+    final categories =
+        await cqrs.bus.query<GetCategoriesQuery, List<CategoryEntity>>(
+      GetCategoriesQuery(userId: profile.userId, type: _type),
+    );
+    final account = _accountById(accounts, _selectedAccountId);
+    final category = _categoryById(categories, _selectedCategoryId);
+    final currency = widget.initialTransaction?.currency ?? 'BDT';
 
     if (amount == null || amount <= 0) {
       _showError('Enter a valid amount.');
@@ -667,22 +682,37 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       );
 
       await cqrs.bus.execute(
-        CreateTransactionCommand(
-          userId: profile.userId,
-          accountId: account.accountId,
-          categoryId: category.categoryId,
-          type: _type,
-          amount: amount,
-          currency: currency,
-          date: _date,
-          note: _noteController.text.trim().isEmpty
-              ? null
-              : _noteController.text.trim(),
-        ),
+        _isEditing
+            ? UpdateTransactionCommand(
+                userId: profile.userId,
+                transactionId: widget.initialTransaction!.transactionId,
+                accountId: account.accountId,
+                categoryId: category.categoryId,
+                type: _type,
+                amount: amount,
+                currency: currency,
+                date: _date,
+                note: _noteController.text.trim().isEmpty
+                    ? null
+                    : _noteController.text.trim(),
+                isRecurring: widget.initialTransaction!.isRecurring,
+              )
+            : CreateTransactionCommand(
+                userId: profile.userId,
+                accountId: account.accountId,
+                categoryId: category.categoryId,
+                type: _type,
+                amount: amount,
+                currency: currency,
+                date: _date,
+                note: _noteController.text.trim().isEmpty
+                    ? null
+                    : _noteController.text.trim(),
+              ),
       );
 
       if (mounted) {
-        Navigator.of(context).pop();
+        Navigator.of(context).pop(true);
       }
     } catch (error) {
       _showError('Failed to save: $error');
@@ -702,5 +732,32 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
     );
+  }
+
+  AccountEntity? _accountById(List<AccountEntity> accounts, String? accountId) {
+    if (accountId == null) {
+      return null;
+    }
+    for (final account in accounts) {
+      if (account.accountId == accountId) {
+        return account;
+      }
+    }
+    return null;
+  }
+
+  CategoryEntity? _categoryById(
+    List<CategoryEntity> categories,
+    String? categoryId,
+  ) {
+    if (categoryId == null) {
+      return null;
+    }
+    for (final category in categories) {
+      if (category.categoryId == categoryId) {
+        return category;
+      }
+    }
+    return null;
   }
 }

@@ -23,6 +23,8 @@ class LocalDb {
         TransferEntitySchema,
         BudgetEntitySchema,
         RecurringTransactionEntitySchema,
+        PaymentCardCredentialEntitySchema,
+        BankAccountCredentialEntitySchema,
         SummaryCacheEntitySchema,
         SyncOutboxEntitySchema,
       ],

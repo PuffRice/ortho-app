@@ -191,6 +191,10 @@ class SyncService {
         return 'budgets';
       case 'recurring':
         return 'recurring_transactions';
+      case 'payment_card_credentials':
+        return 'payment_card_credentials';
+      case 'bank_account_credentials':
+        return 'bank_account_credentials';
       default:
         return null;
     }
@@ -291,6 +295,16 @@ class SyncService {
         .userIdEqualTo(userId)
         .sortByUpdatedAtDesc()
         .findFirst();
+    final paymentCard = await _isar.paymentCardCredentialEntitys
+        .filter()
+        .userIdEqualTo(userId)
+        .sortByUpdatedAtDesc()
+        .findFirst();
+    final bankCredential = await _isar.bankAccountCredentialEntitys
+        .filter()
+        .userIdEqualTo(userId)
+        .sortByUpdatedAtDesc()
+        .findFirst();
 
     return _maxDate([
       user?.updatedAt,
@@ -300,6 +314,8 @@ class SyncService {
       transfer?.updatedAt,
       budget?.updatedAt,
       recurring?.updatedAt,
+      paymentCard?.updatedAt,
+      bankCredential?.updatedAt,
     ]);
   }
 
@@ -312,6 +328,8 @@ class SyncService {
       _fetchRemoteLatest('transfers', userId),
       _fetchRemoteLatest('budgets', userId),
       _fetchRemoteLatest('recurring_transactions', userId),
+      _fetchRemoteLatest('payment_card_credentials', userId),
+      _fetchRemoteLatest('bank_account_credentials', userId),
     ]);
     return _maxDate(values);
   }
@@ -352,6 +370,14 @@ class SyncService {
           .filter()
           .userIdEqualTo(userId)
           .deleteAll();
+      await _isar.paymentCardCredentialEntitys
+          .filter()
+          .userIdEqualTo(userId)
+          .deleteAll();
+      await _isar.bankAccountCredentialEntitys
+          .filter()
+          .userIdEqualTo(userId)
+          .deleteAll();
 
       if (snapshot.user != null) {
         await _isar.userEntitys.put(snapshot.user!);
@@ -374,6 +400,13 @@ class SyncService {
       if (snapshot.recurring.isNotEmpty) {
         await _isar.recurringTransactionEntitys.putAll(snapshot.recurring);
       }
+      if (snapshot.paymentCards.isNotEmpty) {
+        await _isar.paymentCardCredentialEntitys.putAll(snapshot.paymentCards);
+      }
+      if (snapshot.bankCredentials.isNotEmpty) {
+        await _isar.bankAccountCredentialEntitys
+            .putAll(snapshot.bankCredentials);
+      }
     });
   }
 
@@ -394,6 +427,14 @@ class SyncService {
         .from('recurring_transactions')
         .select()
         .eq('user_id', userId);
+    final paymentCardRows = await _client
+        .from('payment_card_credentials')
+        .select()
+        .eq('user_id', userId);
+    final bankCredentialRows = await _client
+        .from('bank_account_credentials')
+        .select()
+        .eq('user_id', userId);
 
     final user = userRows.isNotEmpty ? _userFromRemote(userRows.first) : null;
 
@@ -405,6 +446,8 @@ class SyncService {
       transfers: _mapAll(transferRows, _transferFromRemote),
       budgets: _mapAll(budgetRows, _budgetFromRemote),
       recurring: _mapAll(recurringRows, _recurringFromRemote),
+      paymentCards: _mapAll(paymentCardRows, _paymentCardFromRemote),
+      bankCredentials: _mapAll(bankCredentialRows, _bankCredentialFromRemote),
     );
   }
 
@@ -518,6 +561,43 @@ class SyncService {
       ..deletedAt = _parseDate(row['deleted_at']);
   }
 
+  PaymentCardCredentialEntity _paymentCardFromRemote(
+    Map<String, dynamic> row,
+  ) {
+    return PaymentCardCredentialEntity()
+      ..userId = row['user_id'] as String
+      ..cardCredentialId = row['id'] as String
+      ..bankName = row['bank_name'] as String
+      ..bankLogoBase64 = row['bank_logo_base64'] as String?
+      ..cardType = row['card_type'] as String
+      ..network = row['network'] as String
+      ..cardholderName = row['cardholder_name'] as String
+      ..cardNumber = row['card_number'] as String
+      ..expiry = row['expiry'] as String
+      ..hasNfc = row['has_nfc'] as bool? ?? false
+      ..createdAt = _requireDate(row['created_at'])
+      ..updatedAt = _requireDate(row['updated_at'])
+      ..deletedAt = _parseDate(row['deleted_at']);
+  }
+
+  BankAccountCredentialEntity _bankCredentialFromRemote(
+    Map<String, dynamic> row,
+  ) {
+    return BankAccountCredentialEntity()
+      ..userId = row['user_id'] as String
+      ..bankCredentialId = row['id'] as String
+      ..bankName = row['bank_name'] as String
+      ..bankLogoBase64 = row['bank_logo_base64'] as String?
+      ..branchName = row['branch_name'] as String
+      ..accountName = row['account_name'] as String
+      ..accountNumber = row['account_number'] as String
+      ..routingNumber = row['routing_number'] as String
+      ..swiftCode = row['swift_code'] as String
+      ..createdAt = _requireDate(row['created_at'])
+      ..updatedAt = _requireDate(row['updated_at'])
+      ..deletedAt = _parseDate(row['deleted_at']);
+  }
+
   DateTime _requireDate(dynamic value) {
     final parsed = _parseDate(value);
     if (parsed == null) {
@@ -602,6 +682,8 @@ class _RemoteSnapshot {
     required this.transfers,
     required this.budgets,
     required this.recurring,
+    required this.paymentCards,
+    required this.bankCredentials,
   });
 
   final UserEntity? user;
@@ -611,4 +693,6 @@ class _RemoteSnapshot {
   final List<TransferEntity> transfers;
   final List<BudgetEntity> budgets;
   final List<RecurringTransactionEntity> recurring;
+  final List<PaymentCardCredentialEntity> paymentCards;
+  final List<BankAccountCredentialEntity> bankCredentials;
 }

@@ -108,5 +108,44 @@ class SyncPayloadMapper {
     };
   }
 
+  static Map<String, dynamic> paymentCardCredential(
+    PaymentCardCredentialEntity credential,
+  ) {
+    return {
+      'id': credential.cardCredentialId,
+      'user_id': credential.userId,
+      'bank_name': credential.bankName,
+      'bank_logo_base64': credential.bankLogoBase64,
+      'card_type': credential.cardType,
+      'network': credential.network,
+      'cardholder_name': credential.cardholderName,
+      'card_number': credential.cardNumber,
+      'expiry': credential.expiry,
+      'has_nfc': credential.hasNfc,
+      'created_at': _iso(credential.createdAt),
+      'updated_at': _iso(credential.updatedAt),
+      'deleted_at': _iso(credential.deletedAt),
+    };
+  }
+
+  static Map<String, dynamic> bankAccountCredential(
+    BankAccountCredentialEntity credential,
+  ) {
+    return {
+      'id': credential.bankCredentialId,
+      'user_id': credential.userId,
+      'bank_name': credential.bankName,
+      'bank_logo_base64': credential.bankLogoBase64,
+      'branch_name': credential.branchName,
+      'account_name': credential.accountName,
+      'account_number': credential.accountNumber,
+      'routing_number': credential.routingNumber,
+      'swift_code': credential.swiftCode,
+      'created_at': _iso(credential.createdAt),
+      'updated_at': _iso(credential.updatedAt),
+      'deleted_at': _iso(credential.deletedAt),
+    };
+  }
+
   static String? _iso(DateTime? value) => value?.toUtc().toIso8601String();
 }

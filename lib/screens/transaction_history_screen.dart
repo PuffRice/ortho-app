@@ -24,11 +24,27 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
   String? _accountId;
   String? _categoryId;
   DateTimeRange? _dateRange;
+  bool _appliedInitialFilters = false;
 
   @override
   void initState() {
     super.initState();
     _historyFuture = _loadHistory();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_appliedInitialFilters) {
+      return;
+    }
+    _appliedInitialFilters = true;
+
+    final arguments = ModalRoute.of(context)?.settings.arguments;
+    final initialType = arguments is String ? arguments : null;
+    if (initialType == 'income' || initialType == 'expense') {
+      _type = initialType;
+    }
   }
 
   @override

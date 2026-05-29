@@ -1,11 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:isar/isar.dart';
 import '../config/app_colors.dart';
-import '../config/app_routes.dart';
 import '../config/category_icons.dart';
 import '../cqrs/queries.dart';
 import '../models/isar_models.dart';
 import '../services/cqrs_service.dart';
+import '../services/local_db.dart';
 import '../services/user_identity.dart';
+import 'add_transaction_screen.dart';
+import 'transaction_history_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -16,7 +21,9 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   bool _isBalanceVisible = true;
+  bool _isAccountBalancesExpanded = false;
   Future<_HomeData>? _homeDataFuture;
+  StreamSubscription<void>? _profileChangesSubscription;
 
   Future<_HomeData> get _homeData {
     return _homeDataFuture ??= _loadHomeData();
@@ -26,6 +33,18 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _homeDataFuture = _loadHomeData();
+    _profileChangesSubscription =
+        UserIdentityService.instance.profileChanges.listen((_) {
+      if (mounted) {
+        _reloadHomeData();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _profileChangesSubscription?.cancel();
+    super.dispose();
   }
 
   @override
@@ -154,7 +173,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 _buildLoadWarning(data.loadWarning!),
               ],
               const SizedBox(height: 24),
-              _buildActiveBalanceCard(data.activeBalanceLabel),
+              _buildActiveBalanceCard(
+                data.activeBalanceLabel,
+                data.accountBalances,
+              ),
               const SizedBox(height: 14),
               Row(
                 children: [
@@ -166,6 +188,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       amount: data.inflowLabel,
                       change: data.inflowChangeLabel,
                       changeColor: AppColors.incomePositive,
+                      onTap: () => _openTransactionHistory('income'),
                     ),
                   ),
                   const SizedBox(width: 14),
@@ -177,6 +200,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       amount: data.outflowLabel,
                       change: data.outflowChangeLabel,
                       changeColor: AppColors.expenseNegative,
+                      onTap: () => _openTransactionHistory('expense'),
                     ),
                   ),
                 ],
@@ -189,6 +213,7 @@ class _HomeScreenState extends State<HomeScreen> {
               else
                 for (final transaction in data.transactions) ...[
                   _buildTransactionItem(
+                    transaction: transaction.transaction,
                     description: transaction.description,
                     time: MaterialLocalizations.of(context).formatTimeOfDay(
                       TimeOfDay.fromDateTime(transaction.date),
@@ -212,6 +237,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<_HomeData> _loadHomeData() async {
     final profile = await UserIdentityService.instance.getProfile();
+    final isar = await LocalDb.instance.open();
+    final user = await isar.userEntitys
+        .filter()
+        .userIdEqualTo(profile.userId)
+        .findFirst();
     final cqrs = await CqrsService.create();
     final now = DateTime.now();
     final monthStart = DateTime(now.year, now.month, 1);
@@ -283,8 +313,12 @@ class _HomeScreenState extends State<HomeScreen> {
         _sumTransactions(previousMonthTransactions.value, 'expense');
 
     return _HomeData(
-      displayName: profile.displayName,
+      displayName: user?.displayName ?? profile.displayName,
       activeBalanceLabel: _formatMoney(activeBalance, currency),
+      accountBalances: accounts.value
+          .map(_accountBalanceView)
+          .whereType<_AccountBalanceViewData>()
+          .toList(),
       inflowLabel: _formatMoney(inflow, currency),
       outflowLabel: _formatMoney(outflow, currency),
       inflowChangeLabel: _formatChange(inflow, previousInflow),
@@ -334,6 +368,17 @@ class _HomeScreenState extends State<HomeScreen> {
     return total;
   }
 
+  _AccountBalanceViewData? _accountBalanceView(AccountEntity account) {
+    try {
+      return _AccountBalanceViewData(
+        name: account.name,
+        balanceLabel: _formatMoney(account.currentBalance, account.currency),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
   double _sumTransactions(List<TransactionEntity> transactions, String type) {
     var total = 0.0;
     for (final transaction in transactions) {
@@ -368,6 +413,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final signedAmount = isPositive ? transaction.amount : -transaction.amount;
     final categoryName = category?.name ?? transaction.type;
     return _TransactionViewData(
+      transaction: transaction,
       description: _transactionDescription(transaction, categoryName),
       date: transaction.date,
       amountLabel: _formatSignedMoney(signedAmount, transaction.currency),
@@ -422,6 +468,80 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _homeDataFuture = _loadHomeData();
     });
+  }
+
+  void _openTransactionHistory([String? type]) {
+    Navigator.of(context).push(
+      PageRouteBuilder<void>(
+        settings: RouteSettings(arguments: type),
+        transitionDuration: const Duration(milliseconds: 460),
+        reverseTransitionDuration: const Duration(milliseconds: 320),
+        pageBuilder: (context, animation, secondaryAnimation) {
+          return const TransactionHistoryScreen();
+        },
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          final curvedAnimation = CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOutCubic,
+            reverseCurve: Curves.easeInCubic,
+          );
+          final slideAnimation = Tween<Offset>(
+            begin: const Offset(0.08, 0.02),
+            end: Offset.zero,
+          ).animate(curvedAnimation);
+          final scaleAnimation = Tween<double>(
+            begin: 0.985,
+            end: 1,
+          ).animate(curvedAnimation);
+
+          return FadeTransition(
+            opacity: curvedAnimation,
+            child: SlideTransition(
+              position: slideAnimation,
+              child: ScaleTransition(
+                scale: scaleAnimation,
+                alignment: Alignment.topCenter,
+                child: child,
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _openTransactionEditor(TransactionEntity transaction) async {
+    final updated = await Navigator.of(context).push<bool>(
+      PageRouteBuilder<bool>(
+        transitionDuration: const Duration(milliseconds: 420),
+        reverseTransitionDuration: const Duration(milliseconds: 300),
+        pageBuilder: (context, animation, secondaryAnimation) {
+          return AddTransactionScreen(initialTransaction: transaction);
+        },
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          final curvedAnimation = CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOutCubic,
+            reverseCurve: Curves.easeInCubic,
+          );
+          final slideAnimation = Tween<Offset>(
+            begin: const Offset(0.06, 0.04),
+            end: Offset.zero,
+          ).animate(curvedAnimation);
+
+          return FadeTransition(
+            opacity: curvedAnimation,
+            child: SlideTransition(
+              position: slideAnimation,
+              child: child,
+            ),
+          );
+        },
+      ),
+    );
+    if (updated == true && mounted) {
+      _reloadHomeData();
+    }
   }
 
   Widget _buildHeader(String displayName) {
@@ -505,20 +625,15 @@ class _HomeScreenState extends State<HomeScreen> {
     return 'Good evening';
   }
 
-  Widget _buildActiveBalanceCard(String activeBalanceLabel) {
-    return Container(
-      padding: const EdgeInsets.all(24),
+  Widget _buildActiveBalanceCard(
+    String activeBalanceLabel,
+    List<_AccountBalanceViewData> accountBalances,
+  ) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 260),
+      curve: Curves.easeOutCubic,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(28),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF2A145A),
-            Color(0xFF3B1B7A),
-            Color(0xFF20113F),
-          ],
-        ),
         border: Border.all(
           color: Colors.white.withOpacity(0.10),
           width: 1,
@@ -531,80 +646,300 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      'Active Balance',
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(28),
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: Image.asset(
+                'assets/images/card-bg-ortho.png',
+                fit: BoxFit.cover,
+                alignment: const Alignment(0, -0.77),
+              ),
+            ),
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      const Color(0xFF2A145A).withOpacity(0.42),
+                      const Color(0xFF3B1B7A).withOpacity(0.42),
+                      const Color(0xFF20113F).withOpacity(0.40),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: _buildActiveBalanceCardContent(
+                activeBalanceLabel,
+                accountBalances,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActiveBalanceCardContent(
+    String activeBalanceLabel,
+    List<_AccountBalanceViewData> accountBalances,
+  ) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'Active Balance',
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _isBalanceVisible = !_isBalanceVisible;
+                          });
+                        },
+                        child: Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white.withOpacity(0.1),
+                          ),
+                          child: Icon(
+                            _isBalanceVisible
+                                ? Icons.visibility
+                                : Icons.visibility_off,
+                            color: AppColors.textPrimary,
+                            size: 18,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _isBalanceVisible ? activeBalanceLabel : '********',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 34,
+                      fontWeight: FontWeight.w600,
                     ),
-                    const SizedBox(width: 8),
-                    GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _isBalanceVisible = !_isBalanceVisible;
-                        });
-                      },
-                      child: Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.1),
-                        ),
-                        child: Icon(
-                          _isBalanceVisible
-                              ? Icons.visibility
-                              : Icons.visibility_off,
-                          color: AppColors.textPrimary,
-                          size: 18,
-                        ),
-                      ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  _isAccountBalancesExpanded = !_isAccountBalancesExpanded;
+                });
+              },
+              child: Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  shape: BoxShape.rectangle,
+                  borderRadius: BorderRadius.circular(16),
+                  gradient: LinearGradient(
+                    begin: const AlignmentDirectional(-2, 1),
+                    end: const AlignmentDirectional(1, -1),
+                    colors: [
+                      AppColors.primaryViolet.withValues(alpha: 1),
+                      AppColors.accentCoral.withValues(alpha: 1),
+                    ],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.accentCoral.withOpacity(0.24),
+                      blurRadius: 22,
+                      offset: const Offset(0, 10),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  _isBalanceVisible ? activeBalanceLabel : '••••••••',
-                  style: TextStyle(
+                child: Icon(
+                  _isAccountBalancesExpanded
+                      ? Icons.keyboard_arrow_up
+                      : Icons.wallet,
+                  color: AppColors.textPrimary,
+                  size: 24,
+                ),
+              ),
+            ),
+          ],
+        ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 260),
+          curve: Curves.easeOutCubic,
+          alignment: Alignment.topRight,
+          child: _isAccountBalancesExpanded
+              ? Align(
+                  alignment: Alignment.centerRight,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 18),
+                    child: _buildAccountBalancesPanel(accountBalances),
+                  ),
+                )
+              : const SizedBox.shrink(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAccountBalancesPanel(
+    List<_AccountBalanceViewData> accountBalances,
+  ) {
+    final visibleBalances = _isBalanceVisible
+        ? accountBalances
+        : accountBalances
+            .map(
+              (account) => _AccountBalanceViewData(
+                name: account.name,
+                balanceLabel: '****',
+              ),
+            )
+            .toList();
+
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 360),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.085),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.white.withOpacity(0.12)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.16),
+              blurRadius: 24,
+              offset: const Offset(0, 12),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    color: AppColors.primaryViolet.withOpacity(0.24),
+                  ),
+                  child: const Icon(
+                    Icons.account_balance_wallet_outlined,
                     color: AppColors.textPrimary,
-                    fontSize: 34,
+                    size: 16,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text(
+                    'Accounts',
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                Text(
+                  '${visibleBalances.length}',
+                  style: TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
             ),
-          ),
-          const SizedBox(width: 12),
+            const SizedBox(height: 10),
+            if (visibleBalances.isEmpty)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'No accounts yet',
+                  style: TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              )
+            else
+              for (final account in visibleBalances) ...[
+                _buildAccountBalanceRow(account),
+                if (account != visibleBalances.last) const SizedBox(height: 8),
+              ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAccountBalanceRow(_AccountBalanceViewData account) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        color: Colors.black.withOpacity(0.10),
+        border: Border.all(color: Colors.white.withOpacity(0.07)),
+      ),
+      child: Row(
+        children: [
           Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              shape: BoxShape.rectangle,
-              borderRadius: BorderRadius.circular(16),
-              gradient: LinearGradient(
-                begin: AlignmentDirectional(-2, 1),
-                end: AlignmentDirectional(1, -1),
-                colors: [
-                  AppColors.primaryViolet.withValues(alpha: 1),
-                  AppColors.accentCoral.withValues(alpha: 1),
-                ],
+            width: 8,
+            height: 8,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.incomePositive,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              account.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
               ),
             ),
-            child: const Icon(
-              Icons.wallet,
+          ),
+          const SizedBox(width: 12),
+          Text(
+            account.balanceLabel,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.right,
+            style: const TextStyle(
               color: AppColors.textPrimary,
-              size: 24,
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
             ),
           ),
         ],
@@ -619,64 +954,72 @@ class _HomeScreenState extends State<HomeScreen> {
     required String amount,
     required String change,
     required Color changeColor,
+    VoidCallback? onTap,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(20),
-        color: Colors.white.withOpacity(0.055),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.07),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: iconColor.withOpacity(0.2),
-            ),
-            child: Icon(icon, color: iconColor, size: 20),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            label,
-            style: TextStyle(
-              color: AppColors.textMuted,
-              fontSize: 13,
-              fontWeight: FontWeight.w400,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            color: Colors.white.withOpacity(0.055),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.07),
+              width: 1,
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            amount,
-            style: TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(6),
-              color: changeColor.withOpacity(0.15),
-            ),
-            child: Text(
-              change,
-              style: TextStyle(
-                color: changeColor,
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: iconColor.withOpacity(0.2),
+                ),
+                child: Icon(icon, color: iconColor, size: 20),
               ),
-            ),
+              const SizedBox(height: 12),
+              Text(
+                label,
+                style: TextStyle(
+                  color: AppColors.textMuted,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                amount,
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(6),
+                  color: changeColor.withOpacity(0.15),
+                ),
+                child: Text(
+                  change,
+                  style: TextStyle(
+                    color: changeColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -694,9 +1037,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         GestureDetector(
-          onTap: () => Navigator.of(context).pushNamed(
-            AppRoutes.transactionHistory,
-          ),
+          onTap: _openTransactionHistory,
           child: Text(
             'View all',
             style: TextStyle(
@@ -726,6 +1067,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildTransactionItem({
+    required TransactionEntity? transaction,
     required String description,
     required String time,
     required String date,
@@ -738,81 +1080,90 @@ class _HomeScreenState extends State<HomeScreen> {
     final amountColor =
         isPositive ? AppColors.incomePositive : AppColors.expenseNegative;
 
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: transaction == null
+            ? null
+            : () => _openTransactionEditor(transaction),
         borderRadius: BorderRadius.circular(20),
-        color: Colors.white.withOpacity(0.055),
-      ),
-      height: 74,
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: categoryColor.withOpacity(0.18),
-            ),
-            child: Center(
-              child: Icon(
-                categoryIcon,
-                color: categoryColor,
-                size: 22,
-              ),
-            ),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            color: Colors.white.withOpacity(0.055),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  description,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  '$time | $date',
-                  style: TextStyle(
-                    color: AppColors.textMuted,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            mainAxisAlignment: MainAxisAlignment.center,
+          height: 74,
+          child: Row(
             children: [
-              Text(
-                amount,
-                style: TextStyle(
-                  color: amountColor,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: categoryColor.withOpacity(0.18),
+                ),
+                child: Center(
+                  child: Icon(
+                    categoryIcon,
+                    color: categoryColor,
+                    size: 22,
+                  ),
                 ),
               ),
-              Text(
-                category,
-                style: TextStyle(
-                  color: AppColors.textMuted,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w400,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      description,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      '$time | $date',
+                      style: TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
                 ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    amount,
+                    style: TextStyle(
+                      color: amountColor,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    category,
+                    style: TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -822,6 +1173,7 @@ class _HomeData {
   const _HomeData({
     required this.displayName,
     required this.activeBalanceLabel,
+    required this.accountBalances,
     required this.inflowLabel,
     required this.outflowLabel,
     required this.inflowChangeLabel,
@@ -832,12 +1184,23 @@ class _HomeData {
 
   final String displayName;
   final String activeBalanceLabel;
+  final List<_AccountBalanceViewData> accountBalances;
   final String inflowLabel;
   final String outflowLabel;
   final String inflowChangeLabel;
   final String outflowChangeLabel;
   final String? loadWarning;
   final List<_TransactionViewData> transactions;
+}
+
+class _AccountBalanceViewData {
+  const _AccountBalanceViewData({
+    required this.name,
+    required this.balanceLabel,
+  });
+
+  final String name;
+  final String balanceLabel;
 }
 
 class _SectionLoad<T> {
@@ -854,6 +1217,7 @@ class _SectionLoad<T> {
 
 class _TransactionViewData {
   const _TransactionViewData({
+    required this.transaction,
     required this.description,
     required this.date,
     required this.amountLabel,
@@ -863,6 +1227,7 @@ class _TransactionViewData {
     required this.isPositive,
   });
 
+  final TransactionEntity? transaction;
   final String description;
   final DateTime date;
   final String amountLabel;
