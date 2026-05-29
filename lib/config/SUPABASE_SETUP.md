@@ -1,4 +1,4 @@
-# Finance Tracker Flutter App
+# Ortho : Intelligent Finances Flutter App
 
 A comprehensive finance tracking application built with Flutter, featuring spending analytics, savings goals, budgeting tools, and a rewards system. Built with Supabase as the backend.
 

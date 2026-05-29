@@ -1,10 +1,10 @@
-# Finance Tracker
+# Ortho : Intelligent Finances
 
 A Flutter finance tracking app for managing accounts, categories, transactions, budgets, and personal financial activity with a local-first data layer and optional Supabase sync.
 
 ## Project Overview
 
-Finance Tracker is designed to make everyday money management clearer and faster. Instead of treating the app as a simple collection of screens, the project is structured around a maintainable application architecture: UI, state/business workflows, local persistence, remote services, models, and configuration each have a defined responsibility.
+Ortho : Intelligent Finances is designed to make everyday money management clearer and faster. Instead of treating the app as a simple collection of screens, the project is structured around a maintainable application architecture: UI, state/business workflows, local persistence, remote services, models, and configuration each have a defined responsibility.
 
 The app is intentionally built from scratch with a custom architecture rather than relying on a one-size-fits-all starter template. That decision makes the codebase easier to extend as the product grows from a personal expense tracker into a more complete financial operating system with offline support, cloud synchronization, richer dashboards, recurring transactions, and team-friendly development workflows.
 

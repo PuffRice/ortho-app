@@ -81,7 +81,7 @@ class _MainAppState extends State<MainApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Finance Tracker',
+      title: 'Ortho : Intelligent Finances',
       theme: ThemeData(
         useMaterial3: false,
         primaryColor: const Color(0xFF0F172A),
@@ -203,7 +203,7 @@ class _StartupSplashState extends State<_StartupSplash>
                       ),
                       const SizedBox(height: 24),
                       Text(
-                        'Finance Tracker',
+                        'Ortho : Intelligent Finances',
                         style: GoogleFonts.inter(
                           color: AppColors.textPrimary,
                           fontSize: 22,
@@ -412,7 +412,7 @@ class _StartupErrorScreen extends StatelessWidget {
               ),
               const SizedBox(height: 18),
               Text(
-                'Could not start Finance Tracker',
+                'Could not start Ortho : Intelligent Finances',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.inter(
                   color: AppColors.textPrimary,

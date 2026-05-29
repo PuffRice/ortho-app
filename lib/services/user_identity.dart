@@ -1,5 +1,4 @@
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:uuid/uuid.dart';
 
 class UserIdentityProfile {
   const UserIdentityProfile({
@@ -21,15 +20,15 @@ class UserIdentityService {
   static const String _userIdKey = 'local_user_id';
   static const String _emailKey = 'local_user_email';
   static const String _displayNameKey = 'local_user_display_name';
+  static const String _fixedUserId = '0dbb7f38-eced-4ec4-9c24-3d25f9470cd6';
 
   Future<UserIdentityProfile> getProfile() async {
     final prefs = await SharedPreferences.getInstance();
-    var userId = prefs.getString(_userIdKey);
+    var userId = _fixedUserId;
     var email = prefs.getString(_emailKey);
     var displayName = prefs.getString(_displayNameKey);
 
-    if (userId == null) {
-      userId = const Uuid().v4();
+    if (prefs.getString(_userIdKey) != _fixedUserId) {
       await prefs.setString(_userIdKey, userId);
     }
 
