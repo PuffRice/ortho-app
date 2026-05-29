@@ -2713,6 +2713,160 @@ extension AccountEntityQueryFilter
     });
   }
 
+  QueryBuilder<AccountEntity, AccountEntity, QAfterFilterCondition>
+      logoBase64IsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'logoBase64',
+      ));
+    });
+  }
+
+  QueryBuilder<AccountEntity, AccountEntity, QAfterFilterCondition>
+      logoBase64IsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'logoBase64',
+      ));
+    });
+  }
+
+  QueryBuilder<AccountEntity, AccountEntity, QAfterFilterCondition>
+      logoBase64EqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'logoBase64',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AccountEntity, AccountEntity, QAfterFilterCondition>
+      logoBase64GreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'logoBase64',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AccountEntity, AccountEntity, QAfterFilterCondition>
+      logoBase64LessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'logoBase64',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AccountEntity, AccountEntity, QAfterFilterCondition>
+      logoBase64Between(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'logoBase64',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AccountEntity, AccountEntity, QAfterFilterCondition>
+      logoBase64StartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'logoBase64',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AccountEntity, AccountEntity, QAfterFilterCondition>
+      logoBase64EndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'logoBase64',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AccountEntity, AccountEntity, QAfterFilterCondition>
+      logoBase64Contains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'logoBase64',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AccountEntity, AccountEntity, QAfterFilterCondition>
+      logoBase64Matches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'logoBase64',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AccountEntity, AccountEntity, QAfterFilterCondition>
+      logoBase64IsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'logoBase64',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<AccountEntity, AccountEntity, QAfterFilterCondition>
+      logoBase64IsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'logoBase64',
+        value: '',
+      ));
+    });
+  }
+
   QueryBuilder<AccountEntity, AccountEntity, QAfterFilterCondition> nameEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -3316,6 +3470,19 @@ extension AccountEntityQuerySortBy
     });
   }
 
+  QueryBuilder<AccountEntity, AccountEntity, QAfterSortBy> sortByLogoBase64() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'logoBase64', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AccountEntity, AccountEntity, QAfterSortBy>
+      sortByLogoBase64Desc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'logoBase64', Sort.desc);
+    });
+  }
+
   QueryBuilder<AccountEntity, AccountEntity, QAfterSortBy> sortByName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'name', Sort.asc);
@@ -3460,6 +3627,19 @@ extension AccountEntityQuerySortThenBy
     });
   }
 
+  QueryBuilder<AccountEntity, AccountEntity, QAfterSortBy> thenByLogoBase64() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'logoBase64', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AccountEntity, AccountEntity, QAfterSortBy>
+      thenByLogoBase64Desc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'logoBase64', Sort.desc);
+    });
+  }
+
   QueryBuilder<AccountEntity, AccountEntity, QAfterSortBy> thenByName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'name', Sort.asc);
@@ -3559,6 +3739,13 @@ extension AccountEntityQueryWhereDistinct
     });
   }
 
+  QueryBuilder<AccountEntity, AccountEntity, QDistinct> distinctByLogoBase64(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'logoBase64', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<AccountEntity, AccountEntity, QDistinct> distinctByName(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -3630,6 +3817,12 @@ extension AccountEntityQueryProperty
   QueryBuilder<AccountEntity, DateTime?, QQueryOperations> deletedAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'deletedAt');
+    });
+  }
+
+  QueryBuilder<AccountEntity, String?, QQueryOperations> logoBase64Property() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'logoBase64');
     });
   }
 
@@ -15089,6 +15282,5258 @@ extension RecurringTransactionEntityQueryProperty on QueryBuilder<
   }
 
   QueryBuilder<RecurringTransactionEntity, String, QQueryOperations>
+      userIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'userId');
+    });
+  }
+}
+
+// coverage:ignore-file
+// ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types
+
+extension GetPaymentCardCredentialEntityCollection on Isar {
+  IsarCollection<PaymentCardCredentialEntity>
+      get paymentCardCredentialEntitys => this.collection();
+}
+
+const PaymentCardCredentialEntitySchema = CollectionSchema(
+  name: r'PaymentCardCredentialEntity',
+  id: -428123612210204821,
+  properties: {
+    r'bankLogoBase64': PropertySchema(
+      id: 0,
+      name: r'bankLogoBase64',
+      type: IsarType.string,
+    ),
+    r'bankName': PropertySchema(
+      id: 1,
+      name: r'bankName',
+      type: IsarType.string,
+    ),
+    r'cardCredentialId': PropertySchema(
+      id: 2,
+      name: r'cardCredentialId',
+      type: IsarType.string,
+    ),
+    r'cardNumber': PropertySchema(
+      id: 3,
+      name: r'cardNumber',
+      type: IsarType.string,
+    ),
+    r'cardType': PropertySchema(
+      id: 4,
+      name: r'cardType',
+      type: IsarType.string,
+    ),
+    r'cardholderName': PropertySchema(
+      id: 5,
+      name: r'cardholderName',
+      type: IsarType.string,
+    ),
+    r'createdAt': PropertySchema(
+      id: 6,
+      name: r'createdAt',
+      type: IsarType.dateTime,
+    ),
+    r'deletedAt': PropertySchema(
+      id: 7,
+      name: r'deletedAt',
+      type: IsarType.dateTime,
+    ),
+    r'expiry': PropertySchema(
+      id: 8,
+      name: r'expiry',
+      type: IsarType.string,
+    ),
+    r'hasNfc': PropertySchema(
+      id: 9,
+      name: r'hasNfc',
+      type: IsarType.bool,
+    ),
+    r'network': PropertySchema(
+      id: 10,
+      name: r'network',
+      type: IsarType.string,
+    ),
+    r'updatedAt': PropertySchema(
+      id: 11,
+      name: r'updatedAt',
+      type: IsarType.dateTime,
+    ),
+    r'userId': PropertySchema(
+      id: 12,
+      name: r'userId',
+      type: IsarType.string,
+    )
+  },
+  estimateSize: _paymentCardCredentialEntityEstimateSize,
+  serialize: _paymentCardCredentialEntitySerialize,
+  deserialize: _paymentCardCredentialEntityDeserialize,
+  deserializeProp: _paymentCardCredentialEntityDeserializeProp,
+  idName: r'id',
+  indexes: {
+    r'userId': IndexSchema(
+      id: -2005826577402374815,
+      name: r'userId',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'userId',
+          type: IndexType.hash,
+          caseSensitive: true,
+        )
+      ],
+    ),
+    r'cardCredentialId': IndexSchema(
+      id: 385928416169263695,
+      name: r'cardCredentialId',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'cardCredentialId',
+          type: IndexType.hash,
+          caseSensitive: true,
+        )
+      ],
+    ),
+    r'deletedAt': IndexSchema(
+      id: -8969437169173379604,
+      name: r'deletedAt',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'deletedAt',
+          type: IndexType.value,
+          caseSensitive: false,
+        )
+      ],
+    )
+  },
+  links: {},
+  embeddedSchemas: {},
+  getId: _paymentCardCredentialEntityGetId,
+  getLinks: _paymentCardCredentialEntityGetLinks,
+  attach: _paymentCardCredentialEntityAttach,
+  version: '3.1.0+1',
+);
+
+int _paymentCardCredentialEntityEstimateSize(
+  PaymentCardCredentialEntity object,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  var bytesCount = offsets.last;
+  {
+    final value = object.bankLogoBase64;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  bytesCount += 3 + object.bankName.length * 3;
+  bytesCount += 3 + object.cardCredentialId.length * 3;
+  bytesCount += 3 + object.cardNumber.length * 3;
+  bytesCount += 3 + object.cardType.length * 3;
+  bytesCount += 3 + object.cardholderName.length * 3;
+  bytesCount += 3 + object.expiry.length * 3;
+  bytesCount += 3 + object.network.length * 3;
+  bytesCount += 3 + object.userId.length * 3;
+  return bytesCount;
+}
+
+void _paymentCardCredentialEntitySerialize(
+  PaymentCardCredentialEntity object,
+  IsarWriter writer,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  writer.writeString(offsets[0], object.bankLogoBase64);
+  writer.writeString(offsets[1], object.bankName);
+  writer.writeString(offsets[2], object.cardCredentialId);
+  writer.writeString(offsets[3], object.cardNumber);
+  writer.writeString(offsets[4], object.cardType);
+  writer.writeString(offsets[5], object.cardholderName);
+  writer.writeDateTime(offsets[6], object.createdAt);
+  writer.writeDateTime(offsets[7], object.deletedAt);
+  writer.writeString(offsets[8], object.expiry);
+  writer.writeBool(offsets[9], object.hasNfc);
+  writer.writeString(offsets[10], object.network);
+  writer.writeDateTime(offsets[11], object.updatedAt);
+  writer.writeString(offsets[12], object.userId);
+}
+
+PaymentCardCredentialEntity _paymentCardCredentialEntityDeserialize(
+  Id id,
+  IsarReader reader,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  final object = PaymentCardCredentialEntity();
+  object.bankLogoBase64 = reader.readStringOrNull(offsets[0]);
+  object.bankName = reader.readString(offsets[1]);
+  object.cardCredentialId = reader.readString(offsets[2]);
+  object.cardNumber = reader.readString(offsets[3]);
+  object.cardType = reader.readString(offsets[4]);
+  object.cardholderName = reader.readString(offsets[5]);
+  object.createdAt = reader.readDateTime(offsets[6]);
+  object.deletedAt = reader.readDateTimeOrNull(offsets[7]);
+  object.expiry = reader.readString(offsets[8]);
+  object.hasNfc = reader.readBool(offsets[9]);
+  object.id = id;
+  object.network = reader.readString(offsets[10]);
+  object.updatedAt = reader.readDateTime(offsets[11]);
+  object.userId = reader.readString(offsets[12]);
+  return object;
+}
+
+P _paymentCardCredentialEntityDeserializeProp<P>(
+  IsarReader reader,
+  int propertyId,
+  int offset,
+  Map<Type, List<int>> allOffsets,
+) {
+  switch (propertyId) {
+    case 0:
+      return (reader.readStringOrNull(offset)) as P;
+    case 1:
+      return (reader.readString(offset)) as P;
+    case 2:
+      return (reader.readString(offset)) as P;
+    case 3:
+      return (reader.readString(offset)) as P;
+    case 4:
+      return (reader.readString(offset)) as P;
+    case 5:
+      return (reader.readString(offset)) as P;
+    case 6:
+      return (reader.readDateTime(offset)) as P;
+    case 7:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 8:
+      return (reader.readString(offset)) as P;
+    case 9:
+      return (reader.readBool(offset)) as P;
+    case 10:
+      return (reader.readString(offset)) as P;
+    case 11:
+      return (reader.readDateTime(offset)) as P;
+    case 12:
+      return (reader.readString(offset)) as P;
+    default:
+      throw IsarError('Unknown property with id $propertyId');
+  }
+}
+
+Id _paymentCardCredentialEntityGetId(PaymentCardCredentialEntity object) {
+  return object.id;
+}
+
+List<IsarLinkBase<dynamic>> _paymentCardCredentialEntityGetLinks(
+    PaymentCardCredentialEntity object) {
+  return [];
+}
+
+void _paymentCardCredentialEntityAttach(
+    IsarCollection<dynamic> col, Id id, PaymentCardCredentialEntity object) {
+  object.id = id;
+}
+
+extension PaymentCardCredentialEntityQueryWhereSort on QueryBuilder<
+    PaymentCardCredentialEntity, PaymentCardCredentialEntity, QWhere> {
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterWhere> anyId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(const IdWhereClause.any());
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterWhere> anyDeletedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        const IndexWhereClause.any(indexName: r'deletedAt'),
+      );
+    });
+  }
+}
+
+extension PaymentCardCredentialEntityQueryWhere on QueryBuilder<
+    PaymentCardCredentialEntity, PaymentCardCredentialEntity, QWhereClause> {
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterWhereClause> idEqualTo(Id id) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IdWhereClause.between(
+        lower: id,
+        upper: id,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterWhereClause> idNotEqualTo(Id id) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(
+              IdWhereClause.lessThan(upper: id, includeUpper: false),
+            )
+            .addWhereClause(
+              IdWhereClause.greaterThan(lower: id, includeLower: false),
+            );
+      } else {
+        return query
+            .addWhereClause(
+              IdWhereClause.greaterThan(lower: id, includeLower: false),
+            )
+            .addWhereClause(
+              IdWhereClause.lessThan(upper: id, includeUpper: false),
+            );
+      }
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterWhereClause> idGreaterThan(Id id, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        IdWhereClause.greaterThan(lower: id, includeLower: include),
+      );
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterWhereClause> idLessThan(Id id, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        IdWhereClause.lessThan(upper: id, includeUpper: include),
+      );
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterWhereClause> idBetween(
+    Id lowerId,
+    Id upperId, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IdWhereClause.between(
+        lower: lowerId,
+        includeLower: includeLower,
+        upper: upperId,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterWhereClause> userIdEqualTo(String userId) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'userId',
+        value: [userId],
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterWhereClause> userIdNotEqualTo(String userId) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'userId',
+              lower: [],
+              upper: [userId],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'userId',
+              lower: [userId],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'userId',
+              lower: [userId],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'userId',
+              lower: [],
+              upper: [userId],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterWhereClause> cardCredentialIdEqualTo(String cardCredentialId) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'cardCredentialId',
+        value: [cardCredentialId],
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterWhereClause> cardCredentialIdNotEqualTo(String cardCredentialId) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'cardCredentialId',
+              lower: [],
+              upper: [cardCredentialId],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'cardCredentialId',
+              lower: [cardCredentialId],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'cardCredentialId',
+              lower: [cardCredentialId],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'cardCredentialId',
+              lower: [],
+              upper: [cardCredentialId],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterWhereClause> deletedAtIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'deletedAt',
+        value: [null],
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterWhereClause> deletedAtIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'deletedAt',
+        lower: [null],
+        includeLower: false,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterWhereClause> deletedAtEqualTo(DateTime? deletedAt) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'deletedAt',
+        value: [deletedAt],
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterWhereClause> deletedAtNotEqualTo(DateTime? deletedAt) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'deletedAt',
+              lower: [],
+              upper: [deletedAt],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'deletedAt',
+              lower: [deletedAt],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'deletedAt',
+              lower: [deletedAt],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'deletedAt',
+              lower: [],
+              upper: [deletedAt],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterWhereClause> deletedAtGreaterThan(
+    DateTime? deletedAt, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'deletedAt',
+        lower: [deletedAt],
+        includeLower: include,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterWhereClause> deletedAtLessThan(
+    DateTime? deletedAt, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'deletedAt',
+        lower: [],
+        upper: [deletedAt],
+        includeUpper: include,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterWhereClause> deletedAtBetween(
+    DateTime? lowerDeletedAt,
+    DateTime? upperDeletedAt, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'deletedAt',
+        lower: [lowerDeletedAt],
+        includeLower: includeLower,
+        upper: [upperDeletedAt],
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+}
+
+extension PaymentCardCredentialEntityQueryFilter on QueryBuilder<
+    PaymentCardCredentialEntity,
+    PaymentCardCredentialEntity,
+    QFilterCondition> {
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> bankLogoBase64IsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'bankLogoBase64',
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> bankLogoBase64IsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'bankLogoBase64',
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> bankLogoBase64EqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'bankLogoBase64',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> bankLogoBase64GreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'bankLogoBase64',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> bankLogoBase64LessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'bankLogoBase64',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> bankLogoBase64Between(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'bankLogoBase64',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> bankLogoBase64StartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'bankLogoBase64',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> bankLogoBase64EndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'bankLogoBase64',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+          QAfterFilterCondition>
+      bankLogoBase64Contains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'bankLogoBase64',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+          QAfterFilterCondition>
+      bankLogoBase64Matches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'bankLogoBase64',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> bankLogoBase64IsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'bankLogoBase64',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> bankLogoBase64IsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'bankLogoBase64',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> bankNameEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'bankName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> bankNameGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'bankName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> bankNameLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'bankName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> bankNameBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'bankName',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> bankNameStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'bankName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> bankNameEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'bankName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+          QAfterFilterCondition>
+      bankNameContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'bankName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+          QAfterFilterCondition>
+      bankNameMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'bankName',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> bankNameIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'bankName',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> bankNameIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'bankName',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> cardCredentialIdEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'cardCredentialId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> cardCredentialIdGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'cardCredentialId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> cardCredentialIdLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'cardCredentialId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> cardCredentialIdBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'cardCredentialId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> cardCredentialIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'cardCredentialId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> cardCredentialIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'cardCredentialId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+          QAfterFilterCondition>
+      cardCredentialIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'cardCredentialId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+          QAfterFilterCondition>
+      cardCredentialIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'cardCredentialId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> cardCredentialIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'cardCredentialId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> cardCredentialIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'cardCredentialId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> cardNumberEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'cardNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> cardNumberGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'cardNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> cardNumberLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'cardNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> cardNumberBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'cardNumber',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> cardNumberStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'cardNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> cardNumberEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'cardNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+          QAfterFilterCondition>
+      cardNumberContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'cardNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+          QAfterFilterCondition>
+      cardNumberMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'cardNumber',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> cardNumberIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'cardNumber',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> cardNumberIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'cardNumber',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> cardTypeEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'cardType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> cardTypeGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'cardType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> cardTypeLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'cardType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> cardTypeBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'cardType',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> cardTypeStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'cardType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> cardTypeEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'cardType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+          QAfterFilterCondition>
+      cardTypeContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'cardType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+          QAfterFilterCondition>
+      cardTypeMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'cardType',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> cardTypeIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'cardType',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> cardTypeIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'cardType',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> cardholderNameEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'cardholderName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> cardholderNameGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'cardholderName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> cardholderNameLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'cardholderName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> cardholderNameBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'cardholderName',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> cardholderNameStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'cardholderName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> cardholderNameEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'cardholderName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+          QAfterFilterCondition>
+      cardholderNameContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'cardholderName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+          QAfterFilterCondition>
+      cardholderNameMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'cardholderName',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> cardholderNameIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'cardholderName',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> cardholderNameIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'cardholderName',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> createdAtEqualTo(DateTime value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'createdAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> createdAtGreaterThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'createdAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> createdAtLessThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'createdAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> createdAtBetween(
+    DateTime lower,
+    DateTime upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'createdAt',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> deletedAtIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'deletedAt',
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> deletedAtIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'deletedAt',
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> deletedAtEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deletedAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> deletedAtGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'deletedAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> deletedAtLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'deletedAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> deletedAtBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'deletedAt',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> expiryEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'expiry',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> expiryGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'expiry',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> expiryLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'expiry',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> expiryBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'expiry',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> expiryStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'expiry',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> expiryEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'expiry',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+          QAfterFilterCondition>
+      expiryContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'expiry',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+          QAfterFilterCondition>
+      expiryMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'expiry',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> expiryIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'expiry',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> expiryIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'expiry',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> hasNfcEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'hasNfc',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> idEqualTo(Id value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'id',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> idGreaterThan(
+    Id value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'id',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> idLessThan(
+    Id value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'id',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> idBetween(
+    Id lower,
+    Id upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'id',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> networkEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'network',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> networkGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'network',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> networkLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'network',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> networkBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'network',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> networkStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'network',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> networkEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'network',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+          QAfterFilterCondition>
+      networkContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'network',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+          QAfterFilterCondition>
+      networkMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'network',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> networkIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'network',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> networkIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'network',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> updatedAtEqualTo(DateTime value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'updatedAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> updatedAtGreaterThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'updatedAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> updatedAtLessThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'updatedAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> updatedAtBetween(
+    DateTime lower,
+    DateTime upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'updatedAt',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> userIdEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'userId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> userIdGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'userId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> userIdLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'userId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> userIdBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'userId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> userIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'userId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> userIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'userId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+          QAfterFilterCondition>
+      userIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'userId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+          QAfterFilterCondition>
+      userIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'userId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> userIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'userId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterFilterCondition> userIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'userId',
+        value: '',
+      ));
+    });
+  }
+}
+
+extension PaymentCardCredentialEntityQueryObject on QueryBuilder<
+    PaymentCardCredentialEntity,
+    PaymentCardCredentialEntity,
+    QFilterCondition> {}
+
+extension PaymentCardCredentialEntityQueryLinks on QueryBuilder<
+    PaymentCardCredentialEntity,
+    PaymentCardCredentialEntity,
+    QFilterCondition> {}
+
+extension PaymentCardCredentialEntityQuerySortBy on QueryBuilder<
+    PaymentCardCredentialEntity, PaymentCardCredentialEntity, QSortBy> {
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> sortByBankLogoBase64() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'bankLogoBase64', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> sortByBankLogoBase64Desc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'bankLogoBase64', Sort.desc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> sortByBankName() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'bankName', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> sortByBankNameDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'bankName', Sort.desc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> sortByCardCredentialId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'cardCredentialId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> sortByCardCredentialIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'cardCredentialId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> sortByCardNumber() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'cardNumber', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> sortByCardNumberDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'cardNumber', Sort.desc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> sortByCardType() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'cardType', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> sortByCardTypeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'cardType', Sort.desc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> sortByCardholderName() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'cardholderName', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> sortByCardholderNameDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'cardholderName', Sort.desc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> sortByCreatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> sortByCreatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> sortByDeletedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deletedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> sortByDeletedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deletedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> sortByExpiry() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'expiry', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> sortByExpiryDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'expiry', Sort.desc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> sortByHasNfc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'hasNfc', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> sortByHasNfcDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'hasNfc', Sort.desc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> sortByNetwork() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'network', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> sortByNetworkDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'network', Sort.desc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> sortByUpdatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'updatedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> sortByUpdatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'updatedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> sortByUserId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'userId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> sortByUserIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'userId', Sort.desc);
+    });
+  }
+}
+
+extension PaymentCardCredentialEntityQuerySortThenBy on QueryBuilder<
+    PaymentCardCredentialEntity, PaymentCardCredentialEntity, QSortThenBy> {
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> thenByBankLogoBase64() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'bankLogoBase64', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> thenByBankLogoBase64Desc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'bankLogoBase64', Sort.desc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> thenByBankName() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'bankName', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> thenByBankNameDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'bankName', Sort.desc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> thenByCardCredentialId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'cardCredentialId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> thenByCardCredentialIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'cardCredentialId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> thenByCardNumber() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'cardNumber', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> thenByCardNumberDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'cardNumber', Sort.desc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> thenByCardType() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'cardType', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> thenByCardTypeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'cardType', Sort.desc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> thenByCardholderName() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'cardholderName', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> thenByCardholderNameDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'cardholderName', Sort.desc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> thenByCreatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> thenByCreatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> thenByDeletedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deletedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> thenByDeletedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deletedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> thenByExpiry() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'expiry', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> thenByExpiryDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'expiry', Sort.desc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> thenByHasNfc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'hasNfc', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> thenByHasNfcDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'hasNfc', Sort.desc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> thenById() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'id', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> thenByIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'id', Sort.desc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> thenByNetwork() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'network', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> thenByNetworkDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'network', Sort.desc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> thenByUpdatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'updatedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> thenByUpdatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'updatedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> thenByUserId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'userId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QAfterSortBy> thenByUserIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'userId', Sort.desc);
+    });
+  }
+}
+
+extension PaymentCardCredentialEntityQueryWhereDistinct on QueryBuilder<
+    PaymentCardCredentialEntity, PaymentCardCredentialEntity, QDistinct> {
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QDistinct> distinctByBankLogoBase64({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'bankLogoBase64',
+          caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QDistinct> distinctByBankName({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'bankName', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QDistinct> distinctByCardCredentialId({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'cardCredentialId',
+          caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QDistinct> distinctByCardNumber({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'cardNumber', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QDistinct> distinctByCardType({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'cardType', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QDistinct> distinctByCardholderName({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'cardholderName',
+          caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QDistinct> distinctByCreatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'createdAt');
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QDistinct> distinctByDeletedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'deletedAt');
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QDistinct> distinctByExpiry({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'expiry', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QDistinct> distinctByHasNfc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'hasNfc');
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QDistinct> distinctByNetwork({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'network', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QDistinct> distinctByUpdatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'updatedAt');
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, PaymentCardCredentialEntity,
+      QDistinct> distinctByUserId({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'userId', caseSensitive: caseSensitive);
+    });
+  }
+}
+
+extension PaymentCardCredentialEntityQueryProperty on QueryBuilder<
+    PaymentCardCredentialEntity, PaymentCardCredentialEntity, QQueryProperty> {
+  QueryBuilder<PaymentCardCredentialEntity, int, QQueryOperations>
+      idProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'id');
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, String?, QQueryOperations>
+      bankLogoBase64Property() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'bankLogoBase64');
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, String, QQueryOperations>
+      bankNameProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'bankName');
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, String, QQueryOperations>
+      cardCredentialIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'cardCredentialId');
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, String, QQueryOperations>
+      cardNumberProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'cardNumber');
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, String, QQueryOperations>
+      cardTypeProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'cardType');
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, String, QQueryOperations>
+      cardholderNameProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'cardholderName');
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, DateTime, QQueryOperations>
+      createdAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'createdAt');
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, DateTime?, QQueryOperations>
+      deletedAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'deletedAt');
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, String, QQueryOperations>
+      expiryProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'expiry');
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, bool, QQueryOperations>
+      hasNfcProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'hasNfc');
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, String, QQueryOperations>
+      networkProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'network');
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, DateTime, QQueryOperations>
+      updatedAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'updatedAt');
+    });
+  }
+
+  QueryBuilder<PaymentCardCredentialEntity, String, QQueryOperations>
+      userIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'userId');
+    });
+  }
+}
+
+// coverage:ignore-file
+// ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types
+
+extension GetBankAccountCredentialEntityCollection on Isar {
+  IsarCollection<BankAccountCredentialEntity>
+      get bankAccountCredentialEntitys => this.collection();
+}
+
+const BankAccountCredentialEntitySchema = CollectionSchema(
+  name: r'BankAccountCredentialEntity',
+  id: -4146189061926386729,
+  properties: {
+    r'accountName': PropertySchema(
+      id: 0,
+      name: r'accountName',
+      type: IsarType.string,
+    ),
+    r'accountNumber': PropertySchema(
+      id: 1,
+      name: r'accountNumber',
+      type: IsarType.string,
+    ),
+    r'bankCredentialId': PropertySchema(
+      id: 2,
+      name: r'bankCredentialId',
+      type: IsarType.string,
+    ),
+    r'bankLogoBase64': PropertySchema(
+      id: 3,
+      name: r'bankLogoBase64',
+      type: IsarType.string,
+    ),
+    r'bankName': PropertySchema(
+      id: 4,
+      name: r'bankName',
+      type: IsarType.string,
+    ),
+    r'branchName': PropertySchema(
+      id: 5,
+      name: r'branchName',
+      type: IsarType.string,
+    ),
+    r'createdAt': PropertySchema(
+      id: 6,
+      name: r'createdAt',
+      type: IsarType.dateTime,
+    ),
+    r'deletedAt': PropertySchema(
+      id: 7,
+      name: r'deletedAt',
+      type: IsarType.dateTime,
+    ),
+    r'routingNumber': PropertySchema(
+      id: 8,
+      name: r'routingNumber',
+      type: IsarType.string,
+    ),
+    r'swiftCode': PropertySchema(
+      id: 9,
+      name: r'swiftCode',
+      type: IsarType.string,
+    ),
+    r'updatedAt': PropertySchema(
+      id: 10,
+      name: r'updatedAt',
+      type: IsarType.dateTime,
+    ),
+    r'userId': PropertySchema(
+      id: 11,
+      name: r'userId',
+      type: IsarType.string,
+    )
+  },
+  estimateSize: _bankAccountCredentialEntityEstimateSize,
+  serialize: _bankAccountCredentialEntitySerialize,
+  deserialize: _bankAccountCredentialEntityDeserialize,
+  deserializeProp: _bankAccountCredentialEntityDeserializeProp,
+  idName: r'id',
+  indexes: {
+    r'userId': IndexSchema(
+      id: -2005826577402374815,
+      name: r'userId',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'userId',
+          type: IndexType.hash,
+          caseSensitive: true,
+        )
+      ],
+    ),
+    r'bankCredentialId': IndexSchema(
+      id: -8924024864016931748,
+      name: r'bankCredentialId',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'bankCredentialId',
+          type: IndexType.hash,
+          caseSensitive: true,
+        )
+      ],
+    ),
+    r'deletedAt': IndexSchema(
+      id: -8969437169173379604,
+      name: r'deletedAt',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'deletedAt',
+          type: IndexType.value,
+          caseSensitive: false,
+        )
+      ],
+    )
+  },
+  links: {},
+  embeddedSchemas: {},
+  getId: _bankAccountCredentialEntityGetId,
+  getLinks: _bankAccountCredentialEntityGetLinks,
+  attach: _bankAccountCredentialEntityAttach,
+  version: '3.1.0+1',
+);
+
+int _bankAccountCredentialEntityEstimateSize(
+  BankAccountCredentialEntity object,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  var bytesCount = offsets.last;
+  bytesCount += 3 + object.accountName.length * 3;
+  bytesCount += 3 + object.accountNumber.length * 3;
+  bytesCount += 3 + object.bankCredentialId.length * 3;
+  {
+    final value = object.bankLogoBase64;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  bytesCount += 3 + object.bankName.length * 3;
+  bytesCount += 3 + object.branchName.length * 3;
+  bytesCount += 3 + object.routingNumber.length * 3;
+  bytesCount += 3 + object.swiftCode.length * 3;
+  bytesCount += 3 + object.userId.length * 3;
+  return bytesCount;
+}
+
+void _bankAccountCredentialEntitySerialize(
+  BankAccountCredentialEntity object,
+  IsarWriter writer,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  writer.writeString(offsets[0], object.accountName);
+  writer.writeString(offsets[1], object.accountNumber);
+  writer.writeString(offsets[2], object.bankCredentialId);
+  writer.writeString(offsets[3], object.bankLogoBase64);
+  writer.writeString(offsets[4], object.bankName);
+  writer.writeString(offsets[5], object.branchName);
+  writer.writeDateTime(offsets[6], object.createdAt);
+  writer.writeDateTime(offsets[7], object.deletedAt);
+  writer.writeString(offsets[8], object.routingNumber);
+  writer.writeString(offsets[9], object.swiftCode);
+  writer.writeDateTime(offsets[10], object.updatedAt);
+  writer.writeString(offsets[11], object.userId);
+}
+
+BankAccountCredentialEntity _bankAccountCredentialEntityDeserialize(
+  Id id,
+  IsarReader reader,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  final object = BankAccountCredentialEntity();
+  object.accountName = reader.readString(offsets[0]);
+  object.accountNumber = reader.readString(offsets[1]);
+  object.bankCredentialId = reader.readString(offsets[2]);
+  object.bankLogoBase64 = reader.readStringOrNull(offsets[3]);
+  object.bankName = reader.readString(offsets[4]);
+  object.branchName = reader.readString(offsets[5]);
+  object.createdAt = reader.readDateTime(offsets[6]);
+  object.deletedAt = reader.readDateTimeOrNull(offsets[7]);
+  object.id = id;
+  object.routingNumber = reader.readString(offsets[8]);
+  object.swiftCode = reader.readString(offsets[9]);
+  object.updatedAt = reader.readDateTime(offsets[10]);
+  object.userId = reader.readString(offsets[11]);
+  return object;
+}
+
+P _bankAccountCredentialEntityDeserializeProp<P>(
+  IsarReader reader,
+  int propertyId,
+  int offset,
+  Map<Type, List<int>> allOffsets,
+) {
+  switch (propertyId) {
+    case 0:
+      return (reader.readString(offset)) as P;
+    case 1:
+      return (reader.readString(offset)) as P;
+    case 2:
+      return (reader.readString(offset)) as P;
+    case 3:
+      return (reader.readStringOrNull(offset)) as P;
+    case 4:
+      return (reader.readString(offset)) as P;
+    case 5:
+      return (reader.readString(offset)) as P;
+    case 6:
+      return (reader.readDateTime(offset)) as P;
+    case 7:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 8:
+      return (reader.readString(offset)) as P;
+    case 9:
+      return (reader.readString(offset)) as P;
+    case 10:
+      return (reader.readDateTime(offset)) as P;
+    case 11:
+      return (reader.readString(offset)) as P;
+    default:
+      throw IsarError('Unknown property with id $propertyId');
+  }
+}
+
+Id _bankAccountCredentialEntityGetId(BankAccountCredentialEntity object) {
+  return object.id;
+}
+
+List<IsarLinkBase<dynamic>> _bankAccountCredentialEntityGetLinks(
+    BankAccountCredentialEntity object) {
+  return [];
+}
+
+void _bankAccountCredentialEntityAttach(
+    IsarCollection<dynamic> col, Id id, BankAccountCredentialEntity object) {
+  object.id = id;
+}
+
+extension BankAccountCredentialEntityQueryWhereSort on QueryBuilder<
+    BankAccountCredentialEntity, BankAccountCredentialEntity, QWhere> {
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterWhere> anyId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(const IdWhereClause.any());
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterWhere> anyDeletedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        const IndexWhereClause.any(indexName: r'deletedAt'),
+      );
+    });
+  }
+}
+
+extension BankAccountCredentialEntityQueryWhere on QueryBuilder<
+    BankAccountCredentialEntity, BankAccountCredentialEntity, QWhereClause> {
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterWhereClause> idEqualTo(Id id) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IdWhereClause.between(
+        lower: id,
+        upper: id,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterWhereClause> idNotEqualTo(Id id) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(
+              IdWhereClause.lessThan(upper: id, includeUpper: false),
+            )
+            .addWhereClause(
+              IdWhereClause.greaterThan(lower: id, includeLower: false),
+            );
+      } else {
+        return query
+            .addWhereClause(
+              IdWhereClause.greaterThan(lower: id, includeLower: false),
+            )
+            .addWhereClause(
+              IdWhereClause.lessThan(upper: id, includeUpper: false),
+            );
+      }
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterWhereClause> idGreaterThan(Id id, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        IdWhereClause.greaterThan(lower: id, includeLower: include),
+      );
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterWhereClause> idLessThan(Id id, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        IdWhereClause.lessThan(upper: id, includeUpper: include),
+      );
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterWhereClause> idBetween(
+    Id lowerId,
+    Id upperId, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IdWhereClause.between(
+        lower: lowerId,
+        includeLower: includeLower,
+        upper: upperId,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterWhereClause> userIdEqualTo(String userId) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'userId',
+        value: [userId],
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterWhereClause> userIdNotEqualTo(String userId) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'userId',
+              lower: [],
+              upper: [userId],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'userId',
+              lower: [userId],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'userId',
+              lower: [userId],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'userId',
+              lower: [],
+              upper: [userId],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterWhereClause> bankCredentialIdEqualTo(String bankCredentialId) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'bankCredentialId',
+        value: [bankCredentialId],
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterWhereClause> bankCredentialIdNotEqualTo(String bankCredentialId) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'bankCredentialId',
+              lower: [],
+              upper: [bankCredentialId],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'bankCredentialId',
+              lower: [bankCredentialId],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'bankCredentialId',
+              lower: [bankCredentialId],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'bankCredentialId',
+              lower: [],
+              upper: [bankCredentialId],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterWhereClause> deletedAtIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'deletedAt',
+        value: [null],
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterWhereClause> deletedAtIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'deletedAt',
+        lower: [null],
+        includeLower: false,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterWhereClause> deletedAtEqualTo(DateTime? deletedAt) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'deletedAt',
+        value: [deletedAt],
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterWhereClause> deletedAtNotEqualTo(DateTime? deletedAt) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'deletedAt',
+              lower: [],
+              upper: [deletedAt],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'deletedAt',
+              lower: [deletedAt],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'deletedAt',
+              lower: [deletedAt],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'deletedAt',
+              lower: [],
+              upper: [deletedAt],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterWhereClause> deletedAtGreaterThan(
+    DateTime? deletedAt, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'deletedAt',
+        lower: [deletedAt],
+        includeLower: include,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterWhereClause> deletedAtLessThan(
+    DateTime? deletedAt, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'deletedAt',
+        lower: [],
+        upper: [deletedAt],
+        includeUpper: include,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterWhereClause> deletedAtBetween(
+    DateTime? lowerDeletedAt,
+    DateTime? upperDeletedAt, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'deletedAt',
+        lower: [lowerDeletedAt],
+        includeLower: includeLower,
+        upper: [upperDeletedAt],
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+}
+
+extension BankAccountCredentialEntityQueryFilter on QueryBuilder<
+    BankAccountCredentialEntity,
+    BankAccountCredentialEntity,
+    QFilterCondition> {
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> accountNameEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'accountName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> accountNameGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'accountName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> accountNameLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'accountName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> accountNameBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'accountName',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> accountNameStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'accountName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> accountNameEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'accountName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+          QAfterFilterCondition>
+      accountNameContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'accountName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+          QAfterFilterCondition>
+      accountNameMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'accountName',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> accountNameIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'accountName',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> accountNameIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'accountName',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> accountNumberEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'accountNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> accountNumberGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'accountNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> accountNumberLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'accountNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> accountNumberBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'accountNumber',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> accountNumberStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'accountNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> accountNumberEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'accountNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+          QAfterFilterCondition>
+      accountNumberContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'accountNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+          QAfterFilterCondition>
+      accountNumberMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'accountNumber',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> accountNumberIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'accountNumber',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> accountNumberIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'accountNumber',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> bankCredentialIdEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'bankCredentialId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> bankCredentialIdGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'bankCredentialId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> bankCredentialIdLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'bankCredentialId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> bankCredentialIdBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'bankCredentialId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> bankCredentialIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'bankCredentialId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> bankCredentialIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'bankCredentialId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+          QAfterFilterCondition>
+      bankCredentialIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'bankCredentialId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+          QAfterFilterCondition>
+      bankCredentialIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'bankCredentialId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> bankCredentialIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'bankCredentialId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> bankCredentialIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'bankCredentialId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> bankLogoBase64IsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'bankLogoBase64',
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> bankLogoBase64IsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'bankLogoBase64',
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> bankLogoBase64EqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'bankLogoBase64',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> bankLogoBase64GreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'bankLogoBase64',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> bankLogoBase64LessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'bankLogoBase64',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> bankLogoBase64Between(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'bankLogoBase64',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> bankLogoBase64StartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'bankLogoBase64',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> bankLogoBase64EndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'bankLogoBase64',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+          QAfterFilterCondition>
+      bankLogoBase64Contains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'bankLogoBase64',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+          QAfterFilterCondition>
+      bankLogoBase64Matches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'bankLogoBase64',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> bankLogoBase64IsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'bankLogoBase64',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> bankLogoBase64IsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'bankLogoBase64',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> bankNameEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'bankName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> bankNameGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'bankName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> bankNameLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'bankName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> bankNameBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'bankName',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> bankNameStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'bankName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> bankNameEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'bankName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+          QAfterFilterCondition>
+      bankNameContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'bankName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+          QAfterFilterCondition>
+      bankNameMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'bankName',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> bankNameIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'bankName',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> bankNameIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'bankName',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> branchNameEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'branchName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> branchNameGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'branchName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> branchNameLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'branchName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> branchNameBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'branchName',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> branchNameStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'branchName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> branchNameEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'branchName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+          QAfterFilterCondition>
+      branchNameContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'branchName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+          QAfterFilterCondition>
+      branchNameMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'branchName',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> branchNameIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'branchName',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> branchNameIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'branchName',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> createdAtEqualTo(DateTime value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'createdAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> createdAtGreaterThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'createdAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> createdAtLessThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'createdAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> createdAtBetween(
+    DateTime lower,
+    DateTime upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'createdAt',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> deletedAtIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'deletedAt',
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> deletedAtIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'deletedAt',
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> deletedAtEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deletedAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> deletedAtGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'deletedAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> deletedAtLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'deletedAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> deletedAtBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'deletedAt',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> idEqualTo(Id value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'id',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> idGreaterThan(
+    Id value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'id',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> idLessThan(
+    Id value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'id',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> idBetween(
+    Id lower,
+    Id upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'id',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> routingNumberEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'routingNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> routingNumberGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'routingNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> routingNumberLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'routingNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> routingNumberBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'routingNumber',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> routingNumberStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'routingNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> routingNumberEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'routingNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+          QAfterFilterCondition>
+      routingNumberContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'routingNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+          QAfterFilterCondition>
+      routingNumberMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'routingNumber',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> routingNumberIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'routingNumber',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> routingNumberIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'routingNumber',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> swiftCodeEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'swiftCode',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> swiftCodeGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'swiftCode',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> swiftCodeLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'swiftCode',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> swiftCodeBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'swiftCode',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> swiftCodeStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'swiftCode',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> swiftCodeEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'swiftCode',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+          QAfterFilterCondition>
+      swiftCodeContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'swiftCode',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+          QAfterFilterCondition>
+      swiftCodeMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'swiftCode',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> swiftCodeIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'swiftCode',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> swiftCodeIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'swiftCode',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> updatedAtEqualTo(DateTime value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'updatedAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> updatedAtGreaterThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'updatedAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> updatedAtLessThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'updatedAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> updatedAtBetween(
+    DateTime lower,
+    DateTime upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'updatedAt',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> userIdEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'userId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> userIdGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'userId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> userIdLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'userId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> userIdBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'userId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> userIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'userId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> userIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'userId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+          QAfterFilterCondition>
+      userIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'userId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+          QAfterFilterCondition>
+      userIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'userId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> userIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'userId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterFilterCondition> userIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'userId',
+        value: '',
+      ));
+    });
+  }
+}
+
+extension BankAccountCredentialEntityQueryObject on QueryBuilder<
+    BankAccountCredentialEntity,
+    BankAccountCredentialEntity,
+    QFilterCondition> {}
+
+extension BankAccountCredentialEntityQueryLinks on QueryBuilder<
+    BankAccountCredentialEntity,
+    BankAccountCredentialEntity,
+    QFilterCondition> {}
+
+extension BankAccountCredentialEntityQuerySortBy on QueryBuilder<
+    BankAccountCredentialEntity, BankAccountCredentialEntity, QSortBy> {
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> sortByAccountName() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'accountName', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> sortByAccountNameDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'accountName', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> sortByAccountNumber() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'accountNumber', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> sortByAccountNumberDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'accountNumber', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> sortByBankCredentialId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'bankCredentialId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> sortByBankCredentialIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'bankCredentialId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> sortByBankLogoBase64() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'bankLogoBase64', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> sortByBankLogoBase64Desc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'bankLogoBase64', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> sortByBankName() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'bankName', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> sortByBankNameDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'bankName', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> sortByBranchName() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'branchName', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> sortByBranchNameDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'branchName', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> sortByCreatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> sortByCreatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> sortByDeletedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deletedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> sortByDeletedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deletedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> sortByRoutingNumber() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'routingNumber', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> sortByRoutingNumberDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'routingNumber', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> sortBySwiftCode() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'swiftCode', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> sortBySwiftCodeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'swiftCode', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> sortByUpdatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'updatedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> sortByUpdatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'updatedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> sortByUserId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'userId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> sortByUserIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'userId', Sort.desc);
+    });
+  }
+}
+
+extension BankAccountCredentialEntityQuerySortThenBy on QueryBuilder<
+    BankAccountCredentialEntity, BankAccountCredentialEntity, QSortThenBy> {
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> thenByAccountName() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'accountName', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> thenByAccountNameDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'accountName', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> thenByAccountNumber() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'accountNumber', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> thenByAccountNumberDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'accountNumber', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> thenByBankCredentialId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'bankCredentialId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> thenByBankCredentialIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'bankCredentialId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> thenByBankLogoBase64() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'bankLogoBase64', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> thenByBankLogoBase64Desc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'bankLogoBase64', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> thenByBankName() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'bankName', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> thenByBankNameDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'bankName', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> thenByBranchName() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'branchName', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> thenByBranchNameDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'branchName', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> thenByCreatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> thenByCreatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> thenByDeletedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deletedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> thenByDeletedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deletedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> thenById() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'id', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> thenByIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'id', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> thenByRoutingNumber() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'routingNumber', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> thenByRoutingNumberDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'routingNumber', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> thenBySwiftCode() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'swiftCode', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> thenBySwiftCodeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'swiftCode', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> thenByUpdatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'updatedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> thenByUpdatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'updatedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> thenByUserId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'userId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QAfterSortBy> thenByUserIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'userId', Sort.desc);
+    });
+  }
+}
+
+extension BankAccountCredentialEntityQueryWhereDistinct on QueryBuilder<
+    BankAccountCredentialEntity, BankAccountCredentialEntity, QDistinct> {
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QDistinct> distinctByAccountName({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'accountName', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QDistinct> distinctByAccountNumber({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'accountNumber',
+          caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QDistinct> distinctByBankCredentialId({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'bankCredentialId',
+          caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QDistinct> distinctByBankLogoBase64({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'bankLogoBase64',
+          caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QDistinct> distinctByBankName({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'bankName', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QDistinct> distinctByBranchName({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'branchName', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QDistinct> distinctByCreatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'createdAt');
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QDistinct> distinctByDeletedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'deletedAt');
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QDistinct> distinctByRoutingNumber({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'routingNumber',
+          caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QDistinct> distinctBySwiftCode({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'swiftCode', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QDistinct> distinctByUpdatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'updatedAt');
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, BankAccountCredentialEntity,
+      QDistinct> distinctByUserId({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'userId', caseSensitive: caseSensitive);
+    });
+  }
+}
+
+extension BankAccountCredentialEntityQueryProperty on QueryBuilder<
+    BankAccountCredentialEntity, BankAccountCredentialEntity, QQueryProperty> {
+  QueryBuilder<BankAccountCredentialEntity, int, QQueryOperations>
+      idProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'id');
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, String, QQueryOperations>
+      accountNameProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'accountName');
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, String, QQueryOperations>
+      accountNumberProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'accountNumber');
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, String, QQueryOperations>
+      bankCredentialIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'bankCredentialId');
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, String?, QQueryOperations>
+      bankLogoBase64Property() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'bankLogoBase64');
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, String, QQueryOperations>
+      bankNameProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'bankName');
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, String, QQueryOperations>
+      branchNameProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'branchName');
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, DateTime, QQueryOperations>
+      createdAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'createdAt');
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, DateTime?, QQueryOperations>
+      deletedAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'deletedAt');
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, String, QQueryOperations>
+      routingNumberProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'routingNumber');
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, String, QQueryOperations>
+      swiftCodeProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'swiftCode');
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, DateTime, QQueryOperations>
+      updatedAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'updatedAt');
+    });
+  }
+
+  QueryBuilder<BankAccountCredentialEntity, String, QQueryOperations>
       userIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'userId');

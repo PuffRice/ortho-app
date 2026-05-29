@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -735,8 +734,9 @@ class _CardCredentialSheetState extends State<_CardCredentialSheet> {
         SwitchListTile(
           value: _hasNfc,
           onChanged: (value) => setState(() => _hasNfc = value),
-          title: const Text('NFC enabled', style: TextStyle(color: Colors.white)),
-          activeColor: AppColors.primaryViolet,
+          title:
+              const Text('NFC enabled', style: TextStyle(color: Colors.white)),
+          activeThumbColor: AppColors.primaryViolet,
           contentPadding: EdgeInsets.zero,
         ),
       ],

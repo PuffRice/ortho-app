@@ -173,16 +173,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                     const SizedBox(height: 24),
 
-                    // Payment Settings
-                    _buildSectionHeader('Payment Methods'),
+      
+
+                    // Preferences
+                    _buildSectionHeader('Preferences'),
                     const SizedBox(height: 12),
-                    _buildProfileMenuItem(
-                      icon: Icons.credit_card,
-                      title: 'Bank Accounts',
-                      subtitle: 'Manage your bank connections',
-                      onTap: () {},
-                    ),
-                    _buildProfileMenuItem(
+                          _buildProfileMenuItem(
                       icon: Icons.account_balance_wallet,
                       title: 'Manage Accounts',
                       subtitle: 'Edit or remove your accounts',
@@ -191,24 +187,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             .pushNamed(AppRoutes.manageAccounts);
                       },
                     ),
-                    _buildProfileMenuItem(
-                      icon: Icons.payment,
-                      title: 'Payment Cards',
-                      subtitle: 'Add or remove payment cards',
-                      onTap: () {},
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // Preferences
-                    _buildSectionHeader('Preferences'),
-                    const SizedBox(height: 12),
-                    _buildProfileMenuItem(
-                      icon: Icons.language,
-                      title: 'Language',
-                      subtitle: 'English',
-                      onTap: () {},
-                    ),
+               
                     _buildProfileMenuItem(
                       icon: Icons.category,
                       title: 'Manage Categories',
@@ -217,6 +196,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         Navigator.of(context)
                             .pushNamed(AppRoutes.manageCategories);
                       },
+                    ),
+                         _buildProfileMenuItem(
+                      icon: Icons.language,
+                      title: 'Language',
+                      subtitle: 'English',
+                      onTap: () {},
                     ),
                     _buildProfileMenuItem(
                       icon: Icons.brightness_4,
