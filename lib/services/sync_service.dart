@@ -6,6 +6,7 @@ import 'package:isar/isar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/isar_models.dart';
+import 'account_balance_repair_service.dart';
 import 'timestamp_repair_service.dart';
 import 'user_identity.dart';
 
@@ -44,6 +45,11 @@ class SyncService {
           .repairRemote(userId: userId);
       await _trySync();
       await reconcileIfRemoteNewer(userId: userId);
+      final repairedCount =
+          await AccountBalanceRepairService(isar: _isar).repair(userId: userId);
+      if (repairedCount > 0) {
+        await _trySync();
+      }
     }
     _subscription ??= _connectivity.onConnectivityChanged.listen((status) {
       _lastStatus = status;
@@ -64,6 +70,58 @@ class SyncService {
       pendingOutboxCount: pendingCount,
       lastSyncError: lastError,
     );
+  }
+
+  Future<List<SyncOutboxError>> getRecentErrors({
+    required String userId,
+    int limit = 10,
+  }) async {
+    final entries = await _isar.syncOutboxEntitys
+        .filter()
+        .userIdEqualTo(userId)
+        .lastErrorIsNotNull()
+        .sortByLastAttemptAtDesc()
+        .limit(limit)
+        .findAll();
+
+    return entries
+        .map(
+          (entry) => SyncOutboxError(
+            entityType: entry.entityType,
+            entityId: entry.entityId,
+            action: entry.action,
+            attempts: entry.attempts,
+            lastAttemptAt: entry.lastAttemptAt,
+            message: entry.lastError ?? 'Unknown sync error',
+          ),
+        )
+        .toList();
+  }
+
+  Future<void> pushLocalChanges({required String userId}) async {
+    await TimestampRepairService(isar: _isar).repairLocal(userId: userId);
+    await TimestampRepairService(isar: _isar, client: _client)
+        .repairRemote(userId: userId);
+    await AccountBalanceRepairService(isar: _isar).repair(userId: userId);
+    await _trySync();
+  }
+
+  Future<void> downloadRemoteSnapshot({required String userId}) async {
+    if (await _hasPendingLocalChanges(userId)) {
+      throw StateError(
+        'Push pending local changes before downloading from Supabase.',
+      );
+    }
+    final remoteLastUpdated = await _getRemoteLastUpdated(userId);
+    if (remoteLastUpdated == null) {
+      throw StateError('No Supabase data found to download.');
+    }
+    await _importRemoteSnapshot(userId);
+    final repairedCount =
+        await AccountBalanceRepairService(isar: _isar).repair(userId: userId);
+    if (repairedCount > 0) {
+      await _trySync();
+    }
   }
 
   Future<void> reconcileIfRemoteNewer({required String userId}) async {
@@ -671,6 +729,24 @@ class SyncStatus {
       localLastUpdated != null &&
       (remoteLastUpdated == null ||
           localLastUpdated!.isAfter(remoteLastUpdated!));
+}
+
+class SyncOutboxError {
+  const SyncOutboxError({
+    required this.entityType,
+    required this.entityId,
+    required this.action,
+    required this.attempts,
+    required this.lastAttemptAt,
+    required this.message,
+  });
+
+  final String entityType;
+  final String entityId;
+  final String action;
+  final int attempts;
+  final DateTime? lastAttemptAt;
+  final String message;
 }
 
 class _RemoteSnapshot {

@@ -441,7 +441,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   String _formatSignedMoney(double amount, String currency) {
     final sign = amount >= 0 ? '+' : '-';
-    return '$sign$currency ${amount.abs().toStringAsFixed(2)}';
+    return '$sign${_transactionCurrencyLabel(currency)} ${amount.abs().toStringAsFixed(2)}';
+  }
+
+  String _transactionCurrencyLabel(String currency) {
+    return currency == 'BDT' ? 'Tk.' : currency;
   }
 
   String _formatChange(double current, double previous) {
@@ -705,7 +709,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         'Active Balance',
                         style: TextStyle(
                           color: AppColors.textSecondary,
-                          fontSize: 14,
+                          fontSize: 12,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -741,7 +745,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: AppColors.textPrimary,
-                      fontSize: 34,
+                      fontSize: 30,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -974,21 +978,43 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: iconColor.withOpacity(0.2),
-                ),
-                child: Icon(icon, color: iconColor, size: 20),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: iconColor.withOpacity(0.2),
+                    ),
+                    child: Icon(icon, color: iconColor, size: 20),
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(6),
+                      color: changeColor.withOpacity(0.15),
+                    ),
+                    child: Text(
+                      change,
+                      style: TextStyle(
+                        color: changeColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 12),
               Text(
                 label,
                 style: TextStyle(
                   color: AppColors.textMuted,
-                  fontSize: 13,
+                  fontSize: 12,
                   fontWeight: FontWeight.w400,
                 ),
               ),
@@ -997,24 +1023,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 amount,
                 style: TextStyle(
                   color: AppColors.textPrimary,
-                  fontSize: 20,
+                  fontSize: 18,
                   fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(6),
-                  color: changeColor.withOpacity(0.15),
-                ),
-                child: Text(
-                  change,
-                  style: TextStyle(
-                    color: changeColor,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
                 ),
               ),
             ],
@@ -1032,7 +1042,7 @@ class _HomeScreenState extends State<HomeScreen> {
           'Transaction History',
           style: TextStyle(
             color: AppColors.textPrimary,
-            fontSize: 20,
+            fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -1123,7 +1133,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: AppColors.textPrimary,
-                        fontSize: 16,
+                        fontSize: 15,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -1132,7 +1142,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       '$time | $date',
                       style: TextStyle(
                         color: AppColors.textMuted,
-                        fontSize: 13,
+                        fontSize: 12,
                         fontWeight: FontWeight.w400,
                       ),
                     ),
@@ -1147,10 +1157,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     amount,
                     style: TextStyle(
                       color: amountColor,
-                      fontSize: 16,
+                      fontSize: 15,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
+                  const SizedBox(height: 6),
                   Text(
                     category,
                     style: TextStyle(

@@ -173,12 +173,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                     const SizedBox(height: 24),
 
-      
-
                     // Preferences
                     _buildSectionHeader('Preferences'),
                     const SizedBox(height: 12),
-                          _buildProfileMenuItem(
+                    _buildProfileMenuItem(
                       icon: Icons.account_balance_wallet,
                       title: 'Manage Accounts',
                       subtitle: 'Edit or remove your accounts',
@@ -187,7 +185,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             .pushNamed(AppRoutes.manageAccounts);
                       },
                     ),
-               
+
                     _buildProfileMenuItem(
                       icon: Icons.category,
                       title: 'Manage Categories',
@@ -197,7 +195,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             .pushNamed(AppRoutes.manageCategories);
                       },
                     ),
-                         _buildProfileMenuItem(
+                    _buildProfileMenuItem(
                       icon: Icons.language,
                       title: 'Language',
                       subtitle: 'English',
@@ -355,16 +353,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return;
     }
 
-    final userIdFuture = UserIdentityService.instance
-        .getProfile()
-        .then((profile) => profile.userId);
-    var statusFuture = userIdFuture.then((userId) {
+    final userIdFuture = UserIdentityService.instance.getProfile().then((
+      profile,
+    ) {
       final authId = SupabaseService().getCurrentUser()?.id;
-      return sync.getStatus(userId: authId ?? userId);
+      return authId ?? profile.userId;
     });
+    var statusFuture =
+        userIdFuture.then((userId) => sync.getStatus(userId: userId));
+    var errorFuture =
+        userIdFuture.then((userId) => sync.getRecentErrors(userId: userId));
+    var isPushing = false;
+    var isDownloading = false;
 
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: AppColors.bgSecondary,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -372,119 +376,324 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setState) {
-            return Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            void refresh() {
+              setState(() {
+                statusFuture = userIdFuture
+                    .then((userId) => sync.getStatus(userId: userId));
+                errorFuture = userIdFuture
+                    .then((userId) => sync.getRecentErrors(userId: userId));
+              });
+            }
+
+            Future<void> runManualSync({
+              required bool download,
+            }) async {
+              setState(() {
+                if (download) {
+                  isDownloading = true;
+                } else {
+                  isPushing = true;
+                }
+              });
+
+              try {
+                final userId = await userIdFuture;
+                if (download) {
+                  await sync.downloadRemoteSnapshot(userId: userId);
+                } else {
+                  await sync.pushLocalChanges(userId: userId);
+                }
+                if (context.mounted) {
+                  _showInfo(
+                    context,
+                    download
+                        ? 'Downloaded latest Supabase data.'
+                        : 'Local changes pushed to Supabase.',
+                  );
+                }
+              } catch (error) {
+                if (context.mounted) {
+                  _showInfo(context, error.toString());
+                }
+              } finally {
+                if (context.mounted) {
+                  setState(() {
+                    isPushing = false;
+                    isDownloading = false;
+                    statusFuture = userIdFuture
+                        .then((userId) => sync.getStatus(userId: userId));
+                    errorFuture = userIdFuture.then(
+                      (userId) => sync.getRecentErrors(userId: userId),
+                    );
+                  });
+                }
+              }
+            }
+
+            return FractionallySizedBox(
+              heightFactor: 0.82,
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Data Status',
-                        style: TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: () {
-                          setState(() {
-                            statusFuture = userIdFuture.then((userId) {
-                              final authId =
-                                  SupabaseService().getCurrentUser()?.id;
-                              return sync.getStatus(userId: authId ?? userId);
-                            });
-                          });
-                        },
-                        icon: const Icon(Icons.refresh,
-                            color: AppColors.textSecondary),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  FutureBuilder<SyncStatus>(
-                    future: statusFuture,
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 16),
-                          child: Center(child: CircularProgressIndicator()),
-                        );
-                      }
-                      if (snapshot.hasError) {
-                        return Text(
-                          'Unable to load status.',
-                          style: const TextStyle(color: AppColors.textMuted),
-                        );
-                      }
-
-                      final status = snapshot.data ??
-                          const SyncStatus(
-                            localLastUpdated: null,
-                            remoteLastUpdated: null,
-                          );
-
-                      final headline = _statusHeadline(status);
-                      final localLabel =
-                          _formatTimestamp(context, status.localLastUpdated);
-                      final remoteLabel =
-                          _formatTimestamp(context, status.remoteLastUpdated);
-                      final lagText = _formatLag(
-                        status.localLastUpdated,
-                        status.remoteLastUpdated,
-                      );
-
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            headline,
-                            style: const TextStyle(
+                          const Text(
+                            'Data Status',
+                            style: TextStyle(
                               color: AppColors.textPrimary,
-                              fontSize: 14,
+                              fontSize: 16,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          const SizedBox(height: 12),
-                          _statusRow('Local (Isar)', localLabel),
-                          _statusRow('Remote (Supabase)', remoteLabel),
-                          _statusRow(
-                            'Pending sync',
-                            status.pendingOutboxCount.toString(),
-                          ),
-                          if (status.lastSyncError != null) ...[
-                            const SizedBox(height: 10),
-                            Text(
-                              'Last sync error: ${status.lastSyncError}',
-                              style: const TextStyle(
-                                color: Colors.redAccent,
-                                fontSize: 12,
-                              ),
+                          IconButton(
+                            onPressed: refresh,
+                            icon: const Icon(
+                              Icons.refresh,
+                              color: AppColors.textSecondary,
                             ),
-                          ],
-                          if (lagText != null) ...[
-                            const SizedBox(height: 10),
-                            Text(
-                              lagText,
-                              style: const TextStyle(
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      FutureBuilder<SyncStatus>(
+                        future: statusFuture,
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 16),
+                              child: Center(child: CircularProgressIndicator()),
+                            );
+                          }
+                          if (snapshot.hasError) {
+                            return const Text(
+                              'Unable to load status.',
+                              style: TextStyle(color: AppColors.textMuted),
+                            );
+                          }
+
+                          final status = snapshot.data ??
+                              const SyncStatus(
+                                localLastUpdated: null,
+                                remoteLastUpdated: null,
+                              );
+
+                          final headline = _statusHeadline(status);
+                          final localLabel = _formatTimestamp(
+                            context,
+                            status.localLastUpdated,
+                          );
+                          final remoteLabel = _formatTimestamp(
+                            context,
+                            status.remoteLastUpdated,
+                          );
+                          final lagText = _formatLag(
+                            status.localLastUpdated,
+                            status.remoteLastUpdated,
+                          );
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                headline,
+                                style: const TextStyle(
+                                  color: AppColors.textPrimary,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              _statusRow('Local (Isar)', localLabel),
+                              _statusRow('Remote (Supabase)', remoteLabel),
+                              _statusRow(
+                                'Pending sync',
+                                status.pendingOutboxCount.toString(),
+                              ),
+                              if (lagText != null) ...[
+                                const SizedBox(height: 10),
+                                Text(
+                                  lagText,
+                                  style: const TextStyle(
+                                    color: AppColors.textMuted,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _syncActionButton(
+                              icon: Icons.cloud_upload_outlined,
+                              label: 'Push local',
+                              isLoading: isPushing,
+                              onPressed: isDownloading || isPushing
+                                  ? null
+                                  : () => runManualSync(download: false),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _syncActionButton(
+                              icon: Icons.cloud_download_outlined,
+                              label: 'Download',
+                              isLoading: isDownloading,
+                              onPressed: isDownloading || isPushing
+                                  ? null
+                                  : () => runManualSync(download: true),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      const Text(
+                        'Sync errors',
+                        style: TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      FutureBuilder<List<SyncOutboxError>>(
+                        future: errorFuture,
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 12),
+                              child: LinearProgressIndicator(),
+                            );
+                          }
+                          if (snapshot.hasError) {
+                            return const Text(
+                              'Unable to load sync errors.',
+                              style: TextStyle(color: AppColors.textMuted),
+                            );
+                          }
+
+                          final errors =
+                              snapshot.data ?? const <SyncOutboxError>[];
+                          if (errors.isEmpty) {
+                            return const Text(
+                              'No sync errors found.',
+                              style: TextStyle(
                                 color: AppColors.textMuted,
                                 fontSize: 12,
                               ),
-                            ),
-                          ],
-                        ],
-                      );
-                    },
+                            );
+                          }
+
+                          return Column(
+                            children: errors
+                                .map(
+                                  (error) => _syncErrorTile(context, error),
+                                )
+                                .toList(),
+                          );
+                        },
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             );
           },
         );
       },
+    );
+  }
+
+  Widget _syncActionButton({
+    required IconData icon,
+    required String label,
+    required bool isLoading,
+    required VoidCallback? onPressed,
+  }) {
+    return OutlinedButton.icon(
+      onPressed: onPressed,
+      icon: isLoading
+          ? const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : Icon(icon, size: 18),
+      label: Text(label),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: AppColors.textPrimary,
+        side: BorderSide(color: Colors.white.withValues(alpha: 0.14)),
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+    );
+  }
+
+  Widget _syncErrorTile(BuildContext context, SyncOutboxError error) {
+    final attemptedAt = _formatTimestamp(context, error.lastAttemptAt);
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.redAccent.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.redAccent.withValues(alpha: 0.22)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.error_outline,
+                  color: Colors.redAccent, size: 18),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '${error.entityType} ${error.action}',
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Text(
+                '${error.attempts}x',
+                style: const TextStyle(
+                  color: AppColors.textMuted,
+                  fontSize: 11,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            error.message,
+            style: const TextStyle(
+              color: Colors.redAccent,
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '${error.entityId} - $attemptedAt',
+            style: const TextStyle(
+              color: AppColors.textMuted,
+              fontSize: 11,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -525,7 +734,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   String _formatTimestamp(BuildContext context, DateTime? value) {
     if (value == null) {
-      return '—';
+      return '-';
     }
     final local = value.toLocal();
     final date = MaterialLocalizations.of(context).formatMediumDate(local);

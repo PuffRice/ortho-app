@@ -16,6 +16,7 @@ import 'screens/manage_categories_screen.dart';
 import 'screens/personal_information_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/transaction_history_screen.dart';
+import 'services/account_balance_repair_service.dart';
 import 'services/local_db.dart';
 import 'services/local_user_migration.dart';
 import 'services/supabase_service.dart';
@@ -33,6 +34,7 @@ Future<void> _initializeApp() async {
   final profile = await UserIdentityService.instance.getProfile();
   await LocalUserMigration(isar).migrateTo(profile.userId);
   await TimestampRepairService(isar: isar).repairLocal(userId: profile.userId);
+  await AccountBalanceRepairService(isar: isar).repair(userId: profile.userId);
   if (_supabaseConfigured()) {
     await SupabaseService().initialize(
       supabaseUrl: SUPABASE_URL,
@@ -42,6 +44,12 @@ Future<void> _initializeApp() async {
       isar: isar,
       client: SupabaseService().client,
     );
+    final authId = SupabaseService().getCurrentUser()?.id;
+    final repairedCount = await AccountBalanceRepairService(isar: isar)
+        .repair(userId: authId ?? profile.userId);
+    if (repairedCount > 0) {
+      SyncService.instance?.requestSync();
+    }
   }
 }
 

@@ -332,6 +332,7 @@ class CreateTransactionHandler
       await _isar.transactionEntitys.put(transaction);
       await _updateAccountBalance(
         _isar,
+        _outboxWriter,
         command.userId,
         command.accountId,
         _deltaFor(command.type, command.amount),
@@ -380,6 +381,7 @@ class UpdateTransactionHandler
       if (existing!.accountId == command.accountId) {
         await _updateAccountBalance(
           _isar,
+          _outboxWriter,
           command.userId,
           command.accountId,
           newDelta - oldDelta,
@@ -387,12 +389,14 @@ class UpdateTransactionHandler
       } else {
         await _updateAccountBalance(
           _isar,
+          _outboxWriter,
           command.userId,
           existing!.accountId,
           -oldDelta,
         );
         await _updateAccountBalance(
           _isar,
+          _outboxWriter,
           command.userId,
           command.accountId,
           newDelta,
@@ -462,6 +466,7 @@ class DeleteTransactionHandler
       await _isar.transactionEntitys.put(existing!);
       await _updateAccountBalance(
         _isar,
+        _outboxWriter,
         command.userId,
         existing!.accountId,
         -_deltaFor(existing!.type, existing!.amount),
@@ -505,12 +510,14 @@ class CreateTransferHandler implements CommandHandler<CreateTransferCommand> {
       await _isar.transferEntitys.put(transfer);
       await _updateAccountBalance(
         _isar,
+        _outboxWriter,
         command.userId,
         command.fromAccountId,
         -command.amount,
       );
       await _updateAccountBalance(
         _isar,
+        _outboxWriter,
         command.userId,
         command.toAccountId,
         command.amount,
@@ -1095,6 +1102,7 @@ class SummaryCacheWriter {
 
 Future<void> _updateAccountBalance(
   Isar isar,
+  SyncOutboxWriter outboxWriter,
   String userId,
   String accountId,
   double delta,
@@ -1111,6 +1119,12 @@ Future<void> _updateAccountBalance(
   account.currentBalance += delta;
   account.updatedAt = DateTime.now();
   await isar.accountEntitys.put(account);
+  await outboxWriter.enqueueInTxn(
+    userId: userId,
+    entityType: 'accounts',
+    entityId: account.accountId,
+    payload: SyncPayloadMapper.account(account),
+  );
 }
 
 double _deltaFor(String type, double amount) {

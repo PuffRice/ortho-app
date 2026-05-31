@@ -6,6 +6,7 @@ import '../cqrs/queries.dart';
 import '../models/isar_models.dart';
 import '../services/cqrs_service.dart';
 import '../services/user_identity.dart';
+import 'add_transaction_screen.dart';
 
 class TransactionHistoryScreen extends StatefulWidget {
   const TransactionHistoryScreen({super.key});
@@ -356,78 +357,120 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
       transaction.currency,
     );
 
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.055),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _openTransactionEditor(transaction),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withOpacity(0.07)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.18),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              CategoryIcons.iconForName(category?.icon),
-              color: color,
-              size: 21,
-            ),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.055),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: Colors.white.withOpacity(0.07)),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                  ),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.18),
+                  shape: BoxShape.circle,
                 ),
-                const SizedBox(height: 5),
-                Text(
-                  '${category?.name ?? transaction.type} | ${account?.name ?? 'Account'}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppColors.textMuted,
-                    fontSize: 12,
-                  ),
+                child: Icon(
+                  CategoryIcons.iconForName(category?.icon),
+                  color: color,
+                  size: 21,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  _formatDateTime(transaction.date),
-                  style: const TextStyle(
-                    color: AppColors.textMuted,
-                    fontSize: 12,
-                  ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      '${category?.name ?? transaction.type} | ${account?.name ?? 'Account'}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _formatDateTime(transaction.date),
+                      style: const TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                amount,
+                style: TextStyle(
+                  color: isPositive
+                      ? AppColors.incomePositive
+                      : AppColors.expenseNegative,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 10),
-          Text(
-            amount,
-            style: TextStyle(
-              color: isPositive
-                  ? AppColors.incomePositive
-                  : AppColors.expenseNegative,
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
+        ),
       ),
     );
+  }
+
+  Future<void> _openTransactionEditor(TransactionEntity transaction) async {
+    final updated = await Navigator.of(context).push<bool>(
+      PageRouteBuilder<bool>(
+        transitionDuration: const Duration(milliseconds: 420),
+        reverseTransitionDuration: const Duration(milliseconds: 300),
+        pageBuilder: (context, animation, secondaryAnimation) {
+          return AddTransactionScreen(initialTransaction: transaction);
+        },
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          final curvedAnimation = CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOutCubic,
+            reverseCurve: Curves.easeInCubic,
+          );
+          final slideAnimation = Tween<Offset>(
+            begin: const Offset(0.06, 0.04),
+            end: Offset.zero,
+          ).animate(curvedAnimation);
+
+          return FadeTransition(
+            opacity: curvedAnimation,
+            child: SlideTransition(
+              position: slideAnimation,
+              child: child,
+            ),
+          );
+        },
+      ),
+    );
+
+    if (updated == true && mounted) {
+      await _reload();
+    }
   }
 
   Widget _buildEmptyState() {
@@ -619,7 +662,11 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
 
   String _formatSignedMoney(double amount, String currency) {
     final sign = amount >= 0 ? '+' : '-';
-    return '$sign$currency ${amount.abs().toStringAsFixed(2)}';
+    return '$sign${_transactionCurrencyLabel(currency)} ${amount.abs().toStringAsFixed(2)}';
+  }
+
+  String _transactionCurrencyLabel(String currency) {
+    return currency == 'BDT' ? 'Tk.' : currency;
   }
 
   String _formatDateTime(DateTime dateTime) {
