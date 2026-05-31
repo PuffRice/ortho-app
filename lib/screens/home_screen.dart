@@ -639,7 +639,7 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(28),
         border: Border.all(
-          color: Colors.white.withOpacity(0.10),
+          color: AppColors.primaryPurple.withValues(alpha: 0.5),
           width: 1,
         ),
         boxShadow: [
@@ -971,7 +971,7 @@ class _HomeScreenState extends State<HomeScreen> {
             borderRadius: BorderRadius.circular(20),
             color: Colors.white.withOpacity(0.055),
             border: Border.all(
-              color: Colors.white.withOpacity(0.07),
+              color: AppColors.primaryPurple.withOpacity(0.07),
               width: 1,
             ),
           ),
@@ -979,7 +979,7 @@ class _HomeScreenState extends State<HomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Container(
                     width: 40,
@@ -991,6 +991,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Icon(icon, color: iconColor, size: 20),
                   ),
                   const Spacer(),
+                  
                   Container(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

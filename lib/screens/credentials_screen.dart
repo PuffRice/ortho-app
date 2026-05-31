@@ -20,6 +20,7 @@ class CredentialsScreen extends StatefulWidget {
 
 class _CredentialsScreenState extends State<CredentialsScreen> {
   Future<_CredentialsData>? _credentialsFuture;
+  final PageController _cardController = PageController();
 
   Future<_CredentialsData> get _credentialsData {
     return _credentialsFuture ??= _loadCredentials();
@@ -29,6 +30,12 @@ class _CredentialsScreenState extends State<CredentialsScreen> {
   void initState() {
     super.initState();
     _credentialsFuture = _loadCredentials();
+  }
+
+  @override
+  void dispose() {
+    _cardController.dispose();
+    super.dispose();
   }
 
   @override
@@ -184,23 +191,20 @@ class _CredentialsScreenState extends State<CredentialsScreen> {
   }
 
   Widget _buildCardStack(_CredentialsData data) {
-    final cards = data.cards.take(4).toList();
+    final cards = data.cards;
     return SizedBox(
-      height: 260,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          for (var index = cards.length - 1; index >= 0; index--)
-            Positioned(
-              top: 22.0 * index,
-              left: 18.0 * index,
-              right: 18.0 * index,
-              child: Transform.rotate(
-                angle: (index - 1) * 0.035,
-                child: _buildPaymentCard(cards[index], data),
-              ),
-            ),
-        ],
+      height: 214,
+      child: PageView.builder(
+        controller: _cardController,
+        scrollDirection: Axis.vertical,
+        physics: const PageScrollPhysics(),
+        itemCount: cards.length,
+        itemBuilder: (context, index) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 14),
+            child: _buildPaymentCard(cards[index], data),
+          );
+        },
       ),
     );
   }
@@ -216,7 +220,7 @@ class _CredentialsScreenState extends State<CredentialsScreen> {
         height: 190,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(26),
+          borderRadius: BorderRadius.circular(20),
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -300,16 +304,8 @@ class _CredentialsScreenState extends State<CredentialsScreen> {
             ),
             Positioned(
               right: 0,
-              bottom: 0,
-              child: Text(
-                _networkLabel(card.network),
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w900,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
+              bottom: 4,
+              child: _buildNetworkMark(card.network),
             ),
           ],
         ),
@@ -366,31 +362,33 @@ class _CredentialsScreenState extends State<CredentialsScreen> {
                   onPressed: () => _showBankSheet(data, initial: bank),
                   icon: const Icon(Icons.edit, color: AppColors.textSecondary),
                 ),
+                IconButton(
+                  onPressed: () => _copyBankDetails(bank),
+                  icon: const Icon(
+                    Icons.copy_all,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 14),
-            _buildCopyRow('ACC no', bank.accountNumber),
-            _buildCopyRow('Acc Name', bank.accountName),
-            _buildCopyRow('Routing No', bank.routingNumber),
-            _buildCopyRow('Swift Code', bank.swiftCode),
-            _buildCopyRow('Bank Name', bank.bankName),
-            _buildCopyRow('Branch Name', bank.branchName),
+            _buildDetailRow('ACC no', bank.accountNumber),
+            _buildDetailRow('Acc Name', bank.accountName),
+            _buildDetailRow('Routing No', bank.routingNumber),
+            _buildDetailRow('Swift Code', bank.swiftCode),
+            _buildDetailRow('Bank Name', bank.bankName),
+            _buildDetailRow('Branch Name', bank.branchName),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildCopyRow(String label, String value) {
-    return Container(
-      margin: const EdgeInsets.only(top: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withOpacity(0.06)),
-      ),
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 7),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
             width: 88,
@@ -415,11 +413,12 @@ class _CredentialsScreenState extends State<CredentialsScreen> {
               ),
             ),
           ),
+          const SizedBox(width: 8),
           IconButton(
             onPressed: () => _copy(value, label),
             icon: const Icon(Icons.copy, color: AppColors.textSecondary),
-            iconSize: 18,
-            constraints: const BoxConstraints.tightFor(width: 36, height: 36),
+            iconSize: 16,
+            constraints: const BoxConstraints.tightFor(width: 32, height: 32),
             padding: EdgeInsets.zero,
           ),
         ],
@@ -427,20 +426,29 @@ class _CredentialsScreenState extends State<CredentialsScreen> {
     );
   }
 
+  Future<void> _copyBankDetails(BankAccountCredentialEntity bank) async {
+    final details = [
+      'Bank Name: ${bank.bankName}',
+      'Branch Name: ${bank.branchName}',
+      'Account Name: ${bank.accountName}',
+      'Account Number: ${bank.accountNumber}',
+      'Routing Number: ${bank.routingNumber}',
+      'Swift Code: ${bank.swiftCode}',
+    ].join('\n');
+    await _copy(details, 'Bank details');
+  }
+
   Widget _buildLogo(String? logoBase64, double size) {
     final bytes = _decodeLogo(logoBase64);
-    return Container(
+    return SizedBox(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.10),
-        borderRadius: BorderRadius.circular(size * 0.32),
-        border: Border.all(color: Colors.white.withOpacity(0.10)),
-      ),
-      clipBehavior: Clip.antiAlias,
       child: bytes == null
           ? const Icon(Icons.account_balance, color: AppColors.textSecondary)
-          : Image.memory(bytes, fit: BoxFit.cover),
+          : ClipRRect(
+              borderRadius: BorderRadius.circular(size * 0.22),
+              child: Image.memory(bytes, fit: BoxFit.contain),
+            ),
     );
   }
 
@@ -473,6 +481,55 @@ class _CredentialsScreenState extends State<CredentialsScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildNetworkMark(String network) {
+    if (network == 'mastercard') {
+      return SizedBox(
+        width: 58,
+        height: 34,
+        child: Stack(
+          children: [
+            Positioned(
+              left: 6,
+              top: 4,
+              child: Container(
+                width: 28,
+                height: 28,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFEB001B),
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+            Positioned(
+              right: 6,
+              top: 4,
+              child: Container(
+                width: 28,
+                height: 28,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF79E1B),
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    if (network == 'visa') {
+      return const Text(
+        'VISA',
+        style: TextStyle(
+          color: AppColors.textPrimary,
+          fontSize: 22,
+          fontWeight: FontWeight.w900,
+          fontStyle: FontStyle.italic,
+        ),
+      );
+    }
+    return _buildPill(network.toUpperCase());
   }
 
   Widget _buildEmptyPanel(String message) {
@@ -646,16 +703,6 @@ class _CredentialsScreenState extends State<CredentialsScreen> {
     return const [Color(0xFF171A2E), Color(0xFF39276D), Color(0xFF111427)];
   }
 
-  String _networkLabel(String network) {
-    if (network == 'visa') {
-      return 'VISA';
-    }
-    if (network == 'mastercard') {
-      return 'Mastercard';
-    }
-    return network.toUpperCase();
-  }
-
   String _maskedCardNumber(String cardNumber) {
     final digits = cardNumber.replaceAll(RegExp(r'\D'), '');
     final lastFour = digits.length <= 4
@@ -680,7 +727,7 @@ class _CardCredentialSheetState extends State<_CardCredentialSheet> {
   final _holderController = TextEditingController();
   final _numberController = TextEditingController();
   final _expiryController = TextEditingController();
-  String _cardType = 'debit';
+  final _cardTypeController = TextEditingController();
   String _network = 'visa';
   bool _hasNfc = true;
   String? _logoBase64;
@@ -695,10 +742,12 @@ class _CardCredentialSheetState extends State<_CardCredentialSheet> {
       _holderController.text = initial.cardholderName;
       _numberController.text = initial.cardNumber;
       _expiryController.text = initial.expiry;
-      _cardType = initial.cardType;
+      _cardTypeController.text = initial.cardType;
       _network = initial.network;
       _hasNfc = initial.hasNfc;
       _logoBase64 = initial.bankLogoBase64;
+    } else {
+      _cardTypeController.text = 'Debit';
     }
   }
 
@@ -719,12 +768,7 @@ class _CardCredentialSheetState extends State<_CardCredentialSheet> {
           keyboardType: TextInputType.number,
         ),
         _SheetField(controller: _expiryController, label: 'Expiry (MM/YY)'),
-        _SheetDropdown(
-          label: 'Card type',
-          value: _cardType,
-          values: const ['debit', 'credit', 'prepaid'],
-          onChanged: (value) => setState(() => _cardType = value),
-        ),
+        _SheetField(controller: _cardTypeController, label: 'Card type'),
         _SheetDropdown(
           label: 'Network',
           value: _network,
@@ -758,7 +802,8 @@ class _CardCredentialSheetState extends State<_CardCredentialSheet> {
     if (_bankController.text.trim().isEmpty ||
         _holderController.text.trim().isEmpty ||
         _numberController.text.trim().isEmpty ||
-        _expiryController.text.trim().isEmpty) {
+        _expiryController.text.trim().isEmpty ||
+        _cardTypeController.text.trim().isEmpty) {
       _showSheetError(context, 'Fill all required card details.');
       return;
     }
@@ -770,7 +815,7 @@ class _CardCredentialSheetState extends State<_CardCredentialSheet> {
           cardCredentialId: widget.initial?.cardCredentialId,
           bankName: _bankController.text.trim(),
           bankLogoBase64: _logoBase64,
-          cardType: _cardType,
+          cardType: _cardTypeController.text.trim(),
           network: _network,
           cardholderName: _holderController.text.trim(),
           cardNumber: _numberController.text.trim(),
@@ -796,6 +841,7 @@ class _CardCredentialSheetState extends State<_CardCredentialSheet> {
     _holderController.dispose();
     _numberController.dispose();
     _expiryController.dispose();
+    _cardTypeController.dispose();
     super.dispose();
   }
 }
@@ -1101,8 +1147,7 @@ class _LogoPicker extends StatelessWidget {
               height: 48,
               clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(10),
               ),
               child: bytes == null
                   ? const Icon(
