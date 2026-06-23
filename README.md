@@ -8,7 +8,7 @@ Ortho : Intelligent Finances is designed to make everyday money management clear
 
 The app is intentionally built from scratch with a custom architecture rather than relying on a one-size-fits-all starter template. That decision makes the codebase easier to extend as the product grows from a personal expense tracker into a more complete financial operating system with offline support, cloud synchronization, richer dashboards, recurring transactions, and team-friendly development workflows.
 
-What makes this project unique is the combination of a polished fintech-style Flutter interface, a local-first Isar database, a CQRS-inspired business layer, and Supabase-backed remote synchronization. The architecture is designed so features can grow without forcing every screen to know how data is stored, synced, repaired, or migrated.
+What makes this project unique is the combination of a polished fintech-style Flutter interface, a local-first SQLite database, a CQRS-inspired business layer, and Supabase-backed remote synchronization. The architecture is designed so features can grow without forcing every screen to know how data is stored, synced, repaired, or migrated.
 
 ## Key Highlights
 
@@ -19,7 +19,7 @@ What makes this project unique is the combination of a polished fintech-style Fl
 - Reusable navigation, routing, theme, and design-system decisions.
 - CQRS-style state/business flow through command handlers, query handlers, and a central bus.
 - Service abstraction for Supabase, local database access, sync, migrations, and user identity.
-- Local-first persistence with Isar for responsive offline usage.
+- Local-first SQLite persistence for responsive offline usage.
 - Connectivity-aware sync outbox for deferred remote writes.
 - Centralized configuration for app routes, colors, and Supabase setup.
 - Future-ready design for testing, modularization, CI/CD, analytics, and backend expansion.
@@ -95,11 +95,11 @@ It makes debugging easier because data flow has recognizable boundaries: user ac
 | Language | Dart |
 | State Management / Business Flow | Custom CQRS-style command and query bus with Flutter `StatefulWidget` UI state |
 | Backend/API | Supabase |
-| Database/Storage | Isar local database, SharedPreferences, Supabase tables |
+| Database/Storage | SQLite local database, SharedPreferences, Supabase tables |
 | Authentication | Supabase Auth support through `supabase_flutter` |
 | Sync/Connectivity | Connectivity Plus, custom sync outbox, timestamp repair service |
 | UI/Charts/Design | Google Fonts, FL Chart, Percent Indicator, Shimmer, Material widgets |
-| Code Generation | Isar Generator, Build Runner |
+| Code Generation | None required for local persistence |
 
 ## Features
 
@@ -108,7 +108,7 @@ It makes debugging easier because data flow has recognizable boundaries: user ac
 - Transaction creation and tracking.
 - Dashboard and home views for financial summaries.
 - Budget and recurring transaction data models.
-- Local-first storage using Isar.
+- Local-first storage using SQLite.
 - Optional Supabase initialization when credentials are configured.
 - Connectivity-aware sync for pending local changes.
 - User identity and local user migration support.
@@ -266,11 +266,7 @@ flutter build apk --debug
 flutter build apk --release
 ```
 
-If Isar model changes require generated code updates, run:
-
-```bash
-dart run build_runner build
-```
+SQLite schema changes are applied through `AppDatabase` versioned migrations.
 
 ## How to Run the App
 
@@ -288,7 +284,7 @@ flutter run
 | `lib/main.dart` | App startup, local database initialization, optional Supabase setup, sync bootstrapping, main navigation. |
 | `lib/config/` | App-level configuration such as routes, colors, and Supabase setup. |
 | `lib/cqrs/` | Commands, queries, handlers, and bus used to separate write and read workflows. |
-| `lib/models/` | Plain Dart models and Isar database entities. |
+| `lib/models/` | Plain Dart persistence models. |
 | `lib/screens/` | Flutter UI screens for home, dashboard, transactions, accounts, categories, credentials, and profile. |
 | `lib/services/` | Local database, Supabase, sync, migration, identity, mapping, and repair services. |
 | `android/`, `ios/`, `web/`, `windows/`, `macos/`, `linux/` | Platform-specific Flutter project files. |
@@ -311,7 +307,7 @@ Commands represent write operations such as creating accounts, categories, trans
 
 ### Local-First Data
 
-Isar is used as the local database so the app can stay fast and usable even before or without a successful remote sync. This is important for finance tracking, where users expect their data entry to feel immediate.
+SQLite is used as the local database so the app can stay fast and usable even before or without a successful remote sync. This is important for finance tracking, where users expect their data entry to feel immediate.
 
 ### Service Abstraction
 

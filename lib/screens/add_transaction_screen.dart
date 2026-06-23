@@ -24,6 +24,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   final _amountController = TextEditingController();
   final _noteController = TextEditingController();
   String? _selectedAccountId;
+  String? _selectedToAccountId;
   String? _selectedCategoryId;
 
   String _type = 'expense';
@@ -81,6 +82,20 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         backgroundColor: const Color(0xFF050711),
         elevation: 0,
         title: Text(_isEditing ? 'Edit Transaction' : 'Add Transaction'),
+        actions: [
+          if (_isEditing)
+            IconButton(
+              onPressed: _saving
+                  ? null
+                  : () async {
+                      final cqrs = await _cqrs;
+                      if (mounted) {
+                        await _confirmDelete(cqrs);
+                      }
+                    },
+              icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+            ),
+        ],
       ),
       body: FutureBuilder<CqrsService>(
         future: _cqrs,
@@ -113,6 +128,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
             _buildTypeChip('expense', 'Expense'),
             const SizedBox(width: 12),
             _buildTypeChip('income', 'Income'),
+            const SizedBox(width: 12),
+            _buildTypeChip('transfer', 'Transfer'),
           ],
         ),
         const SizedBox(height: 20),
@@ -120,7 +137,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         const SizedBox(height: 20),
         _buildAccountPicker(cqrs),
         const SizedBox(height: 16),
-        _buildCategoryPicker(cqrs),
+        if (_type == 'transfer')
+          _buildTransferDestinationPicker(cqrs)
+        else
+          _buildCategoryPicker(cqrs),
         const SizedBox(height: 16),
         _buildField(
           controller: _noteController,
@@ -516,6 +536,29 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     );
   }
 
+  Widget _buildTransferDestinationPicker(CqrsService cqrs) {
+    final userId = _profile?.userId;
+    if (userId == null) return const SizedBox.shrink();
+    return FutureBuilder<List<AccountEntity>>(
+      future: cqrs.bus.query(GetAccountsQuery(userId: userId)),
+      builder: (context, snapshot) {
+        final accounts = snapshot.data ?? const <AccountEntity>[];
+        return DropdownButtonFormField<String>(
+          initialValue: accounts.any((a) => a.accountId == _selectedToAccountId)
+              ? _selectedToAccountId
+              : null,
+          items: accounts
+              .map((a) => DropdownMenuItem(value: a.accountId, child: Text(a.name)))
+              .toList(),
+          onChanged: (value) => setState(() => _selectedToAccountId = value),
+          decoration: _buildSelectDecoration('To account'),
+          dropdownColor: AppColors.bgSecondary,
+          style: const TextStyle(color: Colors.white),
+        );
+      },
+    );
+  }
+
   Widget _buildCategoryPicker(CqrsService cqrs) {
     final userId = _profile?.userId;
     if (userId == null) {
@@ -650,10 +693,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         await cqrs.bus.query<GetAccountsQuery, List<AccountEntity>>(
       GetAccountsQuery(userId: profile.userId),
     );
-    final categories =
-        await cqrs.bus.query<GetCategoriesQuery, List<CategoryEntity>>(
-      GetCategoriesQuery(userId: profile.userId, type: _type),
-    );
+    final categories = _type == 'transfer'
+        ? const <CategoryEntity>[]
+        : await cqrs.bus.query<GetCategoriesQuery, List<CategoryEntity>>(
+            GetCategoriesQuery(userId: profile.userId, type: _type),
+          );
     final account = _accountById(accounts, _selectedAccountId);
     final category = _categoryById(categories, _selectedCategoryId);
     final currency = widget.initialTransaction?.currency ?? 'BDT';
@@ -662,8 +706,14 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       _showError('Enter a valid amount.');
       return;
     }
-    if (account == null || category == null) {
+    if (account == null || (_type != 'transfer' && category == null)) {
       _showError('Account and category are required.');
+      return;
+    }
+    final toAccount = _accountById(accounts, _selectedToAccountId);
+    if (_type == 'transfer' &&
+        (toAccount == null || toAccount.accountId == account.accountId)) {
+      _showError('Choose a different destination account.');
       return;
     }
 
@@ -682,12 +732,23 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       );
 
       await cqrs.bus.execute(
-        _isEditing
+        _type == 'transfer'
+            ? CreateTransferCommand(
+                userId: profile.userId,
+                fromAccountId: account.accountId,
+                toAccountId: toAccount!.accountId,
+                amount: amount,
+                date: _date,
+                note: _noteController.text.trim().isEmpty
+                    ? null
+                    : _noteController.text.trim(),
+              )
+            : _isEditing
             ? UpdateTransactionCommand(
                 userId: profile.userId,
                 transactionId: widget.initialTransaction!.transactionId,
                 accountId: account.accountId,
-                categoryId: category.categoryId,
+                categoryId: category!.categoryId,
                 type: _type,
                 amount: amount,
                 currency: currency,
@@ -700,7 +761,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
             : CreateTransactionCommand(
                 userId: profile.userId,
                 accountId: account.accountId,
-                categoryId: category.categoryId,
+                categoryId: category!.categoryId,
                 type: _type,
                 amount: amount,
                 currency: currency,
@@ -716,6 +777,72 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       }
     } catch (error) {
       _showError('Failed to save: $error');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _saving = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _confirmDelete(CqrsService cqrs) async {
+    final profile = _profile;
+    final transaction = widget.initialTransaction;
+    if (profile == null || transaction == null) {
+      _showError('Transaction is not ready yet.');
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: AppColors.bgSecondary,
+          title: const Text(
+            'Delete transaction?',
+            style: TextStyle(color: AppColors.textPrimary),
+          ),
+          content: const Text(
+            'This will remove it locally and sync the deletion.',
+            style: TextStyle(color: AppColors.textSecondary),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text(
+                'Delete',
+                style: TextStyle(color: Colors.redAccent),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true) {
+      return;
+    }
+
+    setState(() {
+      _saving = true;
+    });
+    try {
+      await cqrs.bus.execute(
+        DeleteTransactionCommand(
+          userId: profile.userId,
+          transactionId: transaction.transactionId,
+        ),
+      );
+      if (mounted) {
+        Navigator.of(context).pop(true);
+      }
+    } catch (error) {
+      _showError('Failed to delete: $error');
     } finally {
       if (mounted) {
         setState(() {

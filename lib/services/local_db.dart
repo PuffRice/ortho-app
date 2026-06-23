@@ -1,41 +1,22 @@
-import 'package:isar/isar.dart';
-import 'package:path_provider/path_provider.dart';
-import '../models/isar_models.dart';
+import 'app_database.dart';
 
 class LocalDb {
   LocalDb._();
 
   static final LocalDb instance = LocalDb._();
-  Isar? _isar;
+  AppDatabase? _db;
 
-  Future<Isar> open() async {
-    if (_isar != null) {
-      return _isar!;
+  Future<AppDatabase> open() async {
+    if (_db != null) {
+      return _db!;
     }
 
-    final dir = await getApplicationDocumentsDirectory();
-    _isar = await Isar.open(
-      [
-        UserEntitySchema,
-        AccountEntitySchema,
-        CategoryEntitySchema,
-        TransactionEntitySchema,
-        TransferEntitySchema,
-        BudgetEntitySchema,
-        RecurringTransactionEntitySchema,
-        PaymentCardCredentialEntitySchema,
-        BankAccountCredentialEntitySchema,
-        SummaryCacheEntitySchema,
-        SyncOutboxEntitySchema,
-      ],
-      directory: dir.path,
-    );
-
-    return _isar!;
+    _db = await AppDatabase.open();
+    return _db!;
   }
 
   Future<void> close() async {
-    await _isar?.close();
-    _isar = null;
+    await _db?.close();
+    _db = null;
   }
 }

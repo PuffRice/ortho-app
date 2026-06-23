@@ -1,31 +1,35 @@
 import 'dart:convert';
 
-import 'package:isar/isar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/isar_models.dart';
+import 'app_database.dart';
 
 class TimestampRepairService {
   TimestampRepairService({
-    required Isar isar,
+    required AppDatabase db,
     SupabaseClient? client,
-  })  : _isar = isar,
+  })  : _db = db,
         _client = client;
 
-  final Isar _isar;
+  final AppDatabase _db;
   final SupabaseClient? _client;
 
   Future<void> repairLocal({required String userId}) async {
-    await _isar.writeTxn(() async {
-      await _repairLocalUser(userId);
-      await _repairLocalAccounts(userId);
-      await _repairLocalCategories(userId);
-      await _repairLocalTransactions(userId);
-      await _repairLocalTransfers(userId);
-      await _repairLocalBudgets(userId);
-      await _repairLocalRecurring(userId);
-      await _repairLocalOutbox(userId);
-    });
+    final user = await _db.getUserByUserId(userId);
+    if (user != null) await _db.putUser(_repairUser(user));
+    for (final entry in await _db.getAccounts(userId: userId, deletedOnly: false)) { await _db.putAccount(_repairAccount(entry)); }
+    for (final entry in await _db.getCategories(userId: userId, deletedOnly: false)) { await _db.putCategory(_repairCategory(entry)); }
+    for (final entry in await _db.getTransactions(userId: userId, limit: 1000000)) { await _db.putTransaction(_repairTransaction(entry)); }
+    for (final entry in await _db.getTransfers(userId: userId)) { await _db.putTransfer(_repairTransfer(entry)); }
+    for (final entry in await _db.getBudgets(userId: userId)) { await _db.putBudget(_repairBudget(entry)); }
+    for (final entry in await _db.getRecurringTransactions(userId: userId)) { await _db.putRecurring(_repairRecurring(entry)); }
+    for (final entry in await _db.getSyncOutboxEntries(userId: userId)) {
+        entry.createdAt = _repairDate(entry.createdAt) ?? entry.createdAt;
+        entry.lastAttemptAt = _repairNullableDate(entry.lastAttemptAt);
+        entry.payloadJson = _repairPayload(entry.payloadJson);
+        await _db.putSyncOutbox(entry);
+    }
   }
 
   Future<void> repairRemote({required String userId}) async {
@@ -58,104 +62,54 @@ class TimestampRepairService {
     );
   }
 
-  Future<void> _repairLocalUser(String userId) async {
-    final user =
-        await _isar.userEntitys.filter().userIdEqualTo(userId).findFirst();
-    if (user == null) {
-      return;
-    }
-
+  UserEntity _repairUser(UserEntity user) {
     user
       ..createdAt = _repairDate(user.createdAt) ?? user.createdAt
       ..updatedAt = _repairDate(user.updatedAt) ?? user.updatedAt
       ..deletedAt = _repairNullableDate(user.deletedAt);
-    await _isar.userEntitys.put(user);
+    return user;
   }
 
-  Future<void> _repairLocalAccounts(String userId) async {
-    final entries =
-        await _isar.accountEntitys.filter().userIdEqualTo(userId).findAll();
-    for (final entry in entries) {
-      entry
+  AccountEntity _repairAccount(AccountEntity entry) {
+      return entry
         ..createdAt = _repairDate(entry.createdAt) ?? entry.createdAt
         ..updatedAt = _repairDate(entry.updatedAt) ?? entry.updatedAt
         ..deletedAt = _repairNullableDate(entry.deletedAt);
-    }
-    await _isar.accountEntitys.putAll(entries);
   }
 
-  Future<void> _repairLocalCategories(String userId) async {
-    final entries =
-        await _isar.categoryEntitys.filter().userIdEqualTo(userId).findAll();
-    for (final entry in entries) {
-      entry
+  CategoryEntity _repairCategory(CategoryEntity entry) {
+      return entry
         ..createdAt = _repairDate(entry.createdAt) ?? entry.createdAt
         ..updatedAt = _repairDate(entry.updatedAt) ?? entry.updatedAt
         ..deletedAt = _repairNullableDate(entry.deletedAt);
-    }
-    await _isar.categoryEntitys.putAll(entries);
   }
 
-  Future<void> _repairLocalTransactions(String userId) async {
-    final entries =
-        await _isar.transactionEntitys.filter().userIdEqualTo(userId).findAll();
-    for (final entry in entries) {
-      entry
+  TransactionEntity _repairTransaction(TransactionEntity entry) {
+      return entry
         ..createdAt = _repairDate(entry.createdAt) ?? entry.createdAt
         ..updatedAt = _repairDate(entry.updatedAt) ?? entry.updatedAt
         ..deletedAt = _repairNullableDate(entry.deletedAt);
-    }
-    await _isar.transactionEntitys.putAll(entries);
   }
 
-  Future<void> _repairLocalTransfers(String userId) async {
-    final entries =
-        await _isar.transferEntitys.filter().userIdEqualTo(userId).findAll();
-    for (final entry in entries) {
-      entry
+  TransferEntity _repairTransfer(TransferEntity entry) {
+      return entry
         ..createdAt = _repairDate(entry.createdAt) ?? entry.createdAt
         ..updatedAt = _repairDate(entry.updatedAt) ?? entry.updatedAt
         ..deletedAt = _repairNullableDate(entry.deletedAt);
-    }
-    await _isar.transferEntitys.putAll(entries);
   }
 
-  Future<void> _repairLocalBudgets(String userId) async {
-    final entries =
-        await _isar.budgetEntitys.filter().userIdEqualTo(userId).findAll();
-    for (final entry in entries) {
-      entry
+  BudgetEntity _repairBudget(BudgetEntity entry) {
+      return entry
         ..createdAt = _repairDate(entry.createdAt) ?? entry.createdAt
         ..updatedAt = _repairDate(entry.updatedAt) ?? entry.updatedAt
         ..deletedAt = _repairNullableDate(entry.deletedAt);
-    }
-    await _isar.budgetEntitys.putAll(entries);
   }
 
-  Future<void> _repairLocalRecurring(String userId) async {
-    final entries = await _isar.recurringTransactionEntitys
-        .filter()
-        .userIdEqualTo(userId)
-        .findAll();
-    for (final entry in entries) {
-      entry
+  RecurringTransactionEntity _repairRecurring(RecurringTransactionEntity entry) {
+      return entry
         ..createdAt = _repairDate(entry.createdAt) ?? entry.createdAt
         ..updatedAt = _repairDate(entry.updatedAt) ?? entry.updatedAt
         ..deletedAt = _repairNullableDate(entry.deletedAt);
-    }
-    await _isar.recurringTransactionEntitys.putAll(entries);
-  }
-
-  Future<void> _repairLocalOutbox(String userId) async {
-    final entries =
-        await _isar.syncOutboxEntitys.filter().userIdEqualTo(userId).findAll();
-    for (final entry in entries) {
-      entry
-        ..createdAt = _repairDate(entry.createdAt) ?? entry.createdAt
-        ..lastAttemptAt = _repairNullableDate(entry.lastAttemptAt)
-        ..payloadJson = _repairPayload(entry.payloadJson);
-    }
-    await _isar.syncOutboxEntitys.putAll(entries);
   }
 
   Future<void> _repairRemoteTable({

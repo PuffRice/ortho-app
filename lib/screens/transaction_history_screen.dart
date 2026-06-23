@@ -103,6 +103,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
 
   Widget _buildContent(_TransactionHistoryData data) {
     final filteredTransactions = _filteredTransactions(data);
+    final filteredTransfers = _filteredTransfers(data);
     return RefreshIndicator(
       onRefresh: _reload,
       child: ListView(
@@ -113,15 +114,19 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
           const SizedBox(height: 14),
           _buildFilters(data),
           const SizedBox(height: 18),
-          _buildResultSummary(filteredTransactions.length),
+          _buildResultSummary(filteredTransactions.length + filteredTransfers.length),
           const SizedBox(height: 12),
-          if (filteredTransactions.isEmpty)
+          if (filteredTransactions.isEmpty && filteredTransfers.isEmpty)
             _buildEmptyState()
           else
             for (final transaction in filteredTransactions) ...[
               _buildTransactionTile(transaction, data),
               const SizedBox(height: 10),
             ],
+          for (final transfer in filteredTransfers) ...[
+            _buildTransferTile(transfer, data),
+            const SizedBox(height: 10),
+          ],
         ],
       ),
     );
@@ -438,6 +443,36 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
     );
   }
 
+  Widget _buildTransferTile(TransferEntity transfer, _TransactionHistoryData data) {
+    final from = data.accountById[transfer.fromAccountId]?.name ?? 'Account';
+    final to = data.accountById[transfer.toAccountId]?.name ?? 'Account';
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.primaryViolet.withValues(alpha: 0.09),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.primaryViolet.withValues(alpha: 0.22)),
+      ),
+      child: Row(children: [
+        const CircleAvatar(
+          backgroundColor: AppColors.primaryViolet,
+          child: Icon(Icons.swap_horiz_rounded, color: Colors.white),
+        ),
+        const SizedBox(width: 12),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(transfer.note?.trim().isNotEmpty == true ? transfer.note! : 'Transfer',
+              style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 4),
+          Text('$from  →  $to', style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
+          const SizedBox(height: 4),
+          Text(_formatDateTime(transfer.date), style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
+        ])),
+        Text(transfer.amount.toStringAsFixed(2),
+            style: const TextStyle(color: AppColors.primaryViolet, fontWeight: FontWeight.w700)),
+      ]),
+    );
+  }
+
   Future<void> _openTransactionEditor(TransactionEntity transaction) async {
     final updated = await Navigator.of(context).push<bool>(
       PageRouteBuilder<bool>(
@@ -546,11 +581,15 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
         await cqrs.bus.query<GetCategoriesQuery, List<CategoryEntity>>(
       GetCategoriesQuery(userId: profile.userId),
     );
+    final transfers = await cqrs.bus.query<GetTransfersQuery, List<TransferEntity>>(
+      GetTransfersQuery(userId: profile.userId),
+    );
 
     return _TransactionHistoryData(
       transactions: transactions,
       accounts: accounts,
       categories: categories,
+      transfers: transfers,
     );
   }
 
@@ -600,6 +639,23 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
         account?.name,
       ].whereType<String>().join(' ').toLowerCase();
       return searchable.contains(normalizedQuery);
+    }).toList();
+  }
+
+  List<TransferEntity> _filteredTransfers(_TransactionHistoryData data) {
+    if (_type != null || _categoryId != null) return const <TransferEntity>[];
+    final query = _query.trim().toLowerCase();
+    return data.transfers.where((transfer) {
+      if (_accountId != null &&
+          transfer.fromAccountId != _accountId &&
+          transfer.toAccountId != _accountId) return false;
+      if (_dateRange != null &&
+          (transfer.date.isBefore(_dateRange!.start) ||
+              transfer.date.isAfter(_dateRange!.end.add(const Duration(days: 1))))) return false;
+      if (query.isEmpty) return true;
+      final from = data.accountById[transfer.fromAccountId]?.name ?? '';
+      final to = data.accountById[transfer.toAccountId]?.name ?? '';
+      return '${transfer.note ?? ''} $from $to ${transfer.amount}'.toLowerCase().contains(query);
     }).toList();
   }
 
@@ -688,11 +744,13 @@ class _TransactionHistoryData {
     required this.transactions,
     required this.accounts,
     required this.categories,
+    required this.transfers,
   });
 
   final List<TransactionEntity> transactions;
   final List<AccountEntity> accounts;
   final List<CategoryEntity> categories;
+  final List<TransferEntity> transfers;
 
   Map<String, AccountEntity> get accountById {
     return {for (final account in accounts) account.accountId: account};

@@ -1,264 +1,502 @@
-import 'package:isar/isar.dart';
-
-part 'isar_models.g.dart';
-
-@collection
 class UserEntity {
-  Id id = Isar.autoIncrement;
+  UserEntity();
 
-  @Index(unique: true)
-  late String userId;
+  UserEntity.fromMap(Map<String, Object?> map)
+      : userId = map['user_id'] as String,
+        email = map['email'] as String,
+        displayName = map['display_name'] as String,
+        photoUrl = map['photo_url'] as String?,
+        createdAt = DateTime.parse(map['created_at'] as String),
+        updatedAt = DateTime.parse(map['updated_at'] as String),
+        deletedAt = _parseNullableDate(map['deleted_at']);
 
-  @Index(unique: true)
-  late String email;
-
-  late String displayName;
+  String userId = '';
+  String email = '';
+  String displayName = '';
   String? photoUrl;
-  late DateTime createdAt;
-  late DateTime updatedAt;
-  @Index()
+  DateTime createdAt = DateTime.now();
+  DateTime updatedAt = DateTime.now();
   DateTime? deletedAt;
+
+  Map<String, Object?> toMap() {
+    return {
+      'user_id': userId,
+      'email': email,
+      'display_name': displayName,
+      'photo_url': photoUrl,
+      'created_at': createdAt.toUtc().toIso8601String(),
+      'updated_at': updatedAt.toUtc().toIso8601String(),
+      'deleted_at': deletedAt?.toUtc().toIso8601String(),
+    };
+  }
 }
 
-@collection
 class AccountEntity {
-  Id id = Isar.autoIncrement;
+  AccountEntity();
 
-  @Index()
-  late String userId;
+  AccountEntity.fromMap(Map<String, Object?> map)
+      : userId = map['user_id'] as String,
+        accountId = map['account_id'] as String,
+        name = map['name'] as String,
+        type = map['type'] as String,
+        currency = map['currency'] as String,
+        logoBase64 = map['logo_base64'] as String?,
+        openingBalance = _toDouble(map['opening_balance']),
+        currentBalance = _toDouble(map['current_balance']),
+        createdAt = DateTime.parse(map['created_at'] as String),
+        updatedAt = DateTime.parse(map['updated_at'] as String),
+        deletedAt = _parseNullableDate(map['deleted_at']);
 
-  @Index()
-  late String accountId;
-  late String name;
-  late String type; // cash, bank, card, other
-  late String currency;
+  String userId = '';
+  String accountId = '';
+  String name = '';
+  String type = '';
+  String currency = '';
   String? logoBase64;
   double openingBalance = 0;
   double currentBalance = 0;
-  late DateTime createdAt;
-  late DateTime updatedAt;
-  @Index()
+  DateTime createdAt = DateTime.now();
+  DateTime updatedAt = DateTime.now();
   DateTime? deletedAt;
+
+  Map<String, Object?> toMap() {
+    return {
+      'user_id': userId,
+      'account_id': accountId,
+      'name': name,
+      'type': type,
+      'currency': currency,
+      'logo_base64': logoBase64,
+      'opening_balance': openingBalance,
+      'current_balance': currentBalance,
+      'created_at': createdAt.toUtc().toIso8601String(),
+      'updated_at': updatedAt.toUtc().toIso8601String(),
+      'deleted_at': deletedAt?.toUtc().toIso8601String(),
+    };
+  }
 }
 
-@collection
 class CategoryEntity {
-  Id id = Isar.autoIncrement;
+  CategoryEntity();
 
-  @Index()
-  late String userId;
+  CategoryEntity.fromMap(Map<String, Object?> map)
+      : userId = map['user_id'] as String,
+        categoryId = map['category_id'] as String,
+        name = map['name'] as String,
+        type = map['type'] as String,
+        icon = map['icon'] as String?,
+        color = map['color'] as int?,
+        sortOrder = (map['sort_order'] as num?)?.toInt() ?? 0,
+        createdAt = DateTime.parse(map['created_at'] as String),
+        updatedAt = DateTime.parse(map['updated_at'] as String),
+        deletedAt = _parseNullableDate(map['deleted_at']);
 
-  @Index()
-  late String categoryId;
-  late String name;
-  late String type; // income or expense
+  String userId = '';
+  String categoryId = '';
+  String name = '';
+  String type = '';
   String? icon;
-  int? color; // ARGB
+  int? color;
   int sortOrder = 0;
-  late DateTime createdAt;
-  late DateTime updatedAt;
-  @Index()
+  DateTime createdAt = DateTime.now();
+  DateTime updatedAt = DateTime.now();
   DateTime? deletedAt;
+
+  Map<String, Object?> toMap() {
+    return {
+      'user_id': userId,
+      'category_id': categoryId,
+      'name': name,
+      'type': type,
+      'icon': icon,
+      'color': color,
+      'sort_order': sortOrder,
+      'created_at': createdAt.toUtc().toIso8601String(),
+      'updated_at': updatedAt.toUtc().toIso8601String(),
+      'deleted_at': deletedAt?.toUtc().toIso8601String(),
+    };
+  }
 }
 
-@collection
 class TransactionEntity {
-  Id id = Isar.autoIncrement;
+  TransactionEntity();
 
-  @Index()
-  late String userId;
+  TransactionEntity.fromMap(Map<String, Object?> map)
+      : userId = map['user_id'] as String,
+        accountId = map['account_id'] as String,
+        categoryId = map['category_id'] as String,
+        transactionId = map['transaction_id'] as String,
+        type = map['type'] as String,
+        amount = _toDouble(map['amount']),
+        currency = map['currency'] as String,
+        date = DateTime.parse(map['date'] as String),
+        note = map['note'] as String?,
+        isRecurring = (map['is_recurring'] as int? ?? 0) == 1,
+        createdAt = DateTime.parse(map['created_at'] as String),
+        updatedAt = DateTime.parse(map['updated_at'] as String),
+        deletedAt = _parseNullableDate(map['deleted_at']);
 
-  @Index()
-  late String accountId;
-
-  @Index()
-  late String categoryId;
-
-  @Index()
-  late String transactionId;
-  late String type; // income, expense, transfer
-  late double amount;
-  late String currency;
-
-  @Index()
-  late DateTime date;
-
+  String userId = '';
+  String accountId = '';
+  String categoryId = '';
+  String transactionId = '';
+  String type = '';
+  double amount = 0;
+  String currency = '';
+  DateTime date = DateTime.now();
   String? note;
   bool isRecurring = false;
-  late DateTime createdAt;
-  late DateTime updatedAt;
-  @Index()
+  DateTime createdAt = DateTime.now();
+  DateTime updatedAt = DateTime.now();
   DateTime? deletedAt;
+
+  Map<String, Object?> toMap() {
+    return {
+      'user_id': userId,
+      'account_id': accountId,
+      'category_id': categoryId,
+      'transaction_id': transactionId,
+      'type': type,
+      'amount': amount,
+      'currency': currency,
+      'date': date.toUtc().toIso8601String(),
+      'note': note,
+      'is_recurring': isRecurring ? 1 : 0,
+      'created_at': createdAt.toUtc().toIso8601String(),
+      'updated_at': updatedAt.toUtc().toIso8601String(),
+      'deleted_at': deletedAt?.toUtc().toIso8601String(),
+    };
+  }
 }
 
-@collection
 class TransferEntity {
-  Id id = Isar.autoIncrement;
+  TransferEntity();
 
-  @Index()
-  late String userId;
+  TransferEntity.fromMap(Map<String, Object?> map)
+      : userId = map['user_id'] as String,
+        fromAccountId = map['from_account_id'] as String,
+        toAccountId = map['to_account_id'] as String,
+        transferId = map['transfer_id'] as String,
+        amount = _toDouble(map['amount']),
+        date = DateTime.parse(map['date'] as String),
+        note = map['note'] as String?,
+        createdAt = DateTime.parse(map['created_at'] as String),
+        updatedAt = DateTime.parse(map['updated_at'] as String),
+        deletedAt = _parseNullableDate(map['deleted_at']);
 
-  @Index()
-  late String fromAccountId;
-
-  @Index()
-  late String toAccountId;
-
-  @Index()
-  late String transferId;
-  late double amount;
-
-  @Index()
-  late DateTime date;
-
+  String userId = '';
+  String fromAccountId = '';
+  String toAccountId = '';
+  String transferId = '';
+  double amount = 0;
+  DateTime date = DateTime.now();
   String? note;
-  late DateTime createdAt;
-  late DateTime updatedAt;
-  @Index()
+  DateTime createdAt = DateTime.now();
+  DateTime updatedAt = DateTime.now();
   DateTime? deletedAt;
+
+  Map<String, Object?> toMap() {
+    return {
+      'user_id': userId,
+      'from_account_id': fromAccountId,
+      'to_account_id': toAccountId,
+      'transfer_id': transferId,
+      'amount': amount,
+      'date': date.toUtc().toIso8601String(),
+      'note': note,
+      'created_at': createdAt.toUtc().toIso8601String(),
+      'updated_at': updatedAt.toUtc().toIso8601String(),
+      'deleted_at': deletedAt?.toUtc().toIso8601String(),
+    };
+  }
 }
 
-@collection
 class BudgetEntity {
-  Id id = Isar.autoIncrement;
+  BudgetEntity();
 
-  @Index()
-  late String userId;
+  BudgetEntity.fromMap(Map<String, Object?> map)
+      : userId = map['user_id'] as String,
+        categoryId = map['category_id'] as String?,
+        budgetId = map['budget_id'] as String,
+        period = map['period'] as String,
+        amount = _toDouble(map['amount']),
+        startDate = DateTime.parse(map['start_date'] as String),
+        endDate = _parseNullableDate(map['end_date']),
+        createdAt = DateTime.parse(map['created_at'] as String),
+        updatedAt = DateTime.parse(map['updated_at'] as String),
+        deletedAt = _parseNullableDate(map['deleted_at']);
 
-  @Index()
-  String? categoryId; // null = overall
-
-  @Index()
-  late String budgetId;
-  late String period; // weekly, monthly, yearly
-  late double amount;
-  late DateTime startDate;
+  String userId = '';
+  String? categoryId;
+  String budgetId = '';
+  String period = '';
+  double amount = 0;
+  DateTime startDate = DateTime.now();
   DateTime? endDate;
-  late DateTime createdAt;
-  late DateTime updatedAt;
-  @Index()
+  DateTime createdAt = DateTime.now();
+  DateTime updatedAt = DateTime.now();
   DateTime? deletedAt;
+
+  Map<String, Object?> toMap() {
+    return {
+      'user_id': userId,
+      'category_id': categoryId,
+      'budget_id': budgetId,
+      'period': period,
+      'amount': amount,
+      'start_date': startDate.toUtc().toIso8601String(),
+      'end_date': endDate?.toUtc().toIso8601String(),
+      'created_at': createdAt.toUtc().toIso8601String(),
+      'updated_at': updatedAt.toUtc().toIso8601String(),
+      'deleted_at': deletedAt?.toUtc().toIso8601String(),
+    };
+  }
 }
 
-@collection
 class RecurringTransactionEntity {
-  Id id = Isar.autoIncrement;
+  RecurringTransactionEntity();
 
-  @Index()
-  late String userId;
+  RecurringTransactionEntity.fromMap(Map<String, Object?> map)
+      : userId = map['user_id'] as String,
+        accountId = map['account_id'] as String,
+        categoryId = map['category_id'] as String,
+        recurringId = map['recurring_id'] as String,
+        type = map['type'] as String,
+        amount = _toDouble(map['amount']),
+        interval = map['interval'] as String,
+        nextRunAt = DateTime.parse(map['next_run_at'] as String),
+        isActive = (map['is_active'] as int? ?? 1) == 1,
+        createdAt = DateTime.parse(map['created_at'] as String),
+        updatedAt = DateTime.parse(map['updated_at'] as String),
+        deletedAt = _parseNullableDate(map['deleted_at']);
 
-  @Index()
-  late String accountId;
-
-  @Index()
-  late String categoryId;
-
-  @Index()
-  late String recurringId;
-  late String type; // income or expense
-  late double amount;
-  late String interval; // daily, weekly, monthly, yearly
-
-  @Index()
-  late DateTime nextRunAt;
-
+  String userId = '';
+  String accountId = '';
+  String categoryId = '';
+  String recurringId = '';
+  String type = '';
+  double amount = 0;
+  String interval = '';
+  DateTime nextRunAt = DateTime.now();
   bool isActive = true;
-  late DateTime createdAt;
-  late DateTime updatedAt;
-  @Index()
+  DateTime createdAt = DateTime.now();
+  DateTime updatedAt = DateTime.now();
   DateTime? deletedAt;
+
+  Map<String, Object?> toMap() {
+    return {
+      'user_id': userId,
+      'account_id': accountId,
+      'category_id': categoryId,
+      'recurring_id': recurringId,
+      'type': type,
+      'amount': amount,
+      'interval': interval,
+      'next_run_at': nextRunAt.toUtc().toIso8601String(),
+      'is_active': isActive ? 1 : 0,
+      'created_at': createdAt.toUtc().toIso8601String(),
+      'updated_at': updatedAt.toUtc().toIso8601String(),
+      'deleted_at': deletedAt?.toUtc().toIso8601String(),
+    };
+  }
 }
 
-@collection
 class PaymentCardCredentialEntity {
-  Id id = Isar.autoIncrement;
+  PaymentCardCredentialEntity();
 
-  @Index()
-  late String userId;
+  PaymentCardCredentialEntity.fromMap(Map<String, Object?> map)
+      : userId = map['user_id'] as String,
+        cardCredentialId = map['card_credential_id'] as String,
+        bankName = map['bank_name'] as String,
+        bankLogoBase64 = map['bank_logo_base64'] as String?,
+        cardType = map['card_type'] as String,
+        network = map['network'] as String,
+        cardholderName = map['cardholder_name'] as String,
+        cardNumber = map['card_number'] as String,
+        expiry = map['expiry'] as String,
+        hasNfc = (map['has_nfc'] as int? ?? 0) == 1,
+        createdAt = DateTime.parse(map['created_at'] as String),
+        updatedAt = DateTime.parse(map['updated_at'] as String),
+        deletedAt = _parseNullableDate(map['deleted_at']);
 
-  @Index()
-  late String cardCredentialId;
-
-  late String bankName;
+  String userId = '';
+  String cardCredentialId = '';
+  String bankName = '';
   String? bankLogoBase64;
-  late String cardType; // credit, debit, prepaid
-  late String network; // visa, mastercard, other
-  late String cardholderName;
-  late String cardNumber;
-  late String expiry;
+  String cardType = '';
+  String network = '';
+  String cardholderName = '';
+  String cardNumber = '';
+  String expiry = '';
   bool hasNfc = false;
-  late DateTime createdAt;
-  late DateTime updatedAt;
-  @Index()
+  DateTime createdAt = DateTime.now();
+  DateTime updatedAt = DateTime.now();
   DateTime? deletedAt;
+
+  Map<String, Object?> toMap() {
+    return {
+      'user_id': userId,
+      'card_credential_id': cardCredentialId,
+      'bank_name': bankName,
+      'bank_logo_base64': bankLogoBase64,
+      'card_type': cardType,
+      'network': network,
+      'cardholder_name': cardholderName,
+      'card_number': cardNumber,
+      'expiry': expiry,
+      'has_nfc': hasNfc ? 1 : 0,
+      'created_at': createdAt.toUtc().toIso8601String(),
+      'updated_at': updatedAt.toUtc().toIso8601String(),
+      'deleted_at': deletedAt?.toUtc().toIso8601String(),
+    };
+  }
 }
 
-@collection
 class BankAccountCredentialEntity {
-  Id id = Isar.autoIncrement;
+  BankAccountCredentialEntity();
 
-  @Index()
-  late String userId;
+  BankAccountCredentialEntity.fromMap(Map<String, Object?> map)
+      : userId = map['user_id'] as String,
+        bankCredentialId = map['bank_credential_id'] as String,
+        bankName = map['bank_name'] as String,
+        bankLogoBase64 = map['bank_logo_base64'] as String?,
+        branchName = map['branch_name'] as String,
+        accountName = map['account_name'] as String,
+        accountNumber = map['account_number'] as String,
+        routingNumber = map['routing_number'] as String,
+        swiftCode = map['swift_code'] as String,
+        createdAt = DateTime.parse(map['created_at'] as String),
+        updatedAt = DateTime.parse(map['updated_at'] as String),
+        deletedAt = _parseNullableDate(map['deleted_at']);
 
-  @Index()
-  late String bankCredentialId;
-
-  late String bankName;
+  String userId = '';
+  String bankCredentialId = '';
+  String bankName = '';
   String? bankLogoBase64;
-  late String branchName;
-  late String accountName;
-  late String accountNumber;
-  late String routingNumber;
-  late String swiftCode;
-  late DateTime createdAt;
-  late DateTime updatedAt;
-  @Index()
+  String branchName = '';
+  String accountName = '';
+  String accountNumber = '';
+  String routingNumber = '';
+  String swiftCode = '';
+  DateTime createdAt = DateTime.now();
+  DateTime updatedAt = DateTime.now();
   DateTime? deletedAt;
+
+  Map<String, Object?> toMap() {
+    return {
+      'user_id': userId,
+      'bank_credential_id': bankCredentialId,
+      'bank_name': bankName,
+      'bank_logo_base64': bankLogoBase64,
+      'branch_name': branchName,
+      'account_name': accountName,
+      'account_number': accountNumber,
+      'routing_number': routingNumber,
+      'swift_code': swiftCode,
+      'created_at': createdAt.toUtc().toIso8601String(),
+      'updated_at': updatedAt.toUtc().toIso8601String(),
+      'deleted_at': deletedAt?.toUtc().toIso8601String(),
+    };
+  }
 }
 
-@collection
 class SummaryCacheEntity {
-  Id id = Isar.autoIncrement;
+  SummaryCacheEntity();
 
-  @Index(unique: true)
-  late String summaryKey;
+  SummaryCacheEntity.fromMap(Map<String, Object?> map)
+      : summaryKey = map['summary_key'] as String,
+        userId = map['user_id'] as String,
+        period = map['period'] as String,
+        startDate = DateTime.parse(map['start_date'] as String),
+        endDate = _parseNullableDate(map['end_date']),
+        totalIncome = _toDouble(map['total_income']),
+        totalExpense = _toDouble(map['total_expense']),
+        net = _toDouble(map['net']),
+        byCategoryJson = map['by_category_json'] as String?;
 
-  @Index()
-  late String userId;
-
-  @Index()
-  late String period; // weekly, monthly, yearly, lifetime
-
-  @Index()
-  late DateTime startDate;
-
+  String summaryKey = '';
+  String userId = '';
+  String period = '';
+  DateTime startDate = DateTime.now();
   DateTime? endDate;
-  late double totalIncome;
-  late double totalExpense;
-  late double net;
+  double totalIncome = 0;
+  double totalExpense = 0;
+  double net = 0;
   String? byCategoryJson;
+
+  Map<String, Object?> toMap() {
+    return {
+      'summary_key': summaryKey,
+      'user_id': userId,
+      'period': period,
+      'start_date': startDate.toUtc().toIso8601String(),
+      'end_date': endDate?.toUtc().toIso8601String(),
+      'total_income': totalIncome,
+      'total_expense': totalExpense,
+      'net': net,
+      'by_category_json': byCategoryJson,
+    };
+  }
 }
 
-@collection
 class SyncOutboxEntity {
-  Id id = Isar.autoIncrement;
+  SyncOutboxEntity();
 
-  @Index()
-  late String userId;
+  SyncOutboxEntity.fromMap(Map<String, Object?> map)
+      : id = (map['id'] as num?)?.toInt(),
+        userId = map['user_id'] as String,
+        entityType = map['entity_type'] as String,
+        entityId = map['entity_id'] as String,
+        status = map['status'] as String,
+        action = map['action'] as String,
+        payloadJson = map['payload_json'] as String,
+        createdAt = DateTime.parse(map['created_at'] as String),
+        lastAttemptAt = _parseNullableDate(map['last_attempt_at']),
+        attempts = (map['attempts'] as num?)?.toInt() ?? 0,
+        lastError = map['last_error'] as String?;
 
-  @Index()
-  late String entityType;
-
-  @Index()
-  late String entityId;
-
-  @Index()
-  late String status; // pending, synced
-
-  late String action; // upsert
-  late String payloadJson;
-  late DateTime createdAt;
+  int? id;
+  String userId = '';
+  String entityType = '';
+  String entityId = '';
+  String status = '';
+  String action = '';
+  String payloadJson = '';
+  DateTime createdAt = DateTime.now();
   DateTime? lastAttemptAt;
   int attempts = 0;
   String? lastError;
+
+  Map<String, Object?> toMap({bool includeId = false}) {
+    return {
+      if (includeId && id != null) 'id': id,
+      'user_id': userId,
+      'entity_type': entityType,
+      'entity_id': entityId,
+      'status': status,
+      'action': action,
+      'payload_json': payloadJson,
+      'created_at': createdAt.toUtc().toIso8601String(),
+      'last_attempt_at': lastAttemptAt?.toUtc().toIso8601String(),
+      'attempts': attempts,
+      'last_error': lastError,
+    };
+  }
+}
+
+DateTime? _parseNullableDate(Object? value) {
+  if (value == null) {
+    return null;
+  }
+  return DateTime.parse(value as String);
+}
+
+double _toDouble(Object? value) {
+  if (value is num) {
+    return value.toDouble();
+  }
+  if (value == null) {
+    return 0;
+  }
+  return double.parse(value.toString());
 }

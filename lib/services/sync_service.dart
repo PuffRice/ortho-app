@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:isar/isar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'app_database.dart';
 
 import '../models/isar_models.dart';
 import 'account_balance_repair_service.dart';
@@ -11,13 +11,13 @@ import 'timestamp_repair_service.dart';
 import 'user_identity.dart';
 
 class SyncService {
-  SyncService._(this._isar, this._client);
+  SyncService._(this._db, this._client);
 
   static SyncService? _instance;
 
   static SyncService? get instance => _instance;
 
-  final Isar _isar;
+  final AppDatabase _db;
   final SupabaseClient _client;
   final Connectivity _connectivity = Connectivity();
   StreamSubscription<List<ConnectivityResult>>? _subscription;
@@ -26,10 +26,10 @@ class SyncService {
   final Set<String> _bootstrappedUsers = {};
 
   static Future<SyncService> initialize({
-    required Isar isar,
+    required AppDatabase db,
     required SupabaseClient client,
   }) async {
-    _instance ??= SyncService._(isar, client);
+    _instance ??= SyncService._(db, client);
     await _instance!._start();
     return _instance!;
   }
@@ -40,13 +40,13 @@ class SyncService {
       final authId = _client.auth.currentUser?.id;
       final userId =
           authId ?? (await UserIdentityService.instance.getProfile()).userId;
-      await TimestampRepairService(isar: _isar).repairLocal(userId: userId);
-      await TimestampRepairService(isar: _isar, client: _client)
+      await TimestampRepairService(db: _db).repairLocal(userId: userId);
+      await TimestampRepairService(db: _db, client: _client)
           .repairRemote(userId: userId);
       await _trySync();
       await reconcileIfRemoteNewer(userId: userId);
       final repairedCount =
-          await AccountBalanceRepairService(isar: _isar).repair(userId: userId);
+          await AccountBalanceRepairService(db: _db).repair(userId: userId);
       if (repairedCount > 0) {
         await _trySync();
       }
@@ -72,37 +72,33 @@ class SyncService {
     );
   }
 
-  Future<List<SyncOutboxError>> getRecentErrors({
+  Future<List<PendingSync>> getPendingSyncs({
     required String userId,
     int limit = 10,
   }) async {
-    final entries = await _isar.syncOutboxEntitys
-        .filter()
-        .userIdEqualTo(userId)
-        .lastErrorIsNotNull()
-        .sortByLastAttemptAtDesc()
-        .limit(limit)
-        .findAll();
+    final entries = await _db.getSyncOutboxEntries(
+      userId: userId, status: 'pending', orderBy: 'created_at ASC', limit: limit,
+    );
 
     return entries
         .map(
-          (entry) => SyncOutboxError(
+          (entry) => PendingSync(
             entityType: entry.entityType,
             entityId: entry.entityId,
             action: entry.action,
             attempts: entry.attempts,
             lastAttemptAt: entry.lastAttemptAt,
-            message: entry.lastError ?? 'Unknown sync error',
+            errorMessage: entry.lastError,
           ),
         )
         .toList();
   }
 
   Future<void> pushLocalChanges({required String userId}) async {
-    await TimestampRepairService(isar: _isar).repairLocal(userId: userId);
-    await TimestampRepairService(isar: _isar, client: _client)
+    await TimestampRepairService(db: _db).repairLocal(userId: userId);
+    await TimestampRepairService(db: _db, client: _client)
         .repairRemote(userId: userId);
-    await AccountBalanceRepairService(isar: _isar).repair(userId: userId);
+    await AccountBalanceRepairService(db: _db).repair(userId: userId);
     await _trySync();
   }
 
@@ -118,7 +114,7 @@ class SyncService {
     }
     await _importRemoteSnapshot(userId);
     final repairedCount =
-        await AccountBalanceRepairService(isar: _isar).repair(userId: userId);
+        await AccountBalanceRepairService(db: _db).repair(userId: userId);
     if (repairedCount > 0) {
       await _trySync();
     }
@@ -156,11 +152,7 @@ class SyncService {
   }
 
   Future<void> syncPending() async {
-    final pending = await _isar.syncOutboxEntitys
-        .filter()
-        .statusEqualTo('pending')
-        .sortByCreatedAt()
-        .findAll();
+    final pending = await _db.getSyncOutboxEntries(status: 'pending');
 
     for (final entry in pending) {
       final ready = await _ensureRemoteUser(entry.userId);
@@ -191,41 +183,19 @@ class SyncService {
   }
 
   Future<int> _getPendingOutboxCount(String userId) {
-    return _isar.syncOutboxEntitys
-        .filter()
-        .userIdEqualTo(userId)
-        .statusEqualTo('pending')
-        .count();
+    return _db.countSyncOutbox(userId: userId, status: 'pending');
   }
 
   Future<String?> _getLastOutboxError(String userId) async {
-    final entry = await _isar.syncOutboxEntitys
-        .filter()
-        .userIdEqualTo(userId)
-        .lastErrorIsNotNull()
-        .sortByLastAttemptAtDesc()
-        .findFirst();
-    return entry?.lastError;
+    return _db.getLastSyncError(userId: userId);
   }
 
   Future<void> _markSynced(SyncOutboxEntity entry) async {
-    await _isar.writeTxn(() async {
-      entry.status = 'synced';
-      entry.lastAttemptAt = DateTime.now();
-      entry.attempts += 1;
-      entry.lastError = null;
-      await _isar.syncOutboxEntitys.put(entry);
-    });
+    await _db.updateSyncOutboxStatus(entry, status: 'synced', now: DateTime.now());
   }
 
   Future<void> _markFailed(SyncOutboxEntity entry, String message) async {
-    await _isar.writeTxn(() async {
-      entry.status = 'pending';
-      entry.lastAttemptAt = DateTime.now();
-      entry.attempts += 1;
-      entry.lastError = message;
-      await _isar.syncOutboxEntitys.put(entry);
-    });
+    await _db.updateSyncOutboxStatus(entry, status: 'pending', now: DateTime.now(), error: message);
   }
 
   bool _isOnline(List<ConnectivityResult>? status) {
@@ -272,8 +242,7 @@ class SyncService {
       return true;
     }
 
-    final local =
-        await _isar.userEntitys.filter().userIdEqualTo(userId).findFirst();
+    final local = await _db.getUserByUserId(userId);
 
     final authUser = _client.auth.currentUser;
     if (local == null && (authUser == null || authUser.id != userId)) {
@@ -318,63 +287,18 @@ class SyncService {
   }
 
   Future<DateTime?> _getLocalLastUpdated(String userId) async {
-    final user = await _isar.userEntitys
-        .filter()
-        .userIdEqualTo(userId)
-        .sortByUpdatedAtDesc()
-        .findFirst();
-    final account = await _isar.accountEntitys
-        .filter()
-        .userIdEqualTo(userId)
-        .sortByUpdatedAtDesc()
-        .findFirst();
-    final category = await _isar.categoryEntitys
-        .filter()
-        .userIdEqualTo(userId)
-        .sortByUpdatedAtDesc()
-        .findFirst();
-    final transaction = await _isar.transactionEntitys
-        .filter()
-        .userIdEqualTo(userId)
-        .sortByUpdatedAtDesc()
-        .findFirst();
-    final transfer = await _isar.transferEntitys
-        .filter()
-        .userIdEqualTo(userId)
-        .sortByUpdatedAtDesc()
-        .findFirst();
-    final budget = await _isar.budgetEntitys
-        .filter()
-        .userIdEqualTo(userId)
-        .sortByUpdatedAtDesc()
-        .findFirst();
-    final recurring = await _isar.recurringTransactionEntitys
-        .filter()
-        .userIdEqualTo(userId)
-        .sortByUpdatedAtDesc()
-        .findFirst();
-    final paymentCard = await _isar.paymentCardCredentialEntitys
-        .filter()
-        .userIdEqualTo(userId)
-        .sortByUpdatedAtDesc()
-        .findFirst();
-    final bankCredential = await _isar.bankAccountCredentialEntitys
-        .filter()
-        .userIdEqualTo(userId)
-        .sortByUpdatedAtDesc()
-        .findFirst();
-
-    return _maxDate([
-      user?.updatedAt,
-      account?.updatedAt,
-      category?.updatedAt,
-      transaction?.updatedAt,
-      transfer?.updatedAt,
-      budget?.updatedAt,
-      recurring?.updatedAt,
-      paymentCard?.updatedAt,
-      bankCredential?.updatedAt,
+    final values = await Future.wait([
+      _db.getLatestUpdatedAtForUser('users', userId),
+      _db.getLatestUpdatedAtForUser('accounts', userId),
+      _db.getLatestUpdatedAtForUser('categories', userId),
+      _db.getLatestUpdatedAtForUser('transactions', userId),
+      _db.getLatestUpdatedAtForUser('transfers', userId),
+      _db.getLatestUpdatedAtForUser('budgets', userId),
+      _db.getLatestUpdatedAtForUser('recurring_transactions', userId),
+      _db.getLatestUpdatedAtForUser('payment_card_credentials', userId),
+      _db.getLatestUpdatedAtForUser('bank_account_credentials', userId),
     ]);
+    return _maxDate(values);
   }
 
   Future<DateTime?> _getRemoteLastUpdated(String userId) async {
@@ -413,58 +337,19 @@ class SyncService {
 
   Future<void> _importRemoteSnapshot(String userId) async {
     final snapshot = await _fetchRemoteSnapshot(userId);
-    await _isar.writeTxn(() async {
-      await _isar.summaryCacheEntitys
-          .filter()
-          .userIdEqualTo(userId)
-          .deleteAll();
-      await _isar.userEntitys.filter().userIdEqualTo(userId).deleteAll();
-      await _isar.accountEntitys.filter().userIdEqualTo(userId).deleteAll();
-      await _isar.categoryEntitys.filter().userIdEqualTo(userId).deleteAll();
-      await _isar.transactionEntitys.filter().userIdEqualTo(userId).deleteAll();
-      await _isar.transferEntitys.filter().userIdEqualTo(userId).deleteAll();
-      await _isar.budgetEntitys.filter().userIdEqualTo(userId).deleteAll();
-      await _isar.recurringTransactionEntitys
-          .filter()
-          .userIdEqualTo(userId)
-          .deleteAll();
-      await _isar.paymentCardCredentialEntitys
-          .filter()
-          .userIdEqualTo(userId)
-          .deleteAll();
-      await _isar.bankAccountCredentialEntitys
-          .filter()
-          .userIdEqualTo(userId)
-          .deleteAll();
-
-      if (snapshot.user != null) {
-        await _isar.userEntitys.put(snapshot.user!);
+    await _db.transaction((txn) async {
+      for (final table in ['summary_cache', 'users', 'accounts', 'categories', 'transactions', 'transfers', 'budgets', 'recurring_transactions', 'payment_card_credentials', 'bank_account_credentials']) {
+        await txn.rawDelete('DELETE FROM $table WHERE user_id = ?', [userId]);
       }
-      if (snapshot.accounts.isNotEmpty) {
-        await _isar.accountEntitys.putAll(snapshot.accounts);
-      }
-      if (snapshot.categories.isNotEmpty) {
-        await _isar.categoryEntitys.putAll(snapshot.categories);
-      }
-      if (snapshot.transactions.isNotEmpty) {
-        await _isar.transactionEntitys.putAll(snapshot.transactions);
-      }
-      if (snapshot.transfers.isNotEmpty) {
-        await _isar.transferEntitys.putAll(snapshot.transfers);
-      }
-      if (snapshot.budgets.isNotEmpty) {
-        await _isar.budgetEntitys.putAll(snapshot.budgets);
-      }
-      if (snapshot.recurring.isNotEmpty) {
-        await _isar.recurringTransactionEntitys.putAll(snapshot.recurring);
-      }
-      if (snapshot.paymentCards.isNotEmpty) {
-        await _isar.paymentCardCredentialEntitys.putAll(snapshot.paymentCards);
-      }
-      if (snapshot.bankCredentials.isNotEmpty) {
-        await _isar.bankAccountCredentialEntitys
-            .putAll(snapshot.bankCredentials);
-      }
+      if (snapshot.user != null) await _db.putUser(snapshot.user!, txn: txn);
+      await _db.putAccounts(snapshot.accounts, txn: txn);
+      await _db.putCategories(snapshot.categories, txn: txn);
+      await _db.putTransactions(snapshot.transactions, txn: txn);
+      await _db.putTransfers(snapshot.transfers, txn: txn);
+      await _db.putBudgets(snapshot.budgets, txn: txn);
+      await _db.putRecurringTransactions(snapshot.recurring, txn: txn);
+      await _db.putPaymentCardCredentials(snapshot.paymentCards, txn: txn);
+      await _db.putBankAccountCredentials(snapshot.bankCredentials, txn: txn);
     });
   }
 
@@ -731,14 +616,14 @@ class SyncStatus {
           localLastUpdated!.isAfter(remoteLastUpdated!));
 }
 
-class SyncOutboxError {
-  const SyncOutboxError({
+class PendingSync {
+  const PendingSync({
     required this.entityType,
     required this.entityId,
     required this.action,
     required this.attempts,
     required this.lastAttemptAt,
-    required this.message,
+    this.errorMessage,
   });
 
   final String entityType;
@@ -746,7 +631,7 @@ class SyncOutboxError {
   final String action;
   final int attempts;
   final DateTime? lastAttemptAt;
-  final String message;
+  final String? errorMessage;
 }
 
 class _RemoteSnapshot {

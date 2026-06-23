@@ -1,108 +1,107 @@
-import 'package:isar/isar.dart';
-
 import '../cqrs/cqrs_bus.dart';
 import '../cqrs/commands.dart';
-import '../cqrs/handlers.dart';
+import '../cqrs/handlers_sqlite.dart';
 import '../cqrs/queries.dart';
 import '../models/isar_models.dart';
+import 'app_database.dart';
 import 'local_db.dart';
 import 'sync_outbox.dart';
 
 class CqrsService {
-  CqrsService._(this.bus, this.isar);
+  CqrsService._(this.bus, this.db);
 
   final CqrsBus bus;
-  final Isar isar;
+  final AppDatabase db;
 
   static Future<CqrsService> create() async {
-    final isar = await LocalDb.instance.open();
+    final db = await LocalDb.instance.open();
     final bus = CqrsBus();
-    final summaryWriter = SummaryCacheWriter(isar);
-    final outboxWriter = SyncOutboxWriter(isar);
+    final summaryWriter = SummaryCacheWriter(db);
+    final outboxWriter = SyncOutboxWriter(db);
 
     bus.registerCommandHandler<CreateUserCommand>(
-      CreateUserHandler(isar, outboxWriter),
+      CreateUserHandler(db, outboxWriter),
     );
     bus.registerCommandHandler<CreateAccountCommand>(
-      CreateAccountHandler(isar, outboxWriter),
+      CreateAccountHandler(db, outboxWriter),
     );
     bus.registerCommandHandler<UpdateAccountCommand>(
-      UpdateAccountHandler(isar, outboxWriter),
+      UpdateAccountHandler(db, outboxWriter),
     );
     bus.registerCommandHandler<DeleteAccountCommand>(
-      DeleteAccountHandler(isar, outboxWriter),
+      DeleteAccountHandler(db, outboxWriter),
     );
     bus.registerCommandHandler<CreateCategoryCommand>(
-      CreateCategoryHandler(isar, outboxWriter),
+      CreateCategoryHandler(db, outboxWriter),
     );
     bus.registerCommandHandler<UpdateCategoryCommand>(
-      UpdateCategoryHandler(isar, outboxWriter),
+      UpdateCategoryHandler(db, outboxWriter),
     );
     bus.registerCommandHandler<DeleteCategoryCommand>(
-      DeleteCategoryHandler(isar, outboxWriter),
+      DeleteCategoryHandler(db, outboxWriter),
     );
     bus.registerCommandHandler<CreateTransactionCommand>(
-      CreateTransactionHandler(isar, summaryWriter, outboxWriter),
+      CreateTransactionHandler(db, summaryWriter, outboxWriter),
     );
     bus.registerCommandHandler<UpdateTransactionCommand>(
-      UpdateTransactionHandler(isar, summaryWriter, outboxWriter),
+      UpdateTransactionHandler(db, summaryWriter, outboxWriter),
     );
     bus.registerCommandHandler<DeleteTransactionCommand>(
-      DeleteTransactionHandler(isar, summaryWriter, outboxWriter),
+      DeleteTransactionHandler(db, summaryWriter, outboxWriter),
     );
     bus.registerCommandHandler<CreateTransferCommand>(
-      CreateTransferHandler(isar, outboxWriter),
+      CreateTransferHandler(db, outboxWriter),
     );
     bus.registerCommandHandler<CreateBudgetCommand>(
-      CreateBudgetHandler(isar, outboxWriter),
+      CreateBudgetHandler(db, outboxWriter),
     );
     bus.registerCommandHandler<CreateRecurringTransactionCommand>(
-      CreateRecurringTransactionHandler(isar, outboxWriter),
+      CreateRecurringTransactionHandler(db, outboxWriter),
     );
     bus.registerCommandHandler<UpsertPaymentCardCredentialCommand>(
-      UpsertPaymentCardCredentialHandler(isar, outboxWriter),
+      UpsertPaymentCardCredentialHandler(db, outboxWriter),
     );
     bus.registerCommandHandler<DeletePaymentCardCredentialCommand>(
-      DeletePaymentCardCredentialHandler(isar, outboxWriter),
+      DeletePaymentCardCredentialHandler(db, outboxWriter),
     );
     bus.registerCommandHandler<UpsertBankAccountCredentialCommand>(
-      UpsertBankAccountCredentialHandler(isar, outboxWriter),
+      UpsertBankAccountCredentialHandler(db, outboxWriter),
     );
     bus.registerCommandHandler<DeleteBankAccountCredentialCommand>(
-      DeleteBankAccountCredentialHandler(isar, outboxWriter),
+      DeleteBankAccountCredentialHandler(db, outboxWriter),
     );
 
     bus.registerQueryHandler<GetAccountsQuery, List<AccountEntity>>(
-      GetAccountsHandler(isar),
+      GetAccountsHandler(db),
     );
     bus.registerQueryHandler<GetCategoriesQuery, List<CategoryEntity>>(
-      GetCategoriesHandler(isar),
+      GetCategoriesHandler(db),
     );
     bus.registerQueryHandler<GetTransactionsQuery, List<TransactionEntity>>(
-      GetTransactionsHandler(isar),
+      GetTransactionsHandler(db),
     );
     bus.registerQueryHandler<GetBudgetsQuery, List<BudgetEntity>>(
-      GetBudgetsHandler(isar),
+      GetBudgetsHandler(db),
     );
     bus.registerQueryHandler<GetRecurringQuery,
         List<RecurringTransactionEntity>>(
-      GetRecurringHandler(isar),
+      GetRecurringHandler(db),
     );
     bus.registerQueryHandler<GetTransfersQuery, List<TransferEntity>>(
-      GetTransfersHandler(isar),
+      GetTransfersHandler(db),
     );
     bus.registerQueryHandler<GetSummaryQuery, SummaryCacheEntity?>(
-      GetSummaryHandler(isar, summaryWriter),
+      GetSummaryHandler(db, summaryWriter),
     );
     bus.registerQueryHandler<GetPaymentCardCredentialsQuery,
         List<PaymentCardCredentialEntity>>(
-      GetPaymentCardCredentialsHandler(isar),
+      GetPaymentCardCredentialsHandler(db),
     );
     bus.registerQueryHandler<GetBankAccountCredentialsQuery,
         List<BankAccountCredentialEntity>>(
-      GetBankAccountCredentialsHandler(isar),
+      GetBankAccountCredentialsHandler(db),
     );
 
-    return CqrsService._(bus, isar);
+    return CqrsService._(bus, db);
   }
 }

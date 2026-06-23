@@ -1,13 +1,12 @@
 import 'dart:convert';
 
-import 'package:isar/isar.dart';
-
+import 'app_database.dart';
 import '../models/isar_models.dart';
 
 class SyncOutboxWriter {
-  SyncOutboxWriter(this._isar);
+  SyncOutboxWriter(this._db);
 
-  final Isar _isar;
+  final AppDatabase _db;
 
   Future<void> enqueueInTxn({
     required String userId,
@@ -15,6 +14,7 @@ class SyncOutboxWriter {
     required String entityId,
     required Map<String, dynamic> payload,
     String action = 'upsert',
+    required dynamic txn,
   }) async {
     final entry = SyncOutboxEntity()
       ..userId = userId
@@ -26,7 +26,7 @@ class SyncOutboxWriter {
       ..createdAt = DateTime.now()
       ..attempts = 0;
 
-    await _isar.syncOutboxEntitys.put(entry);
+    await _db.putSyncOutbox(entry, txn: txn);
   }
 
   Future<void> enqueue({
@@ -36,13 +36,14 @@ class SyncOutboxWriter {
     required Map<String, dynamic> payload,
     String action = 'upsert',
   }) async {
-    await _isar.writeTxn(() async {
+    await _db.transaction((txn) async {
       await enqueueInTxn(
         userId: userId,
         entityType: entityType,
         entityId: entityId,
         payload: payload,
         action: action,
+        txn: txn,
       );
     });
   }

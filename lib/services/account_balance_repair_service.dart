@@ -1,37 +1,23 @@
-import 'package:isar/isar.dart';
-
-import '../models/isar_models.dart';
+import 'app_database.dart';
 import 'sync_mapper.dart';
 import 'sync_outbox.dart';
 
 class AccountBalanceRepairService {
   AccountBalanceRepairService({
-    required Isar isar,
+    required AppDatabase db,
     SyncOutboxWriter? outboxWriter,
-  })  : _isar = isar,
-        _outboxWriter = outboxWriter ?? SyncOutboxWriter(isar);
+  })  : _db = db,
+        _outboxWriter = outboxWriter ?? SyncOutboxWriter(db);
 
   static const _tolerance = 0.005;
 
-  final Isar _isar;
+  final AppDatabase _db;
   final SyncOutboxWriter _outboxWriter;
 
   Future<int> repair({required String userId}) async {
-    final accounts = await _isar.accountEntitys
-        .filter()
-        .userIdEqualTo(userId)
-        .deletedAtIsNull()
-        .findAll();
-    final transactions = await _isar.transactionEntitys
-        .filter()
-        .userIdEqualTo(userId)
-        .deletedAtIsNull()
-        .findAll();
-    final transfers = await _isar.transferEntitys
-        .filter()
-        .userIdEqualTo(userId)
-        .deletedAtIsNull()
-        .findAll();
+    final accounts = await _db.getAccounts(userId: userId);
+    final transactions = await _db.getTransactions(userId: userId, limit: 1000000);
+    final transfers = await _db.getTransfers(userId: userId);
 
     final balances = <String, double>{
       for (final account in accounts) account.accountId: account.openingBalance,
@@ -58,7 +44,7 @@ class AccountBalanceRepairService {
 
     var repairedCount = 0;
     final now = DateTime.now();
-    await _isar.writeTxn(() async {
+    await _db.transaction((txn) async {
       for (final account in accounts) {
         final expected = balances[account.accountId];
         if (expected == null ||
@@ -69,12 +55,13 @@ class AccountBalanceRepairService {
         account
           ..currentBalance = expected
           ..updatedAt = now;
-        await _isar.accountEntitys.put(account);
+        await _db.putAccount(account, txn: txn);
         await _outboxWriter.enqueueInTxn(
           userId: userId,
           entityType: 'accounts',
           entityId: account.accountId,
           payload: SyncPayloadMapper.account(account),
+          txn: txn,
         );
         repairedCount++;
       }

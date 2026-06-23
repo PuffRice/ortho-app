@@ -758,6 +758,8 @@ class _CardCredentialSheetState extends State<_CardCredentialSheet> {
       saving: _saving,
       actionLabel: widget.initial == null ? 'Save card' : 'Update card',
       onSave: _save,
+      deleteLabel: widget.initial == null ? null : 'Delete card',
+      onDelete: widget.initial == null ? null : _confirmDelete,
       children: [
         _LogoPicker(logoBase64: _logoBase64, onPicked: _pickLogo),
         _SheetField(controller: _bankController, label: 'Bank name'),
@@ -835,6 +837,37 @@ class _CardCredentialSheetState extends State<_CardCredentialSheet> {
     }
   }
 
+  Future<void> _confirmDelete() async {
+    final initial = widget.initial;
+    if (initial == null) {
+      return;
+    }
+
+    final confirmed = await _confirmSheetDelete(context, 'Delete this card?');
+    if (confirmed != true) {
+      return;
+    }
+
+    setState(() => _saving = true);
+    try {
+      await widget.data.cqrs.bus.execute(
+        DeletePaymentCardCredentialCommand(
+          userId: widget.data.profile.userId,
+          cardCredentialId: initial.cardCredentialId,
+        ),
+      );
+      if (mounted) {
+        Navigator.of(context).pop(true);
+      }
+    } catch (error) {
+      _showSheetError(context, 'Unable to delete card: $error');
+    } finally {
+      if (mounted) {
+        setState(() => _saving = false);
+      }
+    }
+  }
+
   @override
   void dispose() {
     _bankController.dispose();
@@ -888,6 +921,8 @@ class _BankCredentialSheetState extends State<_BankCredentialSheet> {
       saving: _saving,
       actionLabel: widget.initial == null ? 'Save bank' : 'Update bank',
       onSave: _save,
+      deleteLabel: widget.initial == null ? null : 'Delete bank account',
+      onDelete: widget.initial == null ? null : _confirmDelete,
       children: [
         _LogoPicker(logoBase64: _logoBase64, onPicked: _pickLogo),
         _SheetField(controller: _bankController, label: 'Bank name'),
@@ -955,6 +990,38 @@ class _BankCredentialSheetState extends State<_BankCredentialSheet> {
     }
   }
 
+  Future<void> _confirmDelete() async {
+    final initial = widget.initial;
+    if (initial == null) {
+      return;
+    }
+
+    final confirmed =
+        await _confirmSheetDelete(context, 'Delete this bank account?');
+    if (confirmed != true) {
+      return;
+    }
+
+    setState(() => _saving = true);
+    try {
+      await widget.data.cqrs.bus.execute(
+        DeleteBankAccountCredentialCommand(
+          userId: widget.data.profile.userId,
+          bankCredentialId: initial.bankCredentialId,
+        ),
+      );
+      if (mounted) {
+        Navigator.of(context).pop(true);
+      }
+    } catch (error) {
+      _showSheetError(context, 'Unable to delete bank account: $error');
+    } finally {
+      if (mounted) {
+        setState(() => _saving = false);
+      }
+    }
+  }
+
   @override
   void dispose() {
     _bankController.dispose();
@@ -974,6 +1041,8 @@ class _SheetShell extends StatelessWidget {
     required this.saving,
     required this.actionLabel,
     required this.onSave,
+    this.deleteLabel,
+    this.onDelete,
   });
 
   final String title;
@@ -981,6 +1050,8 @@ class _SheetShell extends StatelessWidget {
   final bool saving;
   final String actionLabel;
   final VoidCallback onSave;
+  final String? deleteLabel;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -1029,6 +1100,21 @@ class _SheetShell extends StatelessWidget {
                     : Text(actionLabel),
               ),
             ),
+            if (deleteLabel != null && onDelete != null) ...[
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: TextButton.icon(
+                  onPressed: saving ? null : onDelete,
+                  icon: const Icon(Icons.delete_outline),
+                  label: Text(deleteLabel!),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.redAccent,
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -1231,4 +1317,36 @@ Uint8List? _decodeLogo(String? value) {
 
 void _showSheetError(BuildContext context, String message) {
   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+}
+
+Future<bool?> _confirmSheetDelete(BuildContext context, String title) {
+  return showDialog<bool>(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        backgroundColor: AppColors.bgSecondary,
+        title: Text(
+          title,
+          style: const TextStyle(color: AppColors.textPrimary),
+        ),
+        content: const Text(
+          'This will remove it locally and sync the deletion.',
+          style: TextStyle(color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: Colors.redAccent),
+            ),
+          ),
+        ],
+      );
+    },
+  );
 }

@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:isar/isar.dart';
 import '../config/app_colors.dart';
 import '../config/category_icons.dart';
 import '../cqrs/queries.dart';
@@ -20,7 +19,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  bool _isBalanceVisible = true;
+  bool _isBalanceVisible = false;
   bool _isAccountBalancesExpanded = false;
   Future<_HomeData>? _homeDataFuture;
   StreamSubscription<void>? _profileChangesSubscription;
@@ -237,11 +236,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<_HomeData> _loadHomeData() async {
     final profile = await UserIdentityService.instance.getProfile();
-    final isar = await LocalDb.instance.open();
-    final user = await isar.userEntitys
-        .filter()
-        .userIdEqualTo(profile.userId)
-        .findFirst();
+    final db = await LocalDb.instance.open();
+    final user = await db.getUserByUserId(profile.userId);
     final cqrs = await CqrsService.create();
     final now = DateTime.now();
     final monthStart = DateTime(now.year, now.month, 1);
@@ -991,7 +987,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Icon(icon, color: iconColor, size: 20),
                   ),
                   const Spacer(),
-                  
                   Container(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

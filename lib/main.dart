@@ -18,7 +18,6 @@ import 'screens/profile_screen.dart';
 import 'screens/transaction_history_screen.dart';
 import 'services/account_balance_repair_service.dart';
 import 'services/local_db.dart';
-import 'services/local_user_migration.dart';
 import 'services/supabase_service.dart';
 import 'services/sync_service.dart';
 import 'services/timestamp_repair_service.dart';
@@ -30,22 +29,21 @@ void main() {
 }
 
 Future<void> _initializeApp() async {
-  final isar = await LocalDb.instance.open();
+  final db = await LocalDb.instance.open();
   final profile = await UserIdentityService.instance.getProfile();
-  await LocalUserMigration(isar).migrateTo(profile.userId);
-  await TimestampRepairService(isar: isar).repairLocal(userId: profile.userId);
-  await AccountBalanceRepairService(isar: isar).repair(userId: profile.userId);
+  await TimestampRepairService(db: db).repairLocal(userId: profile.userId);
+  await AccountBalanceRepairService(db: db).repair(userId: profile.userId);
   if (_supabaseConfigured()) {
     await SupabaseService().initialize(
       supabaseUrl: SUPABASE_URL,
       supabaseAnonKey: SUPABASE_ANON_KEY,
     );
     await SyncService.initialize(
-      isar: isar,
+      db: db,
       client: SupabaseService().client,
     );
     final authId = SupabaseService().getCurrentUser()?.id;
-    final repairedCount = await AccountBalanceRepairService(isar: isar)
+    final repairedCount = await AccountBalanceRepairService(db: db)
         .repair(userId: authId ?? profile.userId);
     if (repairedCount > 0) {
       SyncService.instance?.requestSync();

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:isar/isar.dart';
 
 import '../config/app_colors.dart';
 import '../config/app_routes.dart';
@@ -32,9 +31,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<UserEntity?> _loadUser() async {
-    final isar = await LocalDb.instance.open();
+    final db = await LocalDb.instance.open();
     final profile = await UserIdentityService.instance.getProfile();
-    return isar.userEntitys.filter().userIdEqualTo(profile.userId).findFirst();
+    return db.getUserByUserId(profile.userId);
   }
 
   @override
@@ -361,8 +360,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
     var statusFuture =
         userIdFuture.then((userId) => sync.getStatus(userId: userId));
-    var errorFuture =
-        userIdFuture.then((userId) => sync.getRecentErrors(userId: userId));
+    var pendingFuture =
+        userIdFuture.then((userId) => sync.getPendingSyncs(userId: userId));
     var isPushing = false;
     var isDownloading = false;
 
@@ -380,8 +379,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               setState(() {
                 statusFuture = userIdFuture
                     .then((userId) => sync.getStatus(userId: userId));
-                errorFuture = userIdFuture
-                    .then((userId) => sync.getRecentErrors(userId: userId));
+                pendingFuture = userIdFuture
+                    .then((userId) => sync.getPendingSyncs(userId: userId));
               });
             }
 
@@ -422,8 +421,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     isDownloading = false;
                     statusFuture = userIdFuture
                         .then((userId) => sync.getStatus(userId: userId));
-                    errorFuture = userIdFuture.then(
-                      (userId) => sync.getRecentErrors(userId: userId),
+                    pendingFuture = userIdFuture.then(
+                      (userId) => sync.getPendingSyncs(userId: userId),
                     );
                   });
                 }
@@ -508,7 +507,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 ),
                               ),
                               const SizedBox(height: 12),
-                              _statusRow('Local (Isar)', localLabel),
+                              _statusRow('Local (SQLite)', localLabel),
                               _statusRow('Remote (Supabase)', remoteLabel),
                               _statusRow(
                                 'Pending sync',
@@ -556,7 +555,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       const SizedBox(height: 20),
                       const Text(
-                        'Sync errors',
+                        'Pending syncs',
                         style: TextStyle(
                           color: AppColors.textPrimary,
                           fontSize: 14,
@@ -564,8 +563,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
                       const SizedBox(height: 10),
-                      FutureBuilder<List<SyncOutboxError>>(
-                        future: errorFuture,
+                      FutureBuilder<List<PendingSync>>(
+                        future: pendingFuture,
                         builder: (context, snapshot) {
                           if (snapshot.connectionState ==
                               ConnectionState.waiting) {
@@ -576,16 +575,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           }
                           if (snapshot.hasError) {
                             return const Text(
-                              'Unable to load sync errors.',
+                              'Unable to load pending syncs.',
                               style: TextStyle(color: AppColors.textMuted),
                             );
                           }
 
-                          final errors =
-                              snapshot.data ?? const <SyncOutboxError>[];
-                          if (errors.isEmpty) {
+                          final pending =
+                              snapshot.data ?? const <PendingSync>[];
+                          if (pending.isEmpty) {
                             return const Text(
-                              'No sync errors found.',
+                              'No pending syncs.',
                               style: TextStyle(
                                 color: AppColors.textMuted,
                                 fontSize: 12,
@@ -594,9 +593,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           }
 
                           return Column(
-                            children: errors
+                            children: pending
                                 .map(
-                                  (error) => _syncErrorTile(context, error),
+                                  (entry) => _pendingSyncTile(context, entry),
                                 )
                                 .toList(),
                           );
@@ -638,28 +637,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _syncErrorTile(BuildContext context, SyncOutboxError error) {
-    final attemptedAt = _formatTimestamp(context, error.lastAttemptAt);
+  Widget _pendingSyncTile(BuildContext context, PendingSync entry) {
+    final attemptedAt = _formatTimestamp(context, entry.lastAttemptAt);
+    final hasError = entry.errorMessage != null;
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.redAccent.withValues(alpha: 0.08),
+        color: (hasError ? Colors.redAccent : AppColors.primaryPurple)
+            .withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.redAccent.withValues(alpha: 0.22)),
+        border: Border.all(
+          color: (hasError ? Colors.redAccent : AppColors.primaryPurple)
+              .withValues(alpha: 0.22),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.error_outline,
-                  color: Colors.redAccent, size: 18),
+              Icon(
+                hasError ? Icons.error_outline : Icons.schedule_outlined,
+                color: hasError ? Colors.redAccent : AppColors.primaryPurple,
+                size: 18,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  '${error.entityType} ${error.action}',
+                  '${entry.entityType} ${entry.action}',
                   style: const TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 13,
@@ -668,7 +675,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
               Text(
-                '${error.attempts}x',
+                '${entry.attempts}x',
                 style: const TextStyle(
                   color: AppColors.textMuted,
                   fontSize: 11,
@@ -676,17 +683,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 6),
-          Text(
-            error.message,
-            style: const TextStyle(
-              color: Colors.redAccent,
-              fontSize: 12,
+          if (hasError) ...[
+            const SizedBox(height: 6),
+            Text(
+              entry.errorMessage!,
+              style: const TextStyle(color: Colors.redAccent, fontSize: 12),
             ),
-          ),
+          ],
           const SizedBox(height: 6),
           Text(
-            '${error.entityId} - $attemptedAt',
+            '${entry.entityId} - $attemptedAt',
             style: const TextStyle(
               color: AppColors.textMuted,
               fontSize: 11,

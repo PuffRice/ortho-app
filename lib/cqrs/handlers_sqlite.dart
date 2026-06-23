@@ -1,43 +1,39 @@
 import 'dart:convert';
 
-import 'package:isar/isar.dart';
-
-import '../models/isar_models.dart';
 import 'cqrs_bus.dart';
+import '../models/isar_models.dart';
 import 'commands.dart';
 import 'queries.dart';
 import 'utils.dart';
+import '../services/app_database.dart';
 import '../services/sync_mapper.dart';
 import '../services/sync_outbox.dart';
 import '../services/sync_service.dart';
 
 class CreateUserHandler implements CommandHandler<CreateUserCommand> {
-  CreateUserHandler(this._isar, this._outboxWriter);
+  CreateUserHandler(this._db, this._outboxWriter);
 
-  final Isar _isar;
+  final AppDatabase _db;
   final SyncOutboxWriter _outboxWriter;
 
   @override
   Future<void> handle(CreateUserCommand command) async {
     final now = command.now ?? DateTime.now();
-    await _isar.writeTxn(() async {
-      final existing = await _isar.userEntitys
-          .filter()
-          .userIdEqualTo(command.userId)
-          .findFirst();
+    await _db.transaction((txn) async {
+      final existing = await _db.getUserByUserId(command.userId);
       if (existing != null) {
-        existing.email = command.email;
-        existing.displayName = command.displayName;
-        if (command.photoUrl != null) {
-          existing.photoUrl = command.photoUrl;
-        }
-        existing.updatedAt = now;
-        await _isar.userEntitys.put(existing);
+        existing
+          ..email = command.email
+          ..displayName = command.displayName
+          ..photoUrl = command.photoUrl ?? existing.photoUrl
+          ..updatedAt = now;
+        await _db.putUser(existing, txn: txn);
         await _outboxWriter.enqueueInTxn(
           userId: command.userId,
           entityType: 'users',
           entityId: existing.userId,
           payload: SyncPayloadMapper.user(existing),
+          txn: txn,
         );
         return;
       }
@@ -50,12 +46,13 @@ class CreateUserHandler implements CommandHandler<CreateUserCommand> {
         ..createdAt = now
         ..updatedAt = now;
 
-      await _isar.userEntitys.put(user);
+      await _db.putUser(user, txn: txn);
       await _outboxWriter.enqueueInTxn(
         userId: command.userId,
         entityType: 'users',
         entityId: user.userId,
         payload: SyncPayloadMapper.user(user),
+        txn: txn,
       );
     });
     SyncService.instance?.requestSync();
@@ -63,9 +60,9 @@ class CreateUserHandler implements CommandHandler<CreateUserCommand> {
 }
 
 class CreateAccountHandler implements CommandHandler<CreateAccountCommand> {
-  CreateAccountHandler(this._isar, this._outboxWriter);
+  CreateAccountHandler(this._db, this._outboxWriter);
 
-  final Isar _isar;
+  final AppDatabase _db;
   final SyncOutboxWriter _outboxWriter;
 
   @override
@@ -83,13 +80,14 @@ class CreateAccountHandler implements CommandHandler<CreateAccountCommand> {
       ..createdAt = now
       ..updatedAt = now;
 
-    await _isar.writeTxn(() async {
-      await _isar.accountEntitys.put(account);
+    await _db.transaction((txn) async {
+      await _db.putAccount(account, txn: txn);
       await _outboxWriter.enqueueInTxn(
         userId: command.userId,
         entityType: 'accounts',
         entityId: account.accountId,
         payload: SyncPayloadMapper.account(account),
+        txn: txn,
       );
     });
     SyncService.instance?.requestSync();
@@ -97,9 +95,9 @@ class CreateAccountHandler implements CommandHandler<CreateAccountCommand> {
 }
 
 class UpdateAccountHandler implements CommandHandler<UpdateAccountCommand> {
-  UpdateAccountHandler(this._isar, this._outboxWriter);
+  UpdateAccountHandler(this._db, this._outboxWriter);
 
-  final Isar _isar;
+  final AppDatabase _db;
   final SyncOutboxWriter _outboxWriter;
 
   @override
@@ -107,12 +105,11 @@ class UpdateAccountHandler implements CommandHandler<UpdateAccountCommand> {
     final now = command.now ?? DateTime.now();
     AccountEntity? account;
 
-    await _isar.writeTxn(() async {
-      account = await _isar.accountEntitys
-          .filter()
-          .userIdEqualTo(command.userId)
-          .accountIdEqualTo(command.accountId)
-          .findFirst();
+    await _db.transaction((txn) async {
+      account = await _db.getAccountByUserAndAccountId(
+        command.userId,
+        command.accountId,
+      );
 
       if (account == null) {
         return;
@@ -128,12 +125,13 @@ class UpdateAccountHandler implements CommandHandler<UpdateAccountCommand> {
         ..currentBalance = account!.currentBalance + openingDelta
         ..updatedAt = now;
 
-      await _isar.accountEntitys.put(account!);
+      await _db.putAccount(account!, txn: txn);
       await _outboxWriter.enqueueInTxn(
         userId: command.userId,
         entityType: 'accounts',
         entityId: account!.accountId,
         payload: SyncPayloadMapper.account(account!),
+        txn: txn,
       );
     });
 
@@ -144,9 +142,9 @@ class UpdateAccountHandler implements CommandHandler<UpdateAccountCommand> {
 }
 
 class DeleteAccountHandler implements CommandHandler<DeleteAccountCommand> {
-  DeleteAccountHandler(this._isar, this._outboxWriter);
+  DeleteAccountHandler(this._db, this._outboxWriter);
 
-  final Isar _isar;
+  final AppDatabase _db;
   final SyncOutboxWriter _outboxWriter;
 
   @override
@@ -154,12 +152,11 @@ class DeleteAccountHandler implements CommandHandler<DeleteAccountCommand> {
     final now = command.now ?? DateTime.now();
     AccountEntity? account;
 
-    await _isar.writeTxn(() async {
-      account = await _isar.accountEntitys
-          .filter()
-          .userIdEqualTo(command.userId)
-          .accountIdEqualTo(command.accountId)
-          .findFirst();
+    await _db.transaction((txn) async {
+      account = await _db.getAccountByUserAndAccountId(
+        command.userId,
+        command.accountId,
+      );
 
       if (account == null) {
         return;
@@ -169,12 +166,13 @@ class DeleteAccountHandler implements CommandHandler<DeleteAccountCommand> {
         ..deletedAt = now
         ..updatedAt = now;
 
-      await _isar.accountEntitys.put(account!);
+      await _db.putAccount(account!, txn: txn);
       await _outboxWriter.enqueueInTxn(
         userId: command.userId,
         entityType: 'accounts',
         entityId: account!.accountId,
         payload: SyncPayloadMapper.account(account!),
+        txn: txn,
       );
     });
 
@@ -185,9 +183,9 @@ class DeleteAccountHandler implements CommandHandler<DeleteAccountCommand> {
 }
 
 class CreateCategoryHandler implements CommandHandler<CreateCategoryCommand> {
-  CreateCategoryHandler(this._isar, this._outboxWriter);
+  CreateCategoryHandler(this._db, this._outboxWriter);
 
-  final Isar _isar;
+  final AppDatabase _db;
   final SyncOutboxWriter _outboxWriter;
 
   @override
@@ -204,13 +202,14 @@ class CreateCategoryHandler implements CommandHandler<CreateCategoryCommand> {
       ..createdAt = now
       ..updatedAt = now;
 
-    await _isar.writeTxn(() async {
-      await _isar.categoryEntitys.put(category);
+    await _db.transaction((txn) async {
+      await _db.putCategory(category, txn: txn);
       await _outboxWriter.enqueueInTxn(
         userId: command.userId,
         entityType: 'categories',
         entityId: category.categoryId,
         payload: SyncPayloadMapper.category(category),
+        txn: txn,
       );
     });
     SyncService.instance?.requestSync();
@@ -218,9 +217,9 @@ class CreateCategoryHandler implements CommandHandler<CreateCategoryCommand> {
 }
 
 class UpdateCategoryHandler implements CommandHandler<UpdateCategoryCommand> {
-  UpdateCategoryHandler(this._isar, this._outboxWriter);
+  UpdateCategoryHandler(this._db, this._outboxWriter);
 
-  final Isar _isar;
+  final AppDatabase _db;
   final SyncOutboxWriter _outboxWriter;
 
   @override
@@ -228,12 +227,11 @@ class UpdateCategoryHandler implements CommandHandler<UpdateCategoryCommand> {
     final now = command.now ?? DateTime.now();
     CategoryEntity? category;
 
-    await _isar.writeTxn(() async {
-      category = await _isar.categoryEntitys
-          .filter()
-          .userIdEqualTo(command.userId)
-          .categoryIdEqualTo(command.categoryId)
-          .findFirst();
+    await _db.transaction((txn) async {
+      category = await _db.getCategoryByUserAndCategoryId(
+        command.userId,
+        command.categoryId,
+      );
 
       if (category == null) {
         return;
@@ -247,12 +245,13 @@ class UpdateCategoryHandler implements CommandHandler<UpdateCategoryCommand> {
         ..sortOrder = command.sortOrder
         ..updatedAt = now;
 
-      await _isar.categoryEntitys.put(category!);
+      await _db.putCategory(category!, txn: txn);
       await _outboxWriter.enqueueInTxn(
         userId: command.userId,
         entityType: 'categories',
         entityId: category!.categoryId,
         payload: SyncPayloadMapper.category(category!),
+        txn: txn,
       );
     });
 
@@ -263,9 +262,9 @@ class UpdateCategoryHandler implements CommandHandler<UpdateCategoryCommand> {
 }
 
 class DeleteCategoryHandler implements CommandHandler<DeleteCategoryCommand> {
-  DeleteCategoryHandler(this._isar, this._outboxWriter);
+  DeleteCategoryHandler(this._db, this._outboxWriter);
 
-  final Isar _isar;
+  final AppDatabase _db;
   final SyncOutboxWriter _outboxWriter;
 
   @override
@@ -273,12 +272,11 @@ class DeleteCategoryHandler implements CommandHandler<DeleteCategoryCommand> {
     final now = command.now ?? DateTime.now();
     CategoryEntity? category;
 
-    await _isar.writeTxn(() async {
-      category = await _isar.categoryEntitys
-          .filter()
-          .userIdEqualTo(command.userId)
-          .categoryIdEqualTo(command.categoryId)
-          .findFirst();
+    await _db.transaction((txn) async {
+      category = await _db.getCategoryByUserAndCategoryId(
+        command.userId,
+        command.categoryId,
+      );
 
       if (category == null) {
         return;
@@ -288,12 +286,13 @@ class DeleteCategoryHandler implements CommandHandler<DeleteCategoryCommand> {
         ..deletedAt = now
         ..updatedAt = now;
 
-      await _isar.categoryEntitys.put(category!);
+      await _db.putCategory(category!, txn: txn);
       await _outboxWriter.enqueueInTxn(
         userId: command.userId,
         entityType: 'categories',
         entityId: category!.categoryId,
         payload: SyncPayloadMapper.category(category!),
+        txn: txn,
       );
     });
 
@@ -305,9 +304,9 @@ class DeleteCategoryHandler implements CommandHandler<DeleteCategoryCommand> {
 
 class CreateTransactionHandler
     implements CommandHandler<CreateTransactionCommand> {
-  CreateTransactionHandler(this._isar, this._summaryWriter, this._outboxWriter);
+  CreateTransactionHandler(this._db, this._summaryWriter, this._outboxWriter);
 
-  final Isar _isar;
+  final AppDatabase _db;
   final SummaryCacheWriter _summaryWriter;
   final SyncOutboxWriter _outboxWriter;
 
@@ -328,33 +327,50 @@ class CreateTransactionHandler
       ..createdAt = now
       ..updatedAt = now;
 
-    await _isar.writeTxn(() async {
-      await _isar.transactionEntitys.put(transaction);
+    await _db.transaction((txn) async {
+      await _db.putTransaction(transaction, txn: txn);
       await _updateAccountBalance(
-        _isar,
-        _outboxWriter,
         command.userId,
         command.accountId,
         _deltaFor(command.type, command.amount),
+        txn,
       );
       await _outboxWriter.enqueueInTxn(
         userId: command.userId,
         entityType: 'transactions',
         entityId: transaction.transactionId,
         payload: SyncPayloadMapper.transaction(transaction),
+        txn: txn,
       );
     });
 
     await _summaryWriter.rebuildForDate(command.userId, command.date);
     SyncService.instance?.requestSync();
   }
+
+  Future<void> _updateAccountBalance(
+    String userId,
+    String accountId,
+    double delta,
+    dynamic txn,
+  ) async {
+    final account = await _db.getAccountByUserAndAccountId(userId, accountId);
+    if (account == null) return;
+    account.currentBalance += delta;
+    account.updatedAt = DateTime.now();
+    await _db.putAccount(account, txn: txn);
+  }
+
+  double _deltaFor(String type, double amount) {
+    return type == 'income' ? amount : (type == 'expense' ? -amount : 0);
+  }
 }
 
 class UpdateTransactionHandler
     implements CommandHandler<UpdateTransactionCommand> {
-  UpdateTransactionHandler(this._isar, this._summaryWriter, this._outboxWriter);
+  UpdateTransactionHandler(this._db, this._summaryWriter, this._outboxWriter);
 
-  final Isar _isar;
+  final AppDatabase _db;
   final SummaryCacheWriter _summaryWriter;
   final SyncOutboxWriter _outboxWriter;
 
@@ -363,12 +379,11 @@ class UpdateTransactionHandler
     TransactionEntity? existing;
     DateTime? previousDate;
 
-    await _isar.writeTxn(() async {
-      existing = await _isar.transactionEntitys
-          .filter()
-          .userIdEqualTo(command.userId)
-          .transactionIdEqualTo(command.transactionId)
-          .findFirst();
+    await _db.transaction((txn) async {
+      existing = await _db.getTransactionByUserAndTransactionId(
+        command.userId,
+        command.transactionId,
+      );
 
       if (existing == null) {
         return;
@@ -380,27 +395,14 @@ class UpdateTransactionHandler
 
       if (existing!.accountId == command.accountId) {
         await _updateAccountBalance(
-          _isar,
-          _outboxWriter,
           command.userId,
           command.accountId,
           newDelta - oldDelta,
+          txn,
         );
       } else {
-        await _updateAccountBalance(
-          _isar,
-          _outboxWriter,
-          command.userId,
-          existing!.accountId,
-          -oldDelta,
-        );
-        await _updateAccountBalance(
-          _isar,
-          _outboxWriter,
-          command.userId,
-          command.accountId,
-          newDelta,
-        );
+        await _updateAccountBalance(command.userId, existing!.accountId, -oldDelta, txn);
+        await _updateAccountBalance(command.userId, command.accountId, newDelta, txn);
       }
 
       existing!
@@ -414,12 +416,13 @@ class UpdateTransactionHandler
         ..isRecurring = command.isRecurring
         ..updatedAt = DateTime.now();
 
-      await _isar.transactionEntitys.put(existing!);
+      await _db.putTransaction(existing!, txn: txn);
       await _outboxWriter.enqueueInTxn(
         userId: command.userId,
         entityType: 'transactions',
         entityId: existing!.transactionId,
         payload: SyncPayloadMapper.transaction(existing!),
+        txn: txn,
       );
     });
 
@@ -433,13 +436,30 @@ class UpdateTransactionHandler
     }
     SyncService.instance?.requestSync();
   }
+
+  Future<void> _updateAccountBalance(
+    String userId,
+    String accountId,
+    double delta,
+    dynamic txn,
+  ) async {
+    final account = await _db.getAccountByUserAndAccountId(userId, accountId);
+    if (account == null) return;
+    account.currentBalance += delta;
+    account.updatedAt = DateTime.now();
+    await _db.putAccount(account, txn: txn);
+  }
+
+  double _deltaFor(String type, double amount) {
+    return type == 'income' ? amount : (type == 'expense' ? -amount : 0);
+  }
 }
 
 class DeleteTransactionHandler
     implements CommandHandler<DeleteTransactionCommand> {
-  DeleteTransactionHandler(this._isar, this._summaryWriter, this._outboxWriter);
+  DeleteTransactionHandler(this._db, this._summaryWriter, this._outboxWriter);
 
-  final Isar _isar;
+  final AppDatabase _db;
   final SummaryCacheWriter _summaryWriter;
   final SyncOutboxWriter _outboxWriter;
 
@@ -448,12 +468,11 @@ class DeleteTransactionHandler
     TransactionEntity? existing;
     DateTime? previousDate;
 
-    await _isar.writeTxn(() async {
-      existing = await _isar.transactionEntitys
-          .filter()
-          .userIdEqualTo(command.userId)
-          .transactionIdEqualTo(command.transactionId)
-          .findFirst();
+    await _db.transaction((txn) async {
+      existing = await _db.getTransactionByUserAndTransactionId(
+        command.userId,
+        command.transactionId,
+      );
 
       if (existing == null) {
         return;
@@ -463,19 +482,19 @@ class DeleteTransactionHandler
       existing!
         ..deletedAt = DateTime.now()
         ..updatedAt = DateTime.now();
-      await _isar.transactionEntitys.put(existing!);
+      await _db.putTransaction(existing!, txn: txn);
       await _updateAccountBalance(
-        _isar,
-        _outboxWriter,
         command.userId,
         existing!.accountId,
         -_deltaFor(existing!.type, existing!.amount),
+        txn,
       );
       await _outboxWriter.enqueueInTxn(
         userId: command.userId,
         entityType: 'transactions',
         entityId: existing!.transactionId,
         payload: SyncPayloadMapper.transaction(existing!),
+        txn: txn,
       );
     });
 
@@ -484,12 +503,29 @@ class DeleteTransactionHandler
     }
     SyncService.instance?.requestSync();
   }
+
+  Future<void> _updateAccountBalance(
+    String userId,
+    String accountId,
+    double delta,
+    dynamic txn,
+  ) async {
+    final account = await _db.getAccountByUserAndAccountId(userId, accountId);
+    if (account == null) return;
+    account.currentBalance += delta;
+    account.updatedAt = DateTime.now();
+    await _db.putAccount(account, txn: txn);
+  }
+
+  double _deltaFor(String type, double amount) {
+    return type == 'income' ? amount : (type == 'expense' ? -amount : 0);
+  }
 }
 
 class CreateTransferHandler implements CommandHandler<CreateTransferCommand> {
-  CreateTransferHandler(this._isar, this._outboxWriter);
+  CreateTransferHandler(this._db, this._outboxWriter);
 
-  final Isar _isar;
+  final AppDatabase _db;
   final SyncOutboxWriter _outboxWriter;
 
   @override
@@ -506,37 +542,39 @@ class CreateTransferHandler implements CommandHandler<CreateTransferCommand> {
       ..createdAt = now
       ..updatedAt = now;
 
-    await _isar.writeTxn(() async {
-      await _isar.transferEntitys.put(transfer);
-      await _updateAccountBalance(
-        _isar,
-        _outboxWriter,
-        command.userId,
-        command.fromAccountId,
-        -command.amount,
-      );
-      await _updateAccountBalance(
-        _isar,
-        _outboxWriter,
-        command.userId,
-        command.toAccountId,
-        command.amount,
-      );
+    await _db.transaction((txn) async {
+      await _db.putTransfer(transfer, txn: txn);
+      await _updateAccountBalance(command.userId, command.fromAccountId, -command.amount, txn);
+      await _updateAccountBalance(command.userId, command.toAccountId, command.amount, txn);
       await _outboxWriter.enqueueInTxn(
         userId: command.userId,
         entityType: 'transfers',
         entityId: transfer.transferId,
         payload: SyncPayloadMapper.transfer(transfer),
+        txn: txn,
       );
     });
     SyncService.instance?.requestSync();
   }
+
+  Future<void> _updateAccountBalance(
+    String userId,
+    String accountId,
+    double delta,
+    dynamic txn,
+  ) async {
+    final account = await _db.getAccountByUserAndAccountId(userId, accountId);
+    if (account == null) return;
+    account.currentBalance += delta;
+    account.updatedAt = DateTime.now();
+    await _db.putAccount(account, txn: txn);
+  }
 }
 
 class CreateBudgetHandler implements CommandHandler<CreateBudgetCommand> {
-  CreateBudgetHandler(this._isar, this._outboxWriter);
+  CreateBudgetHandler(this._db, this._outboxWriter);
 
-  final Isar _isar;
+  final AppDatabase _db;
   final SyncOutboxWriter _outboxWriter;
 
   @override
@@ -553,13 +591,14 @@ class CreateBudgetHandler implements CommandHandler<CreateBudgetCommand> {
       ..createdAt = now
       ..updatedAt = now;
 
-    await _isar.writeTxn(() async {
-      await _isar.budgetEntitys.put(budget);
+    await _db.transaction((txn) async {
+      await _db.putBudget(budget, txn: txn);
       await _outboxWriter.enqueueInTxn(
         userId: command.userId,
         entityType: 'budgets',
         entityId: budget.budgetId,
         payload: SyncPayloadMapper.budget(budget),
+        txn: txn,
       );
     });
     SyncService.instance?.requestSync();
@@ -568,9 +607,9 @@ class CreateBudgetHandler implements CommandHandler<CreateBudgetCommand> {
 
 class CreateRecurringTransactionHandler
     implements CommandHandler<CreateRecurringTransactionCommand> {
-  CreateRecurringTransactionHandler(this._isar, this._outboxWriter);
+  CreateRecurringTransactionHandler(this._db, this._outboxWriter);
 
-  final Isar _isar;
+  final AppDatabase _db;
   final SyncOutboxWriter _outboxWriter;
 
   @override
@@ -589,13 +628,14 @@ class CreateRecurringTransactionHandler
       ..createdAt = now
       ..updatedAt = now;
 
-    await _isar.writeTxn(() async {
-      await _isar.recurringTransactionEntitys.put(recurring);
+    await _db.transaction((txn) async {
+      await _db.putRecurring(recurring, txn: txn);
       await _outboxWriter.enqueueInTxn(
         userId: command.userId,
         entityType: 'recurring',
         entityId: recurring.recurringId,
         payload: SyncPayloadMapper.recurring(recurring),
+        txn: txn,
       );
     });
     SyncService.instance?.requestSync();
@@ -604,22 +644,21 @@ class CreateRecurringTransactionHandler
 
 class UpsertPaymentCardCredentialHandler
     implements CommandHandler<UpsertPaymentCardCredentialCommand> {
-  UpsertPaymentCardCredentialHandler(this._isar, this._outboxWriter);
+  UpsertPaymentCardCredentialHandler(this._db, this._outboxWriter);
 
-  final Isar _isar;
+  final AppDatabase _db;
   final SyncOutboxWriter _outboxWriter;
 
   @override
   Future<void> handle(UpsertPaymentCardCredentialCommand command) async {
     final now = command.now ?? DateTime.now();
     PaymentCardCredentialEntity? credential;
-    await _isar.writeTxn(() async {
+    await _db.transaction((txn) async {
       if (command.cardCredentialId != null) {
-        credential = await _isar.paymentCardCredentialEntitys
-            .filter()
-            .userIdEqualTo(command.userId)
-            .cardCredentialIdEqualTo(command.cardCredentialId!)
-            .findFirst();
+        credential = await _db.getPaymentCardCredentialByUserAndId(
+          command.userId,
+          command.cardCredentialId!,
+        );
       }
       credential ??= PaymentCardCredentialEntity()
         ..userId = command.userId
@@ -638,12 +677,13 @@ class UpsertPaymentCardCredentialHandler
         ..updatedAt = now
         ..deletedAt = null;
 
-      await _isar.paymentCardCredentialEntitys.put(credential!);
+      await _db.putPaymentCardCredential(credential!, txn: txn);
       await _outboxWriter.enqueueInTxn(
         userId: command.userId,
         entityType: 'payment_card_credentials',
         entityId: credential!.cardCredentialId,
         payload: SyncPayloadMapper.paymentCardCredential(credential!),
+        txn: txn,
       );
     });
     SyncService.instance?.requestSync();
@@ -652,33 +692,33 @@ class UpsertPaymentCardCredentialHandler
 
 class DeletePaymentCardCredentialHandler
     implements CommandHandler<DeletePaymentCardCredentialCommand> {
-  DeletePaymentCardCredentialHandler(this._isar, this._outboxWriter);
+  DeletePaymentCardCredentialHandler(this._db, this._outboxWriter);
 
-  final Isar _isar;
+  final AppDatabase _db;
   final SyncOutboxWriter _outboxWriter;
 
   @override
   Future<void> handle(DeletePaymentCardCredentialCommand command) async {
     final now = command.now ?? DateTime.now();
     PaymentCardCredentialEntity? credential;
-    await _isar.writeTxn(() async {
-      credential = await _isar.paymentCardCredentialEntitys
-          .filter()
-          .userIdEqualTo(command.userId)
-          .cardCredentialIdEqualTo(command.cardCredentialId)
-          .findFirst();
+    await _db.transaction((txn) async {
+      credential = await _db.getPaymentCardCredentialByUserAndId(
+        command.userId,
+        command.cardCredentialId,
+      );
       if (credential == null) {
         return;
       }
       credential!
         ..deletedAt = now
         ..updatedAt = now;
-      await _isar.paymentCardCredentialEntitys.put(credential!);
+      await _db.putPaymentCardCredential(credential!, txn: txn);
       await _outboxWriter.enqueueInTxn(
         userId: command.userId,
         entityType: 'payment_card_credentials',
         entityId: credential!.cardCredentialId,
         payload: SyncPayloadMapper.paymentCardCredential(credential!),
+        txn: txn,
       );
     });
     SyncService.instance?.requestSync();
@@ -687,22 +727,21 @@ class DeletePaymentCardCredentialHandler
 
 class UpsertBankAccountCredentialHandler
     implements CommandHandler<UpsertBankAccountCredentialCommand> {
-  UpsertBankAccountCredentialHandler(this._isar, this._outboxWriter);
+  UpsertBankAccountCredentialHandler(this._db, this._outboxWriter);
 
-  final Isar _isar;
+  final AppDatabase _db;
   final SyncOutboxWriter _outboxWriter;
 
   @override
   Future<void> handle(UpsertBankAccountCredentialCommand command) async {
     final now = command.now ?? DateTime.now();
     BankAccountCredentialEntity? credential;
-    await _isar.writeTxn(() async {
+    await _db.transaction((txn) async {
       if (command.bankCredentialId != null) {
-        credential = await _isar.bankAccountCredentialEntitys
-            .filter()
-            .userIdEqualTo(command.userId)
-            .bankCredentialIdEqualTo(command.bankCredentialId!)
-            .findFirst();
+        credential = await _db.getBankAccountCredentialByUserAndId(
+          command.userId,
+          command.bankCredentialId!,
+        );
       }
       credential ??= BankAccountCredentialEntity()
         ..userId = command.userId
@@ -720,12 +759,13 @@ class UpsertBankAccountCredentialHandler
         ..updatedAt = now
         ..deletedAt = null;
 
-      await _isar.bankAccountCredentialEntitys.put(credential!);
+      await _db.putBankAccountCredential(credential!, txn: txn);
       await _outboxWriter.enqueueInTxn(
         userId: command.userId,
         entityType: 'bank_account_credentials',
         entityId: credential!.bankCredentialId,
         payload: SyncPayloadMapper.bankAccountCredential(credential!),
+        txn: txn,
       );
     });
     SyncService.instance?.requestSync();
@@ -734,33 +774,33 @@ class UpsertBankAccountCredentialHandler
 
 class DeleteBankAccountCredentialHandler
     implements CommandHandler<DeleteBankAccountCredentialCommand> {
-  DeleteBankAccountCredentialHandler(this._isar, this._outboxWriter);
+  DeleteBankAccountCredentialHandler(this._db, this._outboxWriter);
 
-  final Isar _isar;
+  final AppDatabase _db;
   final SyncOutboxWriter _outboxWriter;
 
   @override
   Future<void> handle(DeleteBankAccountCredentialCommand command) async {
     final now = command.now ?? DateTime.now();
     BankAccountCredentialEntity? credential;
-    await _isar.writeTxn(() async {
-      credential = await _isar.bankAccountCredentialEntitys
-          .filter()
-          .userIdEqualTo(command.userId)
-          .bankCredentialIdEqualTo(command.bankCredentialId)
-          .findFirst();
+    await _db.transaction((txn) async {
+      credential = await _db.getBankAccountCredentialByUserAndId(
+        command.userId,
+        command.bankCredentialId,
+      );
       if (credential == null) {
         return;
       }
       credential!
         ..deletedAt = now
         ..updatedAt = now;
-      await _isar.bankAccountCredentialEntitys.put(credential!);
+      await _db.putBankAccountCredential(credential!, txn: txn);
       await _outboxWriter.enqueueInTxn(
         userId: command.userId,
         entityType: 'bank_account_credentials',
         entityId: credential!.bankCredentialId,
         payload: SyncPayloadMapper.bankAccountCredential(credential!),
+        txn: txn,
       );
     });
     SyncService.instance?.requestSync();
@@ -769,132 +809,94 @@ class DeleteBankAccountCredentialHandler
 
 class GetAccountsHandler
     implements QueryHandler<GetAccountsQuery, List<AccountEntity>> {
-  GetAccountsHandler(this._isar);
+  GetAccountsHandler(this._db);
 
-  final Isar _isar;
+  final AppDatabase _db;
 
   @override
   Future<List<AccountEntity>> handle(GetAccountsQuery query) {
-    return _isar.accountEntitys
-        .filter()
-        .userIdEqualTo(query.userId)
-        .deletedAtIsNull()
-        .findAll();
+    return _db.getAccounts(userId: query.userId);
   }
 }
 
 class GetCategoriesHandler
     implements QueryHandler<GetCategoriesQuery, List<CategoryEntity>> {
-  GetCategoriesHandler(this._isar);
+  GetCategoriesHandler(this._db);
 
-  final Isar _isar;
+  final AppDatabase _db;
 
   @override
-  Future<List<CategoryEntity>> handle(GetCategoriesQuery query) async {
-    var builder = _isar.categoryEntitys
-        .filter()
-        .userIdEqualTo(query.userId)
-        .deletedAtIsNull();
-    if (query.type != null) {
-      builder = builder.typeEqualTo(query.type!);
-    }
-    return builder.findAll();
+  Future<List<CategoryEntity>> handle(GetCategoriesQuery query) {
+    return _db.getCategories(userId: query.userId, type: query.type);
   }
 }
 
 class GetTransactionsHandler
     implements QueryHandler<GetTransactionsQuery, List<TransactionEntity>> {
-  GetTransactionsHandler(this._isar);
+  GetTransactionsHandler(this._db);
 
-  final Isar _isar;
+  final AppDatabase _db;
 
   @override
-  Future<List<TransactionEntity>> handle(GetTransactionsQuery query) async {
-    var builder = _isar.transactionEntitys
-        .filter()
-        .userIdEqualTo(query.userId)
-        .deletedAtIsNull();
-
-    if (query.accountId != null) {
-      builder = builder.accountIdEqualTo(query.accountId!);
-    }
-    if (query.categoryId != null) {
-      builder = builder.categoryIdEqualTo(query.categoryId!);
-    }
-    if (query.type != null) {
-      builder = builder.typeEqualTo(query.type!);
-    }
-    if (query.start != null) {
-      builder = builder.dateGreaterThan(query.start!, include: true);
-    }
-    if (query.end != null) {
-      builder = builder.dateLessThan(query.end!, include: true);
-    }
-
-    return builder.sortByDateDesc().limit(query.limit).findAll();
+  Future<List<TransactionEntity>> handle(GetTransactionsQuery query) {
+    return _db.getTransactions(
+      userId: query.userId,
+      accountId: query.accountId,
+      categoryId: query.categoryId,
+      type: query.type,
+      start: query.start,
+      end: query.end,
+      limit: query.limit,
+    );
   }
 }
 
 class GetBudgetsHandler
     implements QueryHandler<GetBudgetsQuery, List<BudgetEntity>> {
-  GetBudgetsHandler(this._isar);
+  GetBudgetsHandler(this._db);
 
-  final Isar _isar;
+  final AppDatabase _db;
 
   @override
   Future<List<BudgetEntity>> handle(GetBudgetsQuery query) {
-    return _isar.budgetEntitys
-        .filter()
-        .userIdEqualTo(query.userId)
-        .deletedAtIsNull()
-        .findAll();
+    return _db.getBudgets(userId: query.userId);
   }
 }
 
 class GetRecurringHandler
     implements
         QueryHandler<GetRecurringQuery, List<RecurringTransactionEntity>> {
-  GetRecurringHandler(this._isar);
+  GetRecurringHandler(this._db);
 
-  final Isar _isar;
+  final AppDatabase _db;
 
   @override
   Future<List<RecurringTransactionEntity>> handle(GetRecurringQuery query) {
-    return _isar.recurringTransactionEntitys
-        .filter()
-        .userIdEqualTo(query.userId)
-        .deletedAtIsNull()
-        .findAll();
+    return _db.getRecurringTransactions(userId: query.userId);
   }
 }
 
 class GetTransfersHandler
     implements QueryHandler<GetTransfersQuery, List<TransferEntity>> {
-  GetTransfersHandler(this._isar);
+  GetTransfersHandler(this._db);
 
-  final Isar _isar;
+  final AppDatabase _db;
 
   @override
-  Future<List<TransferEntity>> handle(GetTransfersQuery query) async {
-    var builder = _isar.transferEntitys
-        .filter()
-        .userIdEqualTo(query.userId)
-        .deletedAtIsNull();
-    if (query.start != null) {
-      builder = builder.dateGreaterThan(query.start!, include: true);
-    }
-    if (query.end != null) {
-      builder = builder.dateLessThan(query.end!, include: true);
-    }
-    return builder.sortByDateDesc().findAll();
+  Future<List<TransferEntity>> handle(GetTransfersQuery query) {
+    return _db.getTransfers(
+      userId: query.userId,
+      start: query.start,
+      end: query.end,
+    );
   }
 }
 
 class GetSummaryHandler
     implements QueryHandler<GetSummaryQuery, SummaryCacheEntity?> {
-  GetSummaryHandler(this._isar, this._summaryWriter);
+  GetSummaryHandler(this._db, this._summaryWriter);
 
-  final Isar _isar;
+  final AppDatabase _db;
   final SummaryCacheWriter _summaryWriter;
 
   @override
@@ -905,11 +907,7 @@ class GetSummaryHandler
       query.startDate,
     );
 
-    final existing = await _isar.summaryCacheEntitys
-        .filter()
-        .summaryKeyEqualTo(key)
-        .findFirst();
-
+    final existing = await _db.getSummaryByKey(key);
     if (existing != null) {
       return existing;
     }
@@ -921,10 +919,7 @@ class GetSummaryHandler
       _summaryWriter.periodEnd(query.period, query.startDate),
     );
 
-    return _isar.summaryCacheEntitys
-        .filter()
-        .summaryKeyEqualTo(key)
-        .findFirst();
+    return _db.getSummaryByKey(key);
   }
 }
 
@@ -932,20 +927,15 @@ class GetPaymentCardCredentialsHandler
     implements
         QueryHandler<GetPaymentCardCredentialsQuery,
             List<PaymentCardCredentialEntity>> {
-  GetPaymentCardCredentialsHandler(this._isar);
+  GetPaymentCardCredentialsHandler(this._db);
 
-  final Isar _isar;
+  final AppDatabase _db;
 
   @override
   Future<List<PaymentCardCredentialEntity>> handle(
     GetPaymentCardCredentialsQuery query,
   ) {
-    return _isar.paymentCardCredentialEntitys
-        .filter()
-        .userIdEqualTo(query.userId)
-        .deletedAtIsNull()
-        .sortByUpdatedAtDesc()
-        .findAll();
+    return _db.getPaymentCardCredentials(userId: query.userId);
   }
 }
 
@@ -953,57 +943,37 @@ class GetBankAccountCredentialsHandler
     implements
         QueryHandler<GetBankAccountCredentialsQuery,
             List<BankAccountCredentialEntity>> {
-  GetBankAccountCredentialsHandler(this._isar);
+  GetBankAccountCredentialsHandler(this._db);
 
-  final Isar _isar;
+  final AppDatabase _db;
 
   @override
   Future<List<BankAccountCredentialEntity>> handle(
     GetBankAccountCredentialsQuery query,
   ) {
-    return _isar.bankAccountCredentialEntitys
-        .filter()
-        .userIdEqualTo(query.userId)
-        .deletedAtIsNull()
-        .sortByUpdatedAtDesc()
-        .findAll();
+    return _db.getBankAccountCredentials(userId: query.userId);
   }
 }
 
 class SummaryCacheWriter {
-  SummaryCacheWriter(this._isar);
+  SummaryCacheWriter(this._db);
 
-  final Isar _isar;
+  final AppDatabase _db;
 
   String summaryKey(String userId, String period, DateTime startDate) {
     return '$userId:$period:${startDate.millisecondsSinceEpoch}';
   }
 
-  DateTime? periodEnd(String period, DateTime startDate) {
-    switch (period) {
-      case 'weekly':
-        return startDate
-            .add(const Duration(days: 7))
-            .subtract(const Duration(milliseconds: 1));
-      case 'monthly':
-        return DateTime(startDate.year, startDate.month + 1, 1)
-            .subtract(const Duration(milliseconds: 1));
-      case 'yearly':
-        return DateTime(startDate.year + 1, 1, 1)
-            .subtract(const Duration(milliseconds: 1));
-      case 'lifetime':
-      default:
-        return null;
-    }
-  }
-
   Future<void> rebuildForDate(String userId, DateTime date) async {
     await rebuildForRange(userId, 'weekly', _weekStart(date), _weekEnd(date));
-    await rebuildForRange(
-        userId, 'monthly', _monthStart(date), _monthEnd(date));
+    await rebuildForRange(userId, 'monthly', _monthStart(date), _monthEnd(date));
     await rebuildForRange(userId, 'yearly', _yearStart(date), _yearEnd(date));
     await rebuildForRange(
-        userId, 'lifetime', DateTime.fromMillisecondsSinceEpoch(0), null);
+      userId,
+      'lifetime',
+      DateTime.fromMillisecondsSinceEpoch(0),
+      null,
+    );
   }
 
   Future<void> rebuildForRange(
@@ -1040,18 +1010,7 @@ class SummaryCacheWriter {
       ..net = income - expense
       ..byCategoryJson = jsonEncode(categoryTotals);
 
-    await _isar.writeTxn(() async {
-      final existing = await _isar.summaryCacheEntitys
-          .filter()
-          .summaryKeyEqualTo(summary.summaryKey)
-          .findFirst();
-
-      if (existing != null) {
-        summary.id = existing.id;
-      }
-
-      await _isar.summaryCacheEntitys.put(summary);
-    });
+    await _db.putSummaryCache(summary);
   }
 
   Future<List<TransactionEntity>> _loadTransactions(
@@ -1059,19 +1018,20 @@ class SummaryCacheWriter {
     DateTime startDate,
     DateTime? endDate,
   ) {
-    var builder = _isar.transactionEntitys
-        .filter()
-        .userIdEqualTo(userId)
-        .deletedAtIsNull()
-        .not()
-        .typeEqualTo('transfer')
-        .dateGreaterThan(startDate, include: true);
-
-    if (endDate != null) {
-      builder = builder.dateLessThan(endDate, include: true);
-    }
-
-    return builder.findAll();
+    return _db.getTransactions(
+      userId: userId,
+      start: startDate,
+      end: endDate,
+      type: 'income',
+    ).then((income) async {
+      final expense = await _db.getTransactions(
+        userId: userId,
+        start: startDate,
+        end: endDate,
+        type: 'expense',
+      );
+      return [...income, ...expense];
+    });
   }
 
   DateTime _weekStart(DateTime date) {
@@ -1087,52 +1047,25 @@ class SummaryCacheWriter {
 
   DateTime _monthStart(DateTime date) => DateTime(date.year, date.month, 1);
 
-  DateTime _monthEnd(DateTime date) {
-    return DateTime(date.year, date.month + 1, 1)
-        .subtract(const Duration(milliseconds: 1));
-  }
+  DateTime _monthEnd(DateTime date) =>
+      _monthStart(DateTime(date.year, date.month + 1, 1))
+          .subtract(const Duration(milliseconds: 1));
 
   DateTime _yearStart(DateTime date) => DateTime(date.year, 1, 1);
 
-  DateTime _yearEnd(DateTime date) {
-    return DateTime(date.year + 1, 1, 1)
-        .subtract(const Duration(milliseconds: 1));
-  }
-}
+  DateTime _yearEnd(DateTime date) =>
+      DateTime(date.year + 1, 1, 1).subtract(const Duration(milliseconds: 1));
 
-Future<void> _updateAccountBalance(
-  Isar isar,
-  SyncOutboxWriter outboxWriter,
-  String userId,
-  String accountId,
-  double delta,
-) async {
-  final account = await isar.accountEntitys
-      .filter()
-      .userIdEqualTo(userId)
-      .accountIdEqualTo(accountId)
-      .findFirst();
-  if (account == null) {
-    return;
+  DateTime periodEnd(String period, DateTime startDate) {
+    switch (period) {
+      case 'weekly':
+        return _weekEnd(startDate);
+      case 'monthly':
+        return _monthEnd(startDate);
+      case 'yearly':
+        return _yearEnd(startDate);
+      default:
+        return DateTime.now();
+    }
   }
-
-  account.currentBalance += delta;
-  account.updatedAt = DateTime.now();
-  await isar.accountEntitys.put(account);
-  await outboxWriter.enqueueInTxn(
-    userId: userId,
-    entityType: 'accounts',
-    entityId: account.accountId,
-    payload: SyncPayloadMapper.account(account),
-  );
-}
-
-double _deltaFor(String type, double amount) {
-  if (type == 'income') {
-    return amount;
-  }
-  if (type == 'expense') {
-    return -amount;
-  }
-  return 0;
 }

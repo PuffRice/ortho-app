@@ -2,7 +2,6 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:isar/isar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/app_colors.dart';
@@ -52,11 +51,8 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
 
   Future<void> _loadProfile() async {
     final identity = await UserIdentityService.instance.getProfile();
-    final isar = await LocalDb.instance.open();
-    final user = await isar.userEntitys
-        .filter()
-        .userIdEqualTo(identity.userId)
-        .findFirst();
+    final db = await LocalDb.instance.open();
+    final user = await db.getUserByUserId(identity.userId);
 
     _identity = identity;
     _user = user;
@@ -150,7 +146,7 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
                             const SizedBox(height: 24),
                             _InfoCard(
                               text:
-                                  'Profile photos are uploaded to Supabase Storage, then the public URL is saved in users.photo_url and mirrored into Isar during sync.',
+                                  'Profile photos are uploaded to Supabase Storage, then the public URL is saved in users.photo_url and mirrored into SQLite during sync.',
                             ),
                           ],
                         ),
