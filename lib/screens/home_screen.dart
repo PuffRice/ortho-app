@@ -224,6 +224,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     categoryIcon: transaction.categoryIcon,
                     categoryColor: transaction.categoryColor,
                     isPositive: transaction.isPositive,
+                    isTransfer: transaction.isTransfer,
                   ),
                   const SizedBox(height: 12),
                 ],
@@ -265,6 +266,13 @@ class _HomeScreenState extends State<HomeScreen> {
       fallback: const <TransactionEntity>[],
       label: 'recent transactions',
     );
+    final recentTransfers = await _loadSection<List<TransferEntity>>(
+      () => cqrs.bus.query<GetTransfersQuery, List<TransferEntity>>(
+        GetTransfersQuery(userId: profile.userId),
+      ),
+      fallback: const <TransferEntity>[],
+      label: 'recent transfers',
+    );
     final monthTransactions = await _loadSection<List<TransactionEntity>>(
       () => cqrs.bus.query<GetTransactionsQuery, List<TransactionEntity>>(
         GetTransactionsQuery(
@@ -292,6 +300,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (accounts.failed) accounts.label,
       if (categories.failed) categories.label,
       if (recentTransactions.failed) recentTransactions.label,
+      if (recentTransfers.failed) recentTransfers.label,
       if (monthTransactions.failed) monthTransactions.label,
       if (previousMonthTransactions.failed) previousMonthTransactions.label,
     ];
@@ -307,6 +316,14 @@ class _HomeScreenState extends State<HomeScreen> {
         _sumTransactions(previousMonthTransactions.value, 'income');
     final previousOutflow =
         _sumTransactions(previousMonthTransactions.value, 'expense');
+    final recentActivity = [
+      ...recentTransactions.value
+          .map((transaction) => _safeTransactionView(transaction, categoryById))
+          .whereType<_TransactionViewData>(),
+      ...recentTransfers.value
+          .map((transfer) => _safeTransferView(transfer, accounts.value))
+          .whereType<_TransactionViewData>(),
+    ]..sort((a, b) => b.date.compareTo(a.date));
 
     return _HomeData(
       displayName: user?.displayName ?? profile.displayName,
@@ -322,10 +339,7 @@ class _HomeScreenState extends State<HomeScreen> {
       loadWarning: failedSections.isEmpty
           ? null
           : 'Some local data could not be loaded: ${failedSections.join(', ')}.',
-      transactions: recentTransactions.value
-          .map((transaction) => _safeTransactionView(transaction, categoryById))
-          .whereType<_TransactionViewData>()
-          .toList(),
+      transactions: recentActivity.take(5).toList(),
     );
   }
 
@@ -395,6 +409,34 @@ class _HomeScreenState extends State<HomeScreen> {
   ) {
     try {
       return _transactionView(transaction, categoryById);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  _TransactionViewData? _safeTransferView(
+    TransferEntity transfer,
+    List<AccountEntity> accounts,
+  ) {
+    try {
+      final accountsById = {
+        for (final account in accounts) account.accountId: account,
+      };
+      final from = accountsById[transfer.fromAccountId]?.name ?? 'Account';
+      final to = accountsById[transfer.toAccountId]?.name ?? 'Account';
+      final currency = accountsById[transfer.fromAccountId]?.currency ?? 'BDT';
+      final note = transfer.note?.trim();
+      return _TransactionViewData(
+        transaction: null,
+        description: note == null || note.isEmpty ? 'Transfer' : note,
+        date: transfer.date,
+        amountLabel: '${_transactionCurrencyLabel(currency)} ${transfer.amount.toStringAsFixed(2)}',
+        categoryName: '$from → $to',
+        categoryIcon: Icons.swap_horiz_rounded,
+        categoryColor: AppColors.primaryViolet,
+        isPositive: false,
+        isTransfer: true,
+      );
     } catch (_) {
       return null;
     }
@@ -1082,9 +1124,14 @@ class _HomeScreenState extends State<HomeScreen> {
     required IconData categoryIcon,
     required Color categoryColor,
     bool isPositive = false,
+    bool isTransfer = false,
   }) {
     final amountColor =
-        isPositive ? AppColors.incomePositive : AppColors.expenseNegative;
+        isTransfer
+            ? AppColors.primaryViolet
+            : isPositive
+                ? AppColors.incomePositive
+                : AppColors.expenseNegative;
 
     return Material(
       color: Colors.transparent,
@@ -1232,6 +1279,7 @@ class _TransactionViewData {
     required this.categoryIcon,
     required this.categoryColor,
     required this.isPositive,
+    this.isTransfer = false,
   });
 
   final TransactionEntity? transaction;
@@ -1242,4 +1290,5 @@ class _TransactionViewData {
   final IconData categoryIcon;
   final Color categoryColor;
   final bool isPositive;
+  final bool isTransfer;
 }

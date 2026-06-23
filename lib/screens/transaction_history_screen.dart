@@ -104,6 +104,10 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
   Widget _buildContent(_TransactionHistoryData data) {
     final filteredTransactions = _filteredTransactions(data);
     final filteredTransfers = _filteredTransfers(data);
+    final entries = [
+      ...filteredTransactions.map(_HistoryListItem.transaction),
+      ...filteredTransfers.map(_HistoryListItem.transfer),
+    ]..sort((a, b) => b.date.compareTo(a.date));
     return RefreshIndicator(
       onRefresh: _reload,
       child: ListView(
@@ -114,19 +118,17 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
           const SizedBox(height: 14),
           _buildFilters(data),
           const SizedBox(height: 18),
-          _buildResultSummary(filteredTransactions.length + filteredTransfers.length),
+          _buildResultSummary(entries.length),
           const SizedBox(height: 12),
-          if (filteredTransactions.isEmpty && filteredTransfers.isEmpty)
+          if (entries.isEmpty)
             _buildEmptyState()
           else
-            for (final transaction in filteredTransactions) ...[
-              _buildTransactionTile(transaction, data),
+            for (final entry in entries) ...[
+              entry.transaction != null
+                  ? _buildTransactionTile(entry.transaction!, data)
+                  : _buildTransferTile(entry.transfer!, data),
               const SizedBox(height: 10),
             ],
-          for (final transfer in filteredTransfers) ...[
-            _buildTransferTile(transfer, data),
-            const SizedBox(height: 10),
-          ],
         ],
       ),
     );
@@ -207,6 +209,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
           DropdownMenuItem(value: null, child: Text('All types')),
           DropdownMenuItem(value: 'income', child: Text('Income')),
           DropdownMenuItem(value: 'expense', child: Text('Expense')),
+          DropdownMenuItem(value: 'transfer', child: Text('Transfer')),
         ],
         onChanged: (value) {
           setState(() {
@@ -643,7 +646,9 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
   }
 
   List<TransferEntity> _filteredTransfers(_TransactionHistoryData data) {
-    if (_type != null || _categoryId != null) return const <TransferEntity>[];
+    if ((_type != null && _type != 'transfer') || _categoryId != null) {
+      return const <TransferEntity>[];
+    }
     final query = _query.trim().toLowerCase();
     return data.transfers.where((transfer) {
       if (_accountId != null &&
@@ -759,4 +764,24 @@ class _TransactionHistoryData {
   Map<String, CategoryEntity> get categoryById {
     return {for (final category in categories) category.categoryId: category};
   }
+}
+
+class _HistoryListItem {
+  const _HistoryListItem._({
+    required this.date,
+    this.transaction,
+    this.transfer,
+  });
+
+  factory _HistoryListItem.transaction(TransactionEntity transaction) {
+    return _HistoryListItem._(date: transaction.date, transaction: transaction);
+  }
+
+  factory _HistoryListItem.transfer(TransferEntity transfer) {
+    return _HistoryListItem._(date: transfer.date, transfer: transfer);
+  }
+
+  final DateTime date;
+  final TransactionEntity? transaction;
+  final TransferEntity? transfer;
 }

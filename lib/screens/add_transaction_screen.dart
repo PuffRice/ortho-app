@@ -133,9 +133,16 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           ],
         ),
         const SizedBox(height: 20),
+        if (_type == 'transfer') ...[
+          _buildTransferIntro(),
+          const SizedBox(height: 20),
+        ],
         _buildAmountField(),
         const SizedBox(height: 20),
-        _buildAccountPicker(cqrs),
+        _buildAccountPicker(
+          cqrs,
+          label: _type == 'transfer' ? 'From account' : 'Account',
+        ),
         const SizedBox(height: 16),
         if (_type == 'transfer')
           _buildTransferDestinationPicker(cqrs)
@@ -200,6 +207,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         setState(() {
           _type = value;
           _selectedCategoryId = null;
+          if (value != 'transfer') {
+            _selectedToAccountId = null;
+          }
         });
       },
       showCheckmark: false,
@@ -213,6 +223,48 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       labelStyle: TextStyle(
         color: isSelected ? Colors.white : AppColors.textSecondary,
         fontWeight: FontWeight.w600,
+      ),
+    );
+  }
+
+  Widget _buildTransferIntro() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.primaryViolet.withOpacity(0.14),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: AppColors.primaryViolet.withOpacity(0.45),
+        ),
+      ),
+      child: const Row(
+        children: [
+          CircleAvatar(
+            backgroundColor: AppColors.primaryViolet,
+            child: Icon(Icons.swap_horiz_rounded, color: Colors.white),
+          ),
+          SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Move money between accounts',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Choose where the money comes from and where it goes.',
+                  style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -427,7 +479,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     return '$dateLabel, $timeLabel';
   }
 
-  Widget _buildAccountPicker(CqrsService cqrs) {
+  Widget _buildAccountPicker(CqrsService cqrs, {required String label}) {
     final userId = _profile?.userId;
     if (userId == null) {
       return const Center(child: CircularProgressIndicator());
@@ -449,8 +501,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Account',
+            Text(
+              label,
               style: TextStyle(color: Colors.white70, fontSize: 14),
             ),
             const SizedBox(height: 10),
@@ -480,6 +532,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       onTap: () {
         setState(() {
           _selectedAccountId = account.accountId;
+          if (_selectedToAccountId == account.accountId) {
+            _selectedToAccountId = null;
+          }
         });
       },
       borderRadius: BorderRadius.circular(14),
@@ -542,20 +597,89 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     return FutureBuilder<List<AccountEntity>>(
       future: cqrs.bus.query(GetAccountsQuery(userId: userId)),
       builder: (context, snapshot) {
-        final accounts = snapshot.data ?? const <AccountEntity>[];
-        return DropdownButtonFormField<String>(
-          initialValue: accounts.any((a) => a.accountId == _selectedToAccountId)
-              ? _selectedToAccountId
-              : null,
-          items: accounts
-              .map((a) => DropdownMenuItem(value: a.accountId, child: Text(a.name)))
-              .toList(),
-          onChanged: (value) => setState(() => _selectedToAccountId = value),
-          decoration: _buildSelectDecoration('To account'),
-          dropdownColor: AppColors.bgSecondary,
-          style: const TextStyle(color: Colors.white),
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final accounts = snapshot.data!;
+        final destinations = accounts
+            .where((account) => account.accountId != _selectedAccountId)
+            .toList();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.arrow_downward_rounded,
+                    color: AppColors.primaryViolet, size: 18),
+                const SizedBox(width: 8),
+                const Text('To account',
+                    style: TextStyle(color: Colors.white70, fontSize: 14)),
+              ],
+            ),
+            const SizedBox(height: 10),
+            if (destinations.isEmpty)
+              _buildEmptySelectionBox('Add another account to make a transfer')
+            else
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: destinations
+                    .map(
+                      (account) => _buildDestinationAccountOption(
+                        account,
+                        _selectedToAccountId == account.accountId,
+                      ),
+                    )
+                    .toList(),
+              ),
+          ],
         );
       },
+    );
+  }
+
+  Widget _buildDestinationAccountOption(AccountEntity account, bool isSelected) {
+    return InkWell(
+      onTap: () => setState(() => _selectedToAccountId = account.accountId),
+      borderRadius: BorderRadius.circular(14),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        constraints: const BoxConstraints(minWidth: 142),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primaryViolet.withOpacity(0.22)
+              : Colors.white.withOpacity(0.06),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isSelected
+                ? AppColors.primaryViolet
+                : Colors.white.withOpacity(0.12),
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+              color: isSelected ? AppColors.primaryViolet : Colors.white54,
+              size: 18,
+            ),
+            const SizedBox(width: 10),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(account.name,
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 2),
+                Text('${account.type} - ${account.currentBalance.toStringAsFixed(2)}',
+                    style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 

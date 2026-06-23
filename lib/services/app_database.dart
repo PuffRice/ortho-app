@@ -12,6 +12,7 @@ class AppDatabase {
   static const _dbVersion = 1;
 
   final Database _database;
+  DatabaseExecutor? _activeTransaction;
 
   static Future<AppDatabase> open() async {
     final directory = await getApplicationDocumentsDirectory();
@@ -27,7 +28,14 @@ class AppDatabase {
   Future<void> close() => _database.close();
 
   Future<T> transaction<T>(Future<T> Function(Transaction txn) action) {
-    return _database.transaction(action);
+    return _database.transaction((txn) async {
+      _activeTransaction = txn;
+      try {
+        return await action(txn);
+      } finally {
+        _activeTransaction = null;
+      }
+    });
   }
 
   static Future<void> _createSchema(Database db, int version) async {
@@ -594,7 +602,8 @@ class AppDatabase {
     String? orderBy,
     int? limit,
   }) async {
-    return _database.query(
+    final executor = _activeTransaction ?? _database;
+    return executor.query(
       table,
       columns: columns,
       where: where,
