@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../models/isar_models.dart';
+import '../models/local_models.dart';
 import 'app_database.dart';
 
 class TimestampRepairService {

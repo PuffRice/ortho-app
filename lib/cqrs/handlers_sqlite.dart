@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'cqrs_bus.dart';
-import '../models/isar_models.dart';
+import '../models/local_models.dart';
 import 'commands.dart';
 import 'queries.dart';
 import 'utils.dart';

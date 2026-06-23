@@ -1,4 +1,4 @@
-import '../models/isar_models.dart';
+import '../models/local_models.dart';
 
 class SyncPayloadMapper {
   static Map<String, dynamic> user(UserEntity user) {

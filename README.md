@@ -32,7 +32,7 @@ The architecture separates the app into layers so each part of the system has on
 | --- | --- | --- |
 | Presentation Layer | Renders screens, navigation, forms, dashboards, and visual fintech UI. | `lib/screens/`, `main.dart` |
 | Business Logic / State Management Layer | Coordinates user actions as commands and reads as queries. | `lib/cqrs/commands.dart`, `queries.dart`, `handlers.dart`, `cqrs_bus.dart` |
-| Data Layer | Stores durable local app data and generated database schemas. | `lib/models/isar_models.dart`, `lib/services/local_db.dart` |
+| Data Layer | Stores durable local app data and SQLite schema access. | `lib/models/local_models.dart`, `lib/services/app_database.dart` |
 | Service/API Layer | Handles external systems and app-level services. | `supabase_service.dart`, `sync_service.dart`, `local_user_migration.dart` |
 | Model/Entity Layer | Defines finance entities used by local storage and API mapping. | Accounts, categories, transactions, transfers, budgets, recurring transactions |
 | Utility/Core Layer | Provides app configuration, routes, colors, timestamp repair, sync mapping, and user identity. | `lib/config/`, selected `lib/services/` utilities |
@@ -53,8 +53,7 @@ lib/
     utils.dart
   models/
     models.dart
-    isar_models.dart
-    isar_models.g.dart
+    local_models.dart
   screens/
     home_screen.dart
     dashboard_screen.dart

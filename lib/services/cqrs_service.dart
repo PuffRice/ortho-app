@@ -2,7 +2,7 @@ import '../cqrs/cqrs_bus.dart';
 import '../cqrs/commands.dart';
 import '../cqrs/handlers_sqlite.dart';
 import '../cqrs/queries.dart';
-import '../models/isar_models.dart';
+import '../models/local_models.dart';
 import 'app_database.dart';
 import 'local_db.dart';
 import 'sync_outbox.dart';

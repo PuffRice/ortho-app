@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../config/app_colors.dart';
 import '../config/app_routes.dart';
-import '../models/isar_models.dart';
+import '../models/local_models.dart';
 import '../services/local_db.dart';
 import '../services/supabase_service.dart';
 import '../services/sync_service.dart';

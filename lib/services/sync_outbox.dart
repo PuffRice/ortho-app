@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'app_database.dart';
-import '../models/isar_models.dart';
+import '../models/local_models.dart';
 
 class SyncOutboxWriter {
   SyncOutboxWriter(this._db);

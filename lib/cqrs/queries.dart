@@ -1,5 +1,5 @@
 import 'cqrs_bus.dart';
-import '../models/isar_models.dart';
+import '../models/local_models.dart';
 
 class GetAccountsQuery extends Query<List<AccountEntity>> {
   const GetAccountsQuery({required this.userId});

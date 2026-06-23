@@ -4,7 +4,7 @@ import '../config/app_colors.dart';
 import '../config/category_icons.dart';
 import '../cqrs/commands.dart';
 import '../cqrs/queries.dart';
-import '../models/isar_models.dart';
+import '../models/local_models.dart';
 import '../services/cqrs_service.dart';
 import '../services/user_identity.dart';
 

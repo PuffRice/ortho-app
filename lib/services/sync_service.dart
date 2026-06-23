@@ -5,7 +5,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'app_database.dart';
 
-import '../models/isar_models.dart';
+import '../models/local_models.dart';
 import 'account_balance_repair_service.dart';
 import 'timestamp_repair_service.dart';
 import 'user_identity.dart';

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../config/app_colors.dart';
 import '../config/category_icons.dart';
 import '../cqrs/queries.dart';
-import '../models/isar_models.dart';
+import '../models/local_models.dart';
 import '../services/cqrs_service.dart';
 import '../services/user_identity.dart';
 import 'add_transaction_screen.dart';

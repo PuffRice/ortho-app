@@ -6,7 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/app_colors.dart';
 import '../cqrs/commands.dart';
-import '../models/isar_models.dart';
+import '../models/local_models.dart';
 import '../services/cqrs_service.dart';
 import '../services/local_db.dart';
 import '../services/supabase_service.dart';
