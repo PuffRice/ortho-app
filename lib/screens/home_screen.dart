@@ -213,6 +213,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 for (final transaction in data.transactions) ...[
                   _buildTransactionItem(
                     transaction: transaction.transaction,
+                    transfer: transaction.transfer,
                     description: transaction.description,
                     time: MaterialLocalizations.of(context).formatTimeOfDay(
                       TimeOfDay.fromDateTime(transaction.date),
@@ -428,6 +429,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final note = transfer.note?.trim();
       return _TransactionViewData(
         transaction: null,
+        transfer: transfer,
         description: note == null || note.isEmpty ? 'Transfer' : note,
         date: transfer.date,
         amountLabel: '${_transactionCurrencyLabel(currency)} ${transfer.amount.toStringAsFixed(2)}',
@@ -550,6 +552,17 @@ class _HomeScreenState extends State<HomeScreen> {
         },
       ),
     );
+  }
+
+  Future<void> _openTransferEditor(TransferEntity transfer) async {
+    final updated = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+        builder: (_) => AddTransactionScreen(initialTransfer: transfer),
+      ),
+    );
+    if (updated == true && mounted) {
+      _reloadHomeData();
+    }
   }
 
   Future<void> _openTransactionEditor(TransactionEntity transaction) async {
@@ -1116,6 +1129,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildTransactionItem({
     required TransactionEntity? transaction,
+    required TransferEntity? transfer,
     required String description,
     required String time,
     required String date,
@@ -1136,9 +1150,11 @@ class _HomeScreenState extends State<HomeScreen> {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: transaction == null
-            ? null
-            : () => _openTransactionEditor(transaction),
+        onTap: transaction != null
+            ? () => _openTransactionEditor(transaction)
+            : transfer != null
+                ? () => _openTransferEditor(transfer)
+                : null,
         borderRadius: BorderRadius.circular(20),
         child: Container(
           padding: const EdgeInsets.all(14),
@@ -1272,6 +1288,7 @@ class _SectionLoad<T> {
 class _TransactionViewData {
   const _TransactionViewData({
     required this.transaction,
+    this.transfer,
     required this.description,
     required this.date,
     required this.amountLabel,
@@ -1283,6 +1300,7 @@ class _TransactionViewData {
   });
 
   final TransactionEntity? transaction;
+  final TransferEntity? transfer;
   final String description;
   final DateTime date;
   final String amountLabel;

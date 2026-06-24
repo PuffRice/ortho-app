@@ -449,14 +449,19 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
   Widget _buildTransferTile(TransferEntity transfer, _TransactionHistoryData data) {
     final from = data.accountById[transfer.fromAccountId]?.name ?? 'Account';
     final to = data.accountById[transfer.toAccountId]?.name ?? 'Account';
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.primaryViolet.withValues(alpha: 0.09),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _openTransferEditor(transfer),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.primaryViolet.withValues(alpha: 0.22)),
-      ),
-      child: Row(children: [
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: AppColors.primaryViolet.withValues(alpha: 0.09),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: AppColors.primaryViolet.withValues(alpha: 0.22)),
+          ),
+          child: Row(children: [
         const CircleAvatar(
           backgroundColor: AppColors.primaryViolet,
           child: Icon(Icons.swap_horiz_rounded, color: Colors.white),
@@ -472,8 +477,21 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
         ])),
         Text(transfer.amount.toStringAsFixed(2),
             style: const TextStyle(color: AppColors.primaryViolet, fontWeight: FontWeight.w700)),
-      ]),
+          ]),
+        ),
+      ),
     );
+  }
+
+  Future<void> _openTransferEditor(TransferEntity transfer) async {
+    final updated = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+        builder: (_) => AddTransactionScreen(initialTransfer: transfer),
+      ),
+    );
+    if (updated == true && mounted) {
+      await _reload();
+    }
   }
 
   Future<void> _openTransactionEditor(TransactionEntity transaction) async {

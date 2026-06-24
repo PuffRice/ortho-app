@@ -571,6 +571,136 @@ class CreateTransferHandler implements CommandHandler<CreateTransferCommand> {
   }
 }
 
+class UpdateTransferHandler implements CommandHandler<UpdateTransferCommand> {
+  UpdateTransferHandler(this._db, this._outboxWriter);
+
+  final AppDatabase _db;
+  final SyncOutboxWriter _outboxWriter;
+
+  @override
+  Future<void> handle(UpdateTransferCommand command) async {
+    await _db.transaction((txn) async {
+      final existing = await _db.getTransferByUserAndTransferId(
+        command.userId,
+        command.transferId,
+      );
+      if (existing == null || existing.deletedAt != null) return;
+
+      await _updateAccountBalance(
+        command.userId,
+        existing.fromAccountId,
+        existing.amount,
+        txn,
+      );
+      await _updateAccountBalance(
+        command.userId,
+        existing.toAccountId,
+        -existing.amount,
+        txn,
+      );
+      await _updateAccountBalance(
+        command.userId,
+        command.fromAccountId,
+        -command.amount,
+        txn,
+      );
+      await _updateAccountBalance(
+        command.userId,
+        command.toAccountId,
+        command.amount,
+        txn,
+      );
+
+      existing
+        ..fromAccountId = command.fromAccountId
+        ..toAccountId = command.toAccountId
+        ..amount = command.amount
+        ..date = command.date
+        ..note = command.note
+        ..updatedAt = DateTime.now();
+      await _db.putTransfer(existing, txn: txn);
+      await _outboxWriter.enqueueInTxn(
+        userId: command.userId,
+        entityType: 'transfers',
+        entityId: existing.transferId,
+        payload: SyncPayloadMapper.transfer(existing),
+        txn: txn,
+      );
+    });
+    SyncService.instance?.requestSync();
+  }
+
+  Future<void> _updateAccountBalance(
+    String userId,
+    String accountId,
+    double delta,
+    dynamic txn,
+  ) async {
+    final account = await _db.getAccountByUserAndAccountId(userId, accountId);
+    if (account == null) return;
+    account.currentBalance += delta;
+    account.updatedAt = DateTime.now();
+    await _db.putAccount(account, txn: txn);
+  }
+}
+
+class DeleteTransferHandler implements CommandHandler<DeleteTransferCommand> {
+  DeleteTransferHandler(this._db, this._outboxWriter);
+
+  final AppDatabase _db;
+  final SyncOutboxWriter _outboxWriter;
+
+  @override
+  Future<void> handle(DeleteTransferCommand command) async {
+    await _db.transaction((txn) async {
+      final existing = await _db.getTransferByUserAndTransferId(
+        command.userId,
+        command.transferId,
+      );
+      if (existing == null || existing.deletedAt != null) return;
+
+      final now = DateTime.now();
+      existing
+        ..deletedAt = now
+        ..updatedAt = now;
+      await _db.putTransfer(existing, txn: txn);
+      await _updateAccountBalance(
+        command.userId,
+        existing.fromAccountId,
+        existing.amount,
+        txn,
+      );
+      await _updateAccountBalance(
+        command.userId,
+        existing.toAccountId,
+        -existing.amount,
+        txn,
+      );
+      await _outboxWriter.enqueueInTxn(
+        userId: command.userId,
+        entityType: 'transfers',
+        entityId: existing.transferId,
+        payload: SyncPayloadMapper.transfer(existing),
+        txn: txn,
+      );
+    });
+    SyncService.instance?.requestSync();
+  }
+
+  Future<void> _updateAccountBalance(
+    String userId,
+    String accountId,
+    double delta,
+    dynamic txn,
+  ) async {
+    final account = await _db.getAccountByUserAndAccountId(userId, accountId);
+    if (account == null) return;
+    account.currentBalance += delta;
+    account.updatedAt = DateTime.now();
+    await _db.putAccount(account, txn: txn);
+  }
+}
+
 class CreateBudgetHandler implements CommandHandler<CreateBudgetCommand> {
   CreateBudgetHandler(this._db, this._outboxWriter);
 

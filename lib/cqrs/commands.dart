@@ -208,6 +208,36 @@ class CreateTransferCommand extends Command {
   final String? transferId;
 }
 
+class UpdateTransferCommand extends Command {
+  const UpdateTransferCommand({
+    required this.userId,
+    required this.transferId,
+    required this.fromAccountId,
+    required this.toAccountId,
+    required this.amount,
+    required this.date,
+    this.note,
+  });
+
+  final String userId;
+  final String transferId;
+  final String fromAccountId;
+  final String toAccountId;
+  final double amount;
+  final DateTime date;
+  final String? note;
+}
+
+class DeleteTransferCommand extends Command {
+  const DeleteTransferCommand({
+    required this.userId,
+    required this.transferId,
+  });
+
+  final String userId;
+  final String transferId;
+}
+
 class CreateBudgetCommand extends Command {
   const CreateBudgetCommand({
     required this.userId,

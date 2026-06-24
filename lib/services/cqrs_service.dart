@@ -52,6 +52,12 @@ class CqrsService {
     bus.registerCommandHandler<CreateTransferCommand>(
       CreateTransferHandler(db, outboxWriter),
     );
+    bus.registerCommandHandler<UpdateTransferCommand>(
+      UpdateTransferHandler(db, outboxWriter),
+    );
+    bus.registerCommandHandler<DeleteTransferCommand>(
+      DeleteTransferHandler(db, outboxWriter),
+    );
     bus.registerCommandHandler<CreateBudgetCommand>(
       CreateBudgetHandler(db, outboxWriter),
     );

@@ -12,9 +12,11 @@ class AddTransactionScreen extends StatefulWidget {
   const AddTransactionScreen({
     super.key,
     this.initialTransaction,
+    this.initialTransfer,
   });
 
   final TransactionEntity? initialTransaction;
+  final TransferEntity? initialTransfer;
 
   @override
   State<AddTransactionScreen> createState() => _AddTransactionScreenState();
@@ -46,7 +48,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     });
   }
 
-  bool get _isEditing => widget.initialTransaction != null;
+  bool get _isEditing =>
+      widget.initialTransaction != null || widget.initialTransfer != null;
+  bool get _isEditingTransfer => widget.initialTransfer != null;
 
   @override
   void initState() {
@@ -59,6 +63,15 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       _selectedCategoryId = initialTransaction.categoryId;
       _amountController.text = initialTransaction.amount.toStringAsFixed(2);
       _noteController.text = initialTransaction.note ?? '';
+    }
+    final initialTransfer = widget.initialTransfer;
+    if (initialTransfer != null) {
+      _type = 'transfer';
+      _date = initialTransfer.date;
+      _selectedAccountId = initialTransfer.fromAccountId;
+      _selectedToAccountId = initialTransfer.toAccountId;
+      _amountController.text = initialTransfer.amount.toStringAsFixed(2);
+      _noteController.text = initialTransfer.note ?? '';
     }
     _cqrsFuture = CqrsService.create();
     _profileFuture = UserIdentityService.instance.getProfile().then((profile) {
@@ -81,7 +94,13 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF050711),
         elevation: 0,
-        title: Text(_isEditing ? 'Edit Transaction' : 'Add Transaction'),
+        title: Text(
+          _isEditingTransfer
+              ? 'Edit Transfer'
+              : _isEditing
+                  ? 'Edit Transaction'
+                  : 'Add Transaction',
+        ),
         actions: [
           if (_isEditing)
             IconButton(
@@ -123,15 +142,18 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        Row(
-          children: [
-            _buildTypeChip('expense', 'Expense'),
-            const SizedBox(width: 12),
-            _buildTypeChip('income', 'Income'),
-            const SizedBox(width: 12),
-            _buildTypeChip('transfer', 'Transfer'),
-          ],
-        ),
+        if (_isEditingTransfer)
+          _buildEditingTransferLabel()
+        else
+          Row(
+            children: [
+              _buildTypeChip('expense', 'Expense'),
+              const SizedBox(width: 12),
+              _buildTypeChip('income', 'Income'),
+              const SizedBox(width: 12),
+              _buildTypeChip('transfer', 'Transfer'),
+            ],
+          ),
         const SizedBox(height: 20),
         if (_type == 'transfer') ...[
           _buildTransferIntro(),
@@ -266,6 +288,23 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildEditingTransferLabel() {
+    return const Row(
+      children: [
+        Icon(Icons.swap_horiz_rounded, color: AppColors.primaryViolet),
+        SizedBox(width: 8),
+        Text(
+          'Transfer',
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
     );
   }
 
@@ -857,16 +896,28 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
       await cqrs.bus.execute(
         _type == 'transfer'
-            ? CreateTransferCommand(
-                userId: profile.userId,
-                fromAccountId: account.accountId,
-                toAccountId: toAccount!.accountId,
-                amount: amount,
-                date: _date,
-                note: _noteController.text.trim().isEmpty
-                    ? null
-                    : _noteController.text.trim(),
-              )
+            ? _isEditingTransfer
+                ? UpdateTransferCommand(
+                    userId: profile.userId,
+                    transferId: widget.initialTransfer!.transferId,
+                    fromAccountId: account.accountId,
+                    toAccountId: toAccount!.accountId,
+                    amount: amount,
+                    date: _date,
+                    note: _noteController.text.trim().isEmpty
+                        ? null
+                        : _noteController.text.trim(),
+                  )
+                : CreateTransferCommand(
+                    userId: profile.userId,
+                    fromAccountId: account.accountId,
+                    toAccountId: toAccount!.accountId,
+                    amount: amount,
+                    date: _date,
+                    note: _noteController.text.trim().isEmpty
+                        ? null
+                        : _noteController.text.trim(),
+                  )
             : _isEditing
             ? UpdateTransactionCommand(
                 userId: profile.userId,
@@ -913,7 +964,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   Future<void> _confirmDelete(CqrsService cqrs) async {
     final profile = _profile;
     final transaction = widget.initialTransaction;
-    if (profile == null || transaction == null) {
+    final transfer = widget.initialTransfer;
+    if (profile == null || (transaction == null && transfer == null)) {
       _showError('Transaction is not ready yet.');
       return;
     }
@@ -923,8 +975,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       builder: (context) {
         return AlertDialog(
           backgroundColor: AppColors.bgSecondary,
-          title: const Text(
-            'Delete transaction?',
+          title: Text(
+            transfer == null ? 'Delete transaction?' : 'Delete transfer?',
             style: TextStyle(color: AppColors.textPrimary),
           ),
           content: const Text(
@@ -957,10 +1009,15 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     });
     try {
       await cqrs.bus.execute(
-        DeleteTransactionCommand(
-          userId: profile.userId,
-          transactionId: transaction.transactionId,
-        ),
+        transfer == null
+            ? DeleteTransactionCommand(
+                userId: profile.userId,
+                transactionId: transaction!.transactionId,
+              )
+            : DeleteTransferCommand(
+                userId: profile.userId,
+                transferId: transfer.transferId,
+              ),
       );
       if (mounted) {
         Navigator.of(context).pop(true);
