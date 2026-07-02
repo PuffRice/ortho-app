@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -17,6 +18,7 @@ import 'screens/personal_information_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/transaction_history_screen.dart';
 import 'services/account_balance_repair_service.dart';
+import 'services/app_database.dart';
 import 'services/local_db.dart';
 import 'services/supabase_service.dart';
 import 'services/sync_service.dart';
@@ -34,6 +36,20 @@ Future<void> _initializeApp() async {
   await TimestampRepairService(db: db).repairLocal(userId: profile.userId);
   await AccountBalanceRepairService(db: db).repair(userId: profile.userId);
   if (_supabaseConfigured()) {
+    unawaited(
+      _initializeSupabaseSyncInBackground(
+        db: db,
+        fallbackUserId: profile.userId,
+      ),
+    );
+  }
+}
+
+Future<void> _initializeSupabaseSyncInBackground({
+  required AppDatabase db,
+  required String fallbackUserId,
+}) async {
+  try {
     await SupabaseService().initialize(
       supabaseUrl: SUPABASE_URL,
       supabaseAnonKey: SUPABASE_ANON_KEY,
@@ -44,10 +60,13 @@ Future<void> _initializeApp() async {
     );
     final authId = SupabaseService().getCurrentUser()?.id;
     final repairedCount = await AccountBalanceRepairService(db: db)
-        .repair(userId: authId ?? profile.userId);
+        .repair(userId: authId ?? fallbackUserId);
     if (repairedCount > 0) {
       SyncService.instance?.requestSync();
     }
+  } catch (error, stackTrace) {
+    debugPrint('Supabase sync initialization skipped: $error');
+    debugPrintStack(stackTrace: stackTrace);
   }
 }
 
@@ -465,69 +484,64 @@ class MainNavigation extends StatefulWidget {
 
 class _MainNavigationState extends State<MainNavigation> {
   int _selectedIndex = 0;
-  late final PageController _pageController;
-
-  final List<Widget> _screens = [
-    const HomeScreen(),
-    const DashboardScreen(),
-    const CredentialsScreen(),
-    const ProfileScreen(),
-  ];
 
   @override
   void initState() {
     super.initState();
-    _pageController = PageController();
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: ScrollConfiguration(
-        behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
-        child: Stack(
-          children: [
-            PageView(
-              controller: _pageController,
-              physics: const NeverScrollableScrollPhysics(),
-              onPageChanged: (index) {
-                setState(() {
-                  _selectedIndex = index;
-                });
-              },
-              children: _screens,
+      body: Stack(
+        children: [
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 260),
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            child: KeyedSubtree(
+              key: ValueKey(_selectedIndex),
+              child: _buildScreen(_selectedIndex),
             ),
-            Positioned(
-              bottom: 72,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: FloatingActionButton(
-                  onPressed: () {
-                    Navigator.of(context).pushNamed(AppRoutes.addTransaction);
-                  },
-                  backgroundColor: const Color(0xFF7c3aed),
-                  child: const Icon(Icons.add, color: Colors.white),
-                ),
+          ),
+          Positioned(
+            bottom: 72,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: FloatingActionButton(
+                onPressed: () {
+                  Navigator.of(context).pushNamed(AppRoutes.addTransaction);
+                },
+                backgroundColor: const Color(0xFF7c3aed),
+                child: const Icon(Icons.add, color: Colors.white),
               ),
             ),
-            // Fixed glassmorphic navbar
-            Positioned(
-              bottom: 16,
-              left: 16,
-              right: 16,
-              child: _buildFloatingNavBar(),
-            ),
-          ],
-        ),
+          ),
+          // Fixed glassmorphic navbar
+          Positioned(
+            bottom: 16,
+            left: 16,
+            right: 16,
+            child: _buildFloatingNavBar(),
+          ),
+        ],
       ),
     );
+  }
+
+  Widget _buildScreen(int index) {
+    switch (index) {
+      case 0:
+        return const HomeScreen(key: ValueKey('home-screen'));
+      case 1:
+        return const DashboardScreen(key: ValueKey('dashboard-screen'));
+      case 2:
+        return const CredentialsScreen(key: ValueKey('credentials-screen'));
+      case 3:
+      default:
+        return const ProfileScreen(key: ValueKey('profile-screen'));
+    }
   }
 
   Widget _buildFloatingNavBar() {
@@ -575,11 +589,6 @@ class _MainNavigationState extends State<MainNavigation> {
         setState(() {
           _selectedIndex = index;
         });
-        await _pageController.animateToPage(
-          index,
-          duration: const Duration(milliseconds: 520),
-          curve: Curves.easeOutCubic,
-        );
       },
       child: AnimatedScale(
         scale: isSelected ? 1.08 : 1.0,

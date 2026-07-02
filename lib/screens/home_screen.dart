@@ -151,6 +151,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildHomeContent(BuildContext context, _HomeData data) {
+    final isCompact = MediaQuery.sizeOf(context).width < 600;
+
     return RefreshIndicator(
       onRefresh: () async {
         final next = _loadHomeData();
@@ -175,35 +177,62 @@ class _HomeScreenState extends State<HomeScreen> {
               _buildActiveBalanceCard(
                 data.activeBalanceLabel,
                 data.accountBalances,
+                isCompact: isCompact,
               ),
               const SizedBox(height: 14),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildFinancialCard(
-                      icon: Icons.arrow_downward,
-                      iconColor: AppColors.incomePositive,
-                      label: 'Inflow this month',
-                      amount: data.inflowLabel,
-                      change: data.inflowChangeLabel,
-                      changeColor: AppColors.incomePositive,
-                      onTap: () => _openTransactionHistory('income'),
+              isCompact
+                  ? Column(
+                      children: [
+                        _buildFinancialCard(
+                          icon: Icons.arrow_downward,
+                          iconColor: AppColors.incomePositive,
+                          label: 'Inflow this month',
+                          amount: data.inflowLabel,
+                          change: data.inflowChangeLabel,
+                          changeColor: AppColors.incomePositive,
+                          onTap: () => _openTransactionHistory('income'),
+                          isCompact: true,
+                        ),
+                        const SizedBox(height: 12),
+                        _buildFinancialCard(
+                          icon: Icons.arrow_upward,
+                          iconColor: AppColors.expenseNegative,
+                          label: 'Outflow this month',
+                          amount: data.outflowLabel,
+                          change: data.outflowChangeLabel,
+                          changeColor: AppColors.expenseNegative,
+                          onTap: () => _openTransactionHistory('expense'),
+                          isCompact: true,
+                        ),
+                      ],
+                    )
+                  : Row(
+                      children: [
+                        Expanded(
+                          child: _buildFinancialCard(
+                            icon: Icons.arrow_downward,
+                            iconColor: AppColors.incomePositive,
+                            label: 'Inflow this month',
+                            amount: data.inflowLabel,
+                            change: data.inflowChangeLabel,
+                            changeColor: AppColors.incomePositive,
+                            onTap: () => _openTransactionHistory('income'),
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: _buildFinancialCard(
+                            icon: Icons.arrow_upward,
+                            iconColor: AppColors.expenseNegative,
+                            label: 'Outflow this month',
+                            amount: data.outflowLabel,
+                            change: data.outflowChangeLabel,
+                            changeColor: AppColors.expenseNegative,
+                            onTap: () => _openTransactionHistory('expense'),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: _buildFinancialCard(
-                      icon: Icons.arrow_upward,
-                      iconColor: AppColors.expenseNegative,
-                      label: 'Outflow this month',
-                      amount: data.outflowLabel,
-                      change: data.outflowChangeLabel,
-                      changeColor: AppColors.expenseNegative,
-                      onTap: () => _openTransactionHistory('expense'),
-                    ),
-                  ),
-                ],
-              ),
               const SizedBox(height: 32),
               _buildTransactionHeader(),
               const SizedBox(height: 16),
@@ -683,6 +712,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildActiveBalanceCard(
     String activeBalanceLabel,
     List<_AccountBalanceViewData> accountBalances,
+    {bool isCompact = false},
   ) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 260),
@@ -728,10 +758,11 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(isCompact ? 20 : 24),
               child: _buildActiveBalanceCardContent(
                 activeBalanceLabel,
                 accountBalances,
+                isCompact: isCompact,
               ),
             ),
           ],
@@ -743,6 +774,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildActiveBalanceCardContent(
     String activeBalanceLabel,
     List<_AccountBalanceViewData> accountBalances,
+    {bool isCompact = false},
   ) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -760,7 +792,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         'Active Balance',
                         style: TextStyle(
                           color: AppColors.textSecondary,
-                          fontSize: 12,
+                          fontSize: isCompact ? 13 : 12,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -772,8 +804,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           });
                         },
                         child: Container(
-                          width: 32,
-                          height: 32,
+                          width: isCompact ? 36 : 32,
+                          height: isCompact ? 36 : 32,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: Colors.white.withOpacity(0.1),
@@ -783,7 +815,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ? Icons.visibility
                                 : Icons.visibility_off,
                             color: AppColors.textPrimary,
-                            size: 18,
+                            size: isCompact ? 19 : 18,
                           ),
                         ),
                       ),
@@ -796,7 +828,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: AppColors.textPrimary,
-                      fontSize: 30,
+                      fontSize: isCompact ? 34 : 30,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -805,14 +837,23 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(width: 12),
             GestureDetector(
+              onTap: isCompact
+                  ? null
+                  : () {
+                      setState(() {
+                        _isAccountBalancesExpanded = !_isAccountBalancesExpanded;
+                      });
+                    },
               onTap: () {
-                setState(() {
-                  _isAccountBalancesExpanded = !_isAccountBalancesExpanded;
-                });
+                if (!isCompact) {
+                  setState(() {
+                    _isAccountBalancesExpanded = !_isAccountBalancesExpanded;
+                  });
+                }
               },
               child: Container(
-                width: 50,
-                height: 50,
+                width: isCompact ? 56 : 50,
+                height: isCompact ? 56 : 50,
                 decoration: BoxDecoration(
                   shape: BoxShape.rectangle,
                   borderRadius: BorderRadius.circular(16),
@@ -833,30 +874,33 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
                 child: Icon(
-                  _isAccountBalancesExpanded
-                      ? Icons.keyboard_arrow_up
-                      : Icons.wallet,
+                  isCompact
+                      ? Icons.account_balance_wallet_outlined
+                      : _isAccountBalancesExpanded
+                          ? Icons.keyboard_arrow_up
+                          : Icons.wallet,
                   color: AppColors.textPrimary,
-                  size: 24,
+                  size: isCompact ? 28 : 24,
                 ),
               ),
             ),
           ],
         ),
-        AnimatedSize(
-          duration: const Duration(milliseconds: 260),
-          curve: Curves.easeOutCubic,
-          alignment: Alignment.topRight,
-          child: _isAccountBalancesExpanded
-              ? Align(
-                  alignment: Alignment.centerRight,
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 18),
-                    child: _buildAccountBalancesPanel(accountBalances),
-                  ),
-                )
-              : const SizedBox.shrink(),
-        ),
+        if (!isCompact)
+          AnimatedSize(
+            duration: const Duration(milliseconds: 260),
+            curve: Curves.easeOutCubic,
+            alignment: Alignment.topRight,
+            child: _isAccountBalancesExpanded
+                ? Align(
+                    alignment: Alignment.centerRight,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 18),
+                      child: _buildAccountBalancesPanel(accountBalances),
+                    ),
+                  )
+                : const SizedBox.shrink(),
+          ),
       ],
     );
   }
@@ -1010,6 +1054,7 @@ class _HomeScreenState extends State<HomeScreen> {
     required String change,
     required Color changeColor,
     VoidCallback? onTap,
+    bool isCompact = false,
   }) {
     return Material(
       color: Colors.transparent,
@@ -1017,7 +1062,7 @@ class _HomeScreenState extends State<HomeScreen> {
         onTap: onTap,
         borderRadius: BorderRadius.circular(20),
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(isCompact ? 18 : 16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
             color: Colors.white.withOpacity(0.055),
@@ -1033,18 +1078,20 @@ class _HomeScreenState extends State<HomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Container(
-                    width: 40,
-                    height: 40,
+                    width: isCompact ? 48 : 40,
+                    height: isCompact ? 48 : 40,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: iconColor.withOpacity(0.2),
                     ),
-                    child: Icon(icon, color: iconColor, size: 20),
+                    child: Icon(icon, color: iconColor, size: isCompact ? 24 : 20),
                   ),
                   const Spacer(),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isCompact ? 10 : 8,
+                      vertical: isCompact ? 5 : 4,
+                    ),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(6),
                       color: changeColor.withOpacity(0.15),
@@ -1053,7 +1100,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       change,
                       style: TextStyle(
                         color: changeColor,
-                        fontSize: 12,
+                        fontSize: isCompact ? 13 : 12,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -1065,7 +1112,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 label,
                 style: TextStyle(
                   color: AppColors.textMuted,
-                  fontSize: 12,
+                  fontSize: isCompact ? 13 : 12,
                   fontWeight: FontWeight.w400,
                 ),
               ),
@@ -1074,7 +1121,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 amount,
                 style: TextStyle(
                   color: AppColors.textPrimary,
-                  fontSize: 18,
+                  fontSize: isCompact ? 20 : 18,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -1140,6 +1187,7 @@ class _HomeScreenState extends State<HomeScreen> {
     bool isPositive = false,
     bool isTransfer = false,
   }) {
+    final isCompact = MediaQuery.sizeOf(context).width < 600;
     final amountColor =
         isTransfer
             ? AppColors.primaryViolet
@@ -1157,17 +1205,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 : null,
         borderRadius: BorderRadius.circular(20),
         child: Container(
-          padding: const EdgeInsets.all(14),
+          padding: EdgeInsets.all(isCompact ? 16 : 14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
             color: Colors.white.withOpacity(0.055),
           ),
-          height: 74,
+          height: isCompact ? 88 : 74,
           child: Row(
             children: [
               Container(
-                width: 44,
-                height: 44,
+                width: isCompact ? 52 : 44,
+                height: isCompact ? 52 : 44,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: categoryColor.withOpacity(0.18),
@@ -1176,7 +1224,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Icon(
                     categoryIcon,
                     color: categoryColor,
-                    size: 22,
+                    size: isCompact ? 26 : 22,
                   ),
                 ),
               ),
@@ -1192,7 +1240,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: AppColors.textPrimary,
-                        fontSize: 15,
+                        fontSize: isCompact ? 16 : 15,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -1201,7 +1249,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       '$time | $date',
                       style: TextStyle(
                         color: AppColors.textMuted,
-                        fontSize: 12,
+                        fontSize: isCompact ? 12.5 : 12,
                         fontWeight: FontWeight.w400,
                       ),
                     ),
@@ -1216,7 +1264,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     amount,
                     style: TextStyle(
                       color: amountColor,
-                      fontSize: 15,
+                      fontSize: isCompact ? 16 : 15,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -1225,7 +1273,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     category,
                     style: TextStyle(
                       color: AppColors.textMuted,
-                      fontSize: 12,
+                      fontSize: isCompact ? 12.5 : 12,
                       fontWeight: FontWeight.w400,
                     ),
                   ),
