@@ -8,6 +8,7 @@ import '../models/local_models.dart';
 import '../services/cqrs_service.dart';
 import '../services/local_db.dart';
 import '../services/user_identity.dart';
+import '../utils/date_time_utils.dart';
 import 'add_transaction_screen.dart';
 import 'transaction_history_screen.dart';
 
@@ -244,11 +245,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     transaction: transaction.transaction,
                     transfer: transaction.transfer,
                     description: transaction.description,
-                    time: MaterialLocalizations.of(context).formatTimeOfDay(
-                      TimeOfDay.fromDateTime(transaction.date),
+                    time: AppDateTime.formatTime(context, transaction.date),
+                    date: AppDateTime.formatMediumDate(
+                      context,
+                      transaction.date,
                     ),
-                    date: MaterialLocalizations.of(context)
-                        .formatMediumDate(transaction.date),
                     amount: transaction.amountLabel,
                     category: transaction.categoryName,
                     categoryIcon: transaction.categoryIcon,

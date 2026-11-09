@@ -5,6 +5,7 @@ import '../config/category_icons.dart';
 import '../cqrs/queries.dart';
 import '../models/local_models.dart';
 import '../services/cqrs_service.dart';
+import '../services/export_service.dart';
 import '../services/user_identity.dart';
 import 'add_transaction_screen.dart';
 
@@ -26,6 +27,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
   String? _categoryId;
   DateTimeRange? _dateRange;
   bool _appliedInitialFilters = false;
+  bool _exporting = false;
 
   @override
   void initState() {
@@ -62,6 +64,16 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
         backgroundColor: AppColors.bgPrimary,
         elevation: 0,
         title: const Text('Transactions'),
+        actions: [
+          IconButton(
+            onPressed: _exporting ? null : _openExportSheet,
+            tooltip: 'Export',
+            icon: const Icon(
+              Icons.ios_share_rounded,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ],
       ),
       body: Stack(
         children: [
@@ -108,29 +120,40 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
       ...filteredTransactions.map(_HistoryListItem.transaction),
       ...filteredTransfers.map(_HistoryListItem.transfer),
     ]..sort((a, b) => b.date.compareTo(a.date));
-    return RefreshIndicator(
-      onRefresh: _reload,
-      child: ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-        children: [
-          _buildSearchField(),
-          const SizedBox(height: 14),
-          _buildFilters(data),
-          const SizedBox(height: 18),
-          _buildResultSummary(entries.length),
-          const SizedBox(height: 12),
-          if (entries.isEmpty)
-            _buildEmptyState()
-          else
-            for (final entry in entries) ...[
-              entry.transaction != null
-                  ? _buildTransactionTile(entry.transaction!, data)
-                  : _buildTransferTile(entry.transfer!, data),
-              const SizedBox(height: 10),
+    return Stack(
+      children: [
+        RefreshIndicator(
+          onRefresh: _reload,
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+            children: [
+              _buildSearchField(),
+              const SizedBox(height: 14),
+              _buildFilters(data),
+              const SizedBox(height: 18),
+              _buildResultSummary(entries.length),
+              const SizedBox(height: 12),
+              if (entries.isEmpty)
+                _buildEmptyState()
+              else
+                for (final entry in entries) ...[
+                  entry.transaction != null
+                      ? _buildTransactionTile(entry.transaction!, data)
+                      : _buildTransferTile(entry.transfer!, data),
+                  const SizedBox(height: 10),
+                ],
             ],
-        ],
-      ),
+          ),
+        ),
+        if (_exporting)
+          Positioned.fill(
+            child: Container(
+              color: Colors.black.withOpacity(0.45),
+              child: const Center(child: CircularProgressIndicator()),
+            ),
+          ),
+      ],
     );
   }
 
@@ -544,6 +567,276 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
     );
   }
 
+  Future<void> _openExportSheet() async {
+    final data = await _historyFuture;
+    if (!mounted || data == null) {
+      return;
+    }
+
+    final entries = _exportEntries(data);
+    final summary = _filterSummary(data);
+
+    final format = await showModalBottomSheet<ExportFormat>(
+      context: context,
+      backgroundColor: AppColors.bgSecondary,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Export transactions',
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '${entries.length} ${entries.length == 1 ? 'entry' : 'entries'} with the filters currently applied.',
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
+                ),
+                if (summary.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    summary,
+                    style: const TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 18),
+                _buildExportOption(
+                  icon: Icons.picture_as_pdf_rounded,
+                  title: 'Export as PDF',
+                  subtitle: 'Share a printable report of these transactions',
+                  onTap: () => Navigator.of(context).pop(ExportFormat.pdf),
+                ),
+                const SizedBox(height: 12),
+                _buildExportOption(
+                  icon: Icons.table_chart_rounded,
+                  title: 'Export as Excel (XLSX)',
+                  subtitle: 'Spreadsheet with a transactions and a summary sheet',
+                  onTap: () => Navigator.of(context).pop(ExportFormat.xlsx),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (format == null || !mounted) {
+      return;
+    }
+    if (entries.isEmpty) {
+      _showMessage('Nothing to export with the current filters.');
+      return;
+    }
+
+    await _runExport(format, entries, summary);
+  }
+
+  Widget _buildExportOption({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.06),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withOpacity(0.12)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: AppColors.primaryViolet.withOpacity(0.18),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: AppColors.primaryViolet, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: AppColors.textMuted,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _runExport(
+    ExportFormat format,
+    List<ExportEntry> entries,
+    String summary,
+  ) async {
+    setState(() {
+      _exporting = true;
+    });
+
+    try {
+      final result = await TransactionExportService.export(
+        format: format,
+        entries: entries,
+        filterSummary: summary,
+        sharePositionOrigin: _shareOrigin(),
+      );
+      if (mounted) {
+        _showMessage(
+          'Exported ${result.rowCount} ${result.rowCount == 1 ? 'entry' : 'entries'} '
+          'to ${result.fileName}.',
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        _showMessage('Export failed: $error');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _exporting = false;
+        });
+      }
+    }
+  }
+
+  Rect? _shareOrigin() {
+    final box = context.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize) {
+      return null;
+    }
+    return box.localToGlobal(Offset.zero) & box.size;
+  }
+
+  List<ExportEntry> _exportEntries(_TransactionHistoryData data) {
+    final entries = <ExportEntry>[];
+
+    for (final transaction in _filteredTransactions(data)) {
+      final category = data.categoryById[transaction.categoryId];
+      final account = data.accountById[transaction.accountId];
+      final note = transaction.note?.trim();
+      entries.add(
+        ExportEntry(
+          date: transaction.date,
+          type: transaction.type == 'income' ? 'Income' : 'Expense',
+          category: category?.name ?? transaction.type,
+          account: account?.name ?? 'Account',
+          description: note == null || note.isEmpty
+              ? (category?.name ?? transaction.type)
+              : note,
+          amount: transaction.amount,
+          currency: transaction.currency,
+          note: note,
+        ),
+      );
+    }
+
+    for (final transfer in _filteredTransfers(data)) {
+      final from = data.accountById[transfer.fromAccountId]?.name ?? 'Account';
+      final to = data.accountById[transfer.toAccountId]?.name ?? 'Account';
+      final note = transfer.note?.trim();
+      entries.add(
+        ExportEntry(
+          date: transfer.date,
+          type: 'Transfer',
+          category: '$from -> $to',
+          account: from,
+          description: note == null || note.isEmpty ? '$from -> $to' : note,
+          amount: transfer.amount,
+          currency: data.accountById[transfer.fromAccountId]?.currency ?? '',
+          note: note,
+        ),
+      );
+    }
+
+    entries.sort((a, b) => b.date.compareTo(a.date));
+    return entries;
+  }
+
+  String _filterSummary(_TransactionHistoryData data) {
+    final parts = <String>[];
+
+    if (_type != null) {
+      parts.add('Type: ${_type![0].toUpperCase()}${_type!.substring(1)}');
+    }
+    if (_accountId != null) {
+      final account = data.accountById[_accountId];
+      parts.add('Account: ${account?.name ?? 'Account'}');
+    }
+    if (_categoryId != null) {
+      final category = data.categoryById[_categoryId];
+      parts.add('Category: ${category?.name ?? 'Category'}');
+    }
+    if (_dateRange != null) {
+      parts.add(
+        'Dates: ${_formatShortDate(_dateRange!.start)} - '
+        '${_formatShortDate(_dateRange!.end)}',
+      );
+    }
+    if (_query.trim().isNotEmpty) {
+      parts.add('Search: ${_query.trim()}');
+    }
+
+    return parts.join(' | ');
+  }
+
+  void _showMessage(String message) {
+    if (!mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppColors.bgSecondary,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   Widget _buildLoadError(Object? error) {
     return Center(
       child: Padding(
@@ -750,15 +1043,16 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
 
   String _formatDateTime(DateTime dateTime) {
     final localizations = MaterialLocalizations.of(context);
-    final date = localizations.formatMediumDate(dateTime);
+    final local = dateTime.toLocal();
+    final date = localizations.formatMediumDate(local);
     final time = localizations.formatTimeOfDay(
-      TimeOfDay.fromDateTime(dateTime),
+      TimeOfDay.fromDateTime(local),
     );
     return '$time | $date';
   }
 
   String _formatShortDate(DateTime dateTime) {
-    return MaterialLocalizations.of(context).formatShortDate(dateTime);
+    return MaterialLocalizations.of(context).formatShortDate(dateTime.toLocal());
   }
 }
 

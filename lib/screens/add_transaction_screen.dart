@@ -58,7 +58,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     final initialTransaction = widget.initialTransaction;
     if (initialTransaction != null) {
       _type = initialTransaction.type;
-      _date = initialTransaction.date;
+      _date = initialTransaction.date.toLocal();
       _selectedAccountId = initialTransaction.accountId;
       _selectedCategoryId = initialTransaction.categoryId;
       _amountController.text = initialTransaction.amount.toStringAsFixed(2);
@@ -67,7 +67,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     final initialTransfer = widget.initialTransfer;
     if (initialTransfer != null) {
       _type = 'transfer';
-      _date = initialTransfer.date;
+      _date = initialTransfer.date.toLocal();
       _selectedAccountId = initialTransfer.fromAccountId;
       _selectedToAccountId = initialTransfer.toAccountId;
       _amountController.text = initialTransfer.amount.toStringAsFixed(2);
@@ -511,9 +511,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
   String _formatDateTime(BuildContext context, DateTime dateTime) {
     final localizations = MaterialLocalizations.of(context);
-    final dateLabel = localizations.formatMediumDate(dateTime);
+    final local = dateTime.toLocal();
+    final dateLabel = localizations.formatMediumDate(local);
     final timeLabel = localizations.formatTimeOfDay(
-      TimeOfDay.fromDateTime(dateTime),
+      TimeOfDay.fromDateTime(local),
     );
     return '$dateLabel, $timeLabel';
   }
