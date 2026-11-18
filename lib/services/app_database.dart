@@ -9,26 +9,41 @@ class AppDatabase {
   AppDatabase._(this._database);
 
   static const _dbName = 'financetracker.sqlite';
-  static const _dbVersion = 1;
+  static const _dbVersion = 3;
 
   final Database _database;
   DatabaseExecutor? _activeTransaction;
+  static final StreamController<void> _changes =
+      StreamController<void>.broadcast();
+
+  static Stream<void> get changes => _changes.stream;
 
   static Future<AppDatabase> open() async {
-    final directory = await getApplicationDocumentsDirectory();
-    final path = p.join(directory.path, _dbName);
+    final path = await databasePath();
     final database = await openDatabase(
       path,
       version: _dbVersion,
       onCreate: _createSchema,
+      onUpgrade: _upgradeSchema,
     );
     return AppDatabase._(database);
   }
 
   Future<void> close() => _database.close();
 
-  Future<T> transaction<T>(Future<T> Function(Transaction txn) action) {
-    return _database.transaction((txn) async {
+  static Future<String> databasePath() async {
+    final directory = await getApplicationDocumentsDirectory();
+    return p.join(directory.path, _dbName);
+  }
+
+  /// Produces a consistent SQLite snapshot without copying an active WAL file.
+  Future<void> backupTo(String targetPath) async {
+    final escapedPath = targetPath.replaceAll("'", "''");
+    await _database.execute("VACUUM INTO '$escapedPath'");
+  }
+
+  Future<T> transaction<T>(Future<T> Function(Transaction txn) action) async {
+    final result = await _database.transaction((txn) async {
       _activeTransaction = txn;
       try {
         return await action(txn);
@@ -36,6 +51,10 @@ class AppDatabase {
         _activeTransaction = null;
       }
     });
+    // Notify listeners only after the transaction has committed, so they never
+    // begin a refresh against an in-progress SQLite transaction.
+    _changes.add(null);
+    return result;
   }
 
   static Future<void> _createSchema(Database db, int version) async {
@@ -80,7 +99,8 @@ class AppDatabase {
         deleted_at TEXT
       )
     ''');
-    await db.execute('CREATE INDEX idx_categories_user_id ON categories(user_id)');
+    await db
+        .execute('CREATE INDEX idx_categories_user_id ON categories(user_id)');
     await db.execute('''
       CREATE TABLE transactions (
         transaction_id TEXT PRIMARY KEY,
@@ -93,15 +113,20 @@ class AppDatabase {
         date TEXT NOT NULL,
         note TEXT,
         is_recurring INTEGER NOT NULL,
+        receipt_bytes BLOB,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,
         deleted_at TEXT
       )
     ''');
-    await db.execute('CREATE INDEX idx_transactions_user_id ON transactions(user_id)');
-    await db.execute('CREATE INDEX idx_transactions_account_id ON transactions(account_id)');
-    await db.execute('CREATE INDEX idx_transactions_category_id ON transactions(category_id)');
-    await db.execute('CREATE INDEX idx_transactions_date ON transactions(date)');
+    await db.execute(
+        'CREATE INDEX idx_transactions_user_id ON transactions(user_id)');
+    await db.execute(
+        'CREATE INDEX idx_transactions_account_id ON transactions(account_id)');
+    await db.execute(
+        'CREATE INDEX idx_transactions_category_id ON transactions(category_id)');
+    await db
+        .execute('CREATE INDEX idx_transactions_date ON transactions(date)');
     await db.execute('''
       CREATE TABLE transfers (
         transfer_id TEXT PRIMARY KEY,
@@ -116,7 +141,8 @@ class AppDatabase {
         deleted_at TEXT
       )
     ''');
-    await db.execute('CREATE INDEX idx_transfers_user_id ON transfers(user_id)');
+    await db
+        .execute('CREATE INDEX idx_transfers_user_id ON transfers(user_id)');
     await db.execute('CREATE INDEX idx_transfers_date ON transfers(date)');
     await db.execute('''
       CREATE TABLE budgets (
@@ -133,7 +159,8 @@ class AppDatabase {
       )
     ''');
     await db.execute('CREATE INDEX idx_budgets_user_id ON budgets(user_id)');
-    await db.execute('CREATE INDEX idx_budgets_category_id ON budgets(category_id)');
+    await db.execute(
+        'CREATE INDEX idx_budgets_category_id ON budgets(category_id)');
     await db.execute('''
       CREATE TABLE recurring_transactions (
         recurring_id TEXT PRIMARY KEY,
@@ -150,8 +177,10 @@ class AppDatabase {
         deleted_at TEXT
       )
     ''');
-    await db.execute('CREATE INDEX idx_recurring_user_id ON recurring_transactions(user_id)');
-    await db.execute('CREATE INDEX idx_recurring_next_run_at ON recurring_transactions(next_run_at)');
+    await db.execute(
+        'CREATE INDEX idx_recurring_user_id ON recurring_transactions(user_id)');
+    await db.execute(
+        'CREATE INDEX idx_recurring_next_run_at ON recurring_transactions(next_run_at)');
     await db.execute('''
       CREATE TABLE payment_card_credentials (
         card_credential_id TEXT PRIMARY KEY,
@@ -169,7 +198,8 @@ class AppDatabase {
         deleted_at TEXT
       )
     ''');
-    await db.execute('CREATE INDEX idx_payment_card_user_id ON payment_card_credentials(user_id)');
+    await db.execute(
+        'CREATE INDEX idx_payment_card_user_id ON payment_card_credentials(user_id)');
     await db.execute('''
       CREATE TABLE bank_account_credentials (
         bank_credential_id TEXT PRIMARY KEY,
@@ -186,7 +216,8 @@ class AppDatabase {
         deleted_at TEXT
       )
     ''');
-    await db.execute('CREATE INDEX idx_bank_account_user_id ON bank_account_credentials(user_id)');
+    await db.execute(
+        'CREATE INDEX idx_bank_account_user_id ON bank_account_credentials(user_id)');
     await db.execute('''
       CREATE TABLE summary_cache (
         summary_key TEXT PRIMARY KEY,
@@ -200,7 +231,8 @@ class AppDatabase {
         by_category_json TEXT
       )
     ''');
-    await db.execute('CREATE INDEX idx_summary_cache_user_id ON summary_cache(user_id)');
+    await db.execute(
+        'CREATE INDEX idx_summary_cache_user_id ON summary_cache(user_id)');
     await db.execute('''
       CREATE TABLE sync_outbox (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -216,9 +248,68 @@ class AppDatabase {
         last_error TEXT
       )
     ''');
-    await db.execute('CREATE INDEX idx_sync_outbox_user_id ON sync_outbox(user_id)');
-    await db.execute('CREATE INDEX idx_sync_outbox_status ON sync_outbox(status)');
-    await db.execute('CREATE INDEX idx_sync_outbox_last_error ON sync_outbox(last_error)');
+    await db.execute(
+        'CREATE INDEX idx_sync_outbox_user_id ON sync_outbox(user_id)');
+    await db
+        .execute('CREATE INDEX idx_sync_outbox_status ON sync_outbox(status)');
+    await db.execute(
+        'CREATE INDEX idx_sync_outbox_last_error ON sync_outbox(last_error)');
+    await db.execute('''
+      CREATE TABLE loans (
+        loan_id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        account_id TEXT NOT NULL,
+        direction TEXT NOT NULL,
+        counterparty TEXT NOT NULL,
+        amount REAL NOT NULL,
+        currency TEXT NOT NULL,
+        date TEXT NOT NULL,
+        settled_amount REAL NOT NULL DEFAULT 0,
+        note TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        deleted_at TEXT
+      )
+    ''');
+    await db.execute('CREATE INDEX idx_loans_user_id ON loans(user_id)');
+    await db
+        .execute('CREATE INDEX idx_loans_account_id ON loans(account_id)');
+    await db.execute('CREATE INDEX idx_loans_date ON loans(date)');
+  }
+
+  static Future<void> _upgradeSchema(
+    Database db,
+    int oldVersion,
+    int newVersion,
+  ) async {
+    // v2: loan tracking. Loans live in their own table so they can be shown in
+    // transaction lists without ever moving account balances or totals.
+    if (oldVersion < 2) {
+      await db.execute('''CREATE TABLE IF NOT EXISTS loans (
+          loan_id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          account_id TEXT NOT NULL,
+          direction TEXT NOT NULL,
+          counterparty TEXT NOT NULL,
+          amount REAL NOT NULL,
+          currency TEXT NOT NULL,
+          date TEXT NOT NULL,
+          settled_amount REAL NOT NULL DEFAULT 0,
+          note TEXT,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          deleted_at TEXT
+        )''');
+      await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_loans_user_id ON loans(user_id)');
+      await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_loans_account_id ON loans(account_id)');
+      await db
+          .execute('CREATE INDEX IF NOT EXISTS idx_loans_date ON loans(date)');
+    }
+    if (oldVersion < 3) {
+      await db.execute('ALTER TABLE transactions ADD COLUMN receipt_bytes BLOB');
+    }
   }
 
   Future<void> putUser(UserEntity user, {Transaction? txn}) {
@@ -233,7 +324,8 @@ class AppDatabase {
     return _insert('categories', category.toMap(), txn: txn);
   }
 
-  Future<void> putTransaction(TransactionEntity transaction, {Transaction? txn}) {
+  Future<void> putTransaction(TransactionEntity transaction,
+      {Transaction? txn}) {
     return _insert('transactions', transaction.toMap(), txn: txn);
   }
 
@@ -245,7 +337,8 @@ class AppDatabase {
     return _insert('budgets', budget.toMap(), txn: txn);
   }
 
-  Future<void> putRecurring(RecurringTransactionEntity recurring, {Transaction? txn}) {
+  Future<void> putRecurring(RecurringTransactionEntity recurring,
+      {Transaction? txn}) {
     return _insert('recurring_transactions', recurring.toMap(), txn: txn);
   }
 
@@ -277,25 +370,29 @@ class AppDatabase {
     }
   }
 
-  Future<void> putAccounts(List<AccountEntity> items, {Transaction? txn}) async {
+  Future<void> putAccounts(List<AccountEntity> items,
+      {Transaction? txn}) async {
     for (final entry in items) {
       await putAccount(entry, txn: txn);
     }
   }
 
-  Future<void> putCategories(List<CategoryEntity> items, {Transaction? txn}) async {
+  Future<void> putCategories(List<CategoryEntity> items,
+      {Transaction? txn}) async {
     for (final entry in items) {
       await putCategory(entry, txn: txn);
     }
   }
 
-  Future<void> putTransactions(List<TransactionEntity> items, {Transaction? txn}) async {
+  Future<void> putTransactions(List<TransactionEntity> items,
+      {Transaction? txn}) async {
     for (final entry in items) {
       await putTransaction(entry, txn: txn);
     }
   }
 
-  Future<void> putTransfers(List<TransferEntity> items, {Transaction? txn}) async {
+  Future<void> putTransfers(List<TransferEntity> items,
+      {Transaction? txn}) async {
     for (final entry in items) {
       await putTransfer(entry, txn: txn);
     }
@@ -307,95 +404,182 @@ class AppDatabase {
     }
   }
 
-  Future<void> putRecurringTransactions(List<RecurringTransactionEntity> items, {Transaction? txn}) async {
+  Future<void> putRecurringTransactions(List<RecurringTransactionEntity> items,
+      {Transaction? txn}) async {
     for (final entry in items) {
       await putRecurring(entry, txn: txn);
     }
   }
 
-  Future<void> putPaymentCardCredentials(List<PaymentCardCredentialEntity> items, {Transaction? txn}) async {
+  Future<void> putPaymentCardCredentials(
+      List<PaymentCardCredentialEntity> items,
+      {Transaction? txn}) async {
     for (final entry in items) {
       await putPaymentCardCredential(entry, txn: txn);
     }
   }
 
-  Future<void> putBankAccountCredentials(List<BankAccountCredentialEntity> items, {Transaction? txn}) async {
+  Future<void> putBankAccountCredentials(
+      List<BankAccountCredentialEntity> items,
+      {Transaction? txn}) async {
     for (final entry in items) {
       await putBankAccountCredential(entry, txn: txn);
     }
   }
 
-  Future<void> putSyncOutboxAll(List<SyncOutboxEntity> items, {Transaction? txn}) async {
+  Future<void> putSyncOutboxAll(List<SyncOutboxEntity> items,
+      {Transaction? txn}) async {
     for (final entry in items) {
       await putSyncOutbox(entry, txn: txn);
     }
   }
 
   Future<UserEntity?> getUserByUserId(String userId) async {
-    final rows = await _query('users', where: 'user_id = ?', whereArgs: [userId], limit: 1);
+    final rows = await _query('users',
+        where: 'user_id = ?', whereArgs: [userId], limit: 1);
     return rows.isEmpty ? null : UserEntity.fromMap(rows.first);
   }
 
-  Future<AccountEntity?> getAccountByUserAndAccountId(String userId, String accountId) async {
-    final rows = await _query('accounts', where: 'user_id = ? AND account_id = ?', whereArgs: [userId, accountId], limit: 1);
+  Future<AccountEntity?> getAccountByUserAndAccountId(
+      String userId, String accountId) async {
+    final rows = await _query('accounts',
+        where: 'user_id = ? AND account_id = ?',
+        whereArgs: [userId, accountId],
+        limit: 1);
     return rows.isEmpty ? null : AccountEntity.fromMap(rows.first);
   }
 
-  Future<CategoryEntity?> getCategoryByUserAndCategoryId(String userId, String categoryId) async {
-    final rows = await _query('categories', where: 'user_id = ? AND category_id = ?', whereArgs: [userId, categoryId], limit: 1);
+  Future<CategoryEntity?> getCategoryByUserAndCategoryId(
+      String userId, String categoryId) async {
+    final rows = await _query('categories',
+        where: 'user_id = ? AND category_id = ?',
+        whereArgs: [userId, categoryId],
+        limit: 1);
     return rows.isEmpty ? null : CategoryEntity.fromMap(rows.first);
   }
 
-  Future<TransactionEntity?> getTransactionByUserAndTransactionId(String userId, String transactionId) async {
-    final rows = await _query('transactions', where: 'user_id = ? AND transaction_id = ?', whereArgs: [userId, transactionId], limit: 1);
+  Future<TransactionEntity?> getTransactionByUserAndTransactionId(
+      String userId, String transactionId) async {
+    final rows = await _query('transactions',
+        where: 'user_id = ? AND transaction_id = ?',
+        whereArgs: [userId, transactionId],
+        limit: 1);
     return rows.isEmpty ? null : TransactionEntity.fromMap(rows.first);
   }
 
-  Future<TransferEntity?> getTransferByUserAndTransferId(String userId, String transferId) async {
-    final rows = await _query('transfers', where: 'user_id = ? AND transfer_id = ?', whereArgs: [userId, transferId], limit: 1);
+  Future<TransferEntity?> getTransferByUserAndTransferId(
+      String userId, String transferId) async {
+    final rows = await _query('transfers',
+        where: 'user_id = ? AND transfer_id = ?',
+        whereArgs: [userId, transferId],
+        limit: 1);
     return rows.isEmpty ? null : TransferEntity.fromMap(rows.first);
   }
 
-  Future<BudgetEntity?> getBudgetByUserAndBudgetId(String userId, String budgetId) async {
-    final rows = await _query('budgets', where: 'user_id = ? AND budget_id = ?', whereArgs: [userId, budgetId], limit: 1);
+  Future<BudgetEntity?> getBudgetByUserAndBudgetId(
+      String userId, String budgetId) async {
+    final rows = await _query('budgets',
+        where: 'user_id = ? AND budget_id = ?',
+        whereArgs: [userId, budgetId],
+        limit: 1);
     return rows.isEmpty ? null : BudgetEntity.fromMap(rows.first);
   }
 
-  Future<RecurringTransactionEntity?> getRecurringByUserAndRecurringId(String userId, String recurringId) async {
-    final rows = await _query('recurring_transactions', where: 'user_id = ? AND recurring_id = ?', whereArgs: [userId, recurringId], limit: 1);
+  Future<RecurringTransactionEntity?> getRecurringByUserAndRecurringId(
+      String userId, String recurringId) async {
+    final rows = await _query('recurring_transactions',
+        where: 'user_id = ? AND recurring_id = ?',
+        whereArgs: [userId, recurringId],
+        limit: 1);
     return rows.isEmpty ? null : RecurringTransactionEntity.fromMap(rows.first);
   }
 
-  Future<PaymentCardCredentialEntity?> getPaymentCardCredentialByUserAndId(String userId, String cardCredentialId) async {
-    final rows = await _query('payment_card_credentials', where: 'user_id = ? AND card_credential_id = ?', whereArgs: [userId, cardCredentialId], limit: 1);
-    return rows.isEmpty ? null : PaymentCardCredentialEntity.fromMap(rows.first);
+  Future<PaymentCardCredentialEntity?> getPaymentCardCredentialByUserAndId(
+      String userId, String cardCredentialId) async {
+    final rows = await _query('payment_card_credentials',
+        where: 'user_id = ? AND card_credential_id = ?',
+        whereArgs: [userId, cardCredentialId],
+        limit: 1);
+    return rows.isEmpty
+        ? null
+        : PaymentCardCredentialEntity.fromMap(rows.first);
   }
 
-  Future<BankAccountCredentialEntity?> getBankAccountCredentialByUserAndId(String userId, String bankCredentialId) async {
-    final rows = await _query('bank_account_credentials', where: 'user_id = ? AND bank_credential_id = ?', whereArgs: [userId, bankCredentialId], limit: 1);
-    return rows.isEmpty ? null : BankAccountCredentialEntity.fromMap(rows.first);
+  Future<BankAccountCredentialEntity?> getBankAccountCredentialByUserAndId(
+      String userId, String bankCredentialId) async {
+    final rows = await _query('bank_account_credentials',
+        where: 'user_id = ? AND bank_credential_id = ?',
+        whereArgs: [userId, bankCredentialId],
+        limit: 1);
+    return rows.isEmpty
+        ? null
+        : BankAccountCredentialEntity.fromMap(rows.first);
+  }
+
+  Future<void> putLoan(LoanEntity loan, {Transaction? txn}) {
+    return _insert('loans', loan.toMap(), txn: txn);
+  }
+
+  Future<void> putLoans(List<LoanEntity> loans, {Transaction? txn}) async {
+    for (final entry in loans) {
+      await putLoan(entry, txn: txn);
+    }
+  }
+
+  Future<LoanEntity?> getLoanByUserAndLoanId(
+      String userId, String loanId) async {
+    final rows = await _query('loans',
+        where: 'user_id = ? AND loan_id = ?',
+        whereArgs: [userId, loanId],
+        limit: 1);
+    return rows.isEmpty ? null : LoanEntity.fromMap(rows.first);
+  }
+
+  Future<List<LoanEntity>> getLoans(
+      {required String userId, String? accountId, bool deletedOnly = false}) async {
+    final clauses = <String>['user_id = ?'];
+    final args = <Object?>[userId];
+    clauses.add(deletedOnly ? 'deleted_at IS NOT NULL' : 'deleted_at IS NULL');
+    if (accountId != null) {
+      clauses.add('account_id = ?');
+      args.add(accountId);
+    }
+    final rows = await _query(
+      'loans',
+      where: clauses.join(' AND '),
+      whereArgs: args,
+      orderBy: 'date DESC',
+    );
+    return rows.map(LoanEntity.fromMap).toList();
   }
 
   Future<SummaryCacheEntity?> getSummaryByKey(String summaryKey) async {
-    final rows = await _query('summary_cache', where: 'summary_key = ?', whereArgs: [summaryKey], limit: 1);
+    final rows = await _query('summary_cache',
+        where: 'summary_key = ?', whereArgs: [summaryKey], limit: 1);
     return rows.isEmpty ? null : SummaryCacheEntity.fromMap(rows.first);
   }
 
   Future<List<UserEntity>> getUsersByUserId(String userId) async {
-    return (await _query('users', where: 'user_id = ?', whereArgs: [userId])).map(UserEntity.fromMap).toList();
+    return (await _query('users', where: 'user_id = ?', whereArgs: [userId]))
+        .map(UserEntity.fromMap)
+        .toList();
   }
 
-  Future<List<AccountEntity>> getAccounts({required String userId, bool deletedOnly = false}) async {
+  Future<List<AccountEntity>> getAccounts(
+      {required String userId, bool deletedOnly = false}) async {
     final rows = await _query(
       'accounts',
-      where: deletedOnly ? 'user_id = ? AND deleted_at IS NOT NULL' : 'user_id = ? AND deleted_at IS NULL',
+      where: deletedOnly
+          ? 'user_id = ? AND deleted_at IS NOT NULL'
+          : 'user_id = ? AND deleted_at IS NULL',
       whereArgs: [userId],
       orderBy: 'name COLLATE NOCASE ASC',
     );
     return rows.map(AccountEntity.fromMap).toList();
   }
 
-  Future<List<CategoryEntity>> getCategories({required String userId, String? type, bool deletedOnly = false}) async {
+  Future<List<CategoryEntity>> getCategories(
+      {required String userId, String? type, bool deletedOnly = false}) async {
     final clauses = <String>['user_id = ?'];
     final args = <Object?>[userId];
     clauses.add(deletedOnly ? 'deleted_at IS NOT NULL' : 'deleted_at IS NULL');
@@ -403,7 +587,10 @@ class AppDatabase {
       clauses.add('type = ?');
       args.add(type);
     }
-    final rows = await _query('categories', where: clauses.join(' AND '), whereArgs: args, orderBy: 'sort_order ASC, name COLLATE NOCASE ASC');
+    final rows = await _query('categories',
+        where: clauses.join(' AND '),
+        whereArgs: args,
+        orderBy: 'sort_order ASC, name COLLATE NOCASE ASC');
     return rows.map(CategoryEntity.fromMap).toList();
   }
 
@@ -467,27 +654,52 @@ class AppDatabase {
       clauses.add('date <= ?');
       args.add(end.toUtc().toIso8601String());
     }
-    final rows = await _query('transfers', where: clauses.join(' AND '), whereArgs: args, orderBy: 'date DESC');
+    final rows = await _query('transfers',
+        where: clauses.join(' AND '), whereArgs: args, orderBy: 'date DESC');
     return rows.map(TransferEntity.fromMap).toList();
   }
 
-  Future<List<BudgetEntity>> getBudgets({required String userId, bool deletedOnly = false}) async {
-    final rows = await _query('budgets', where: deletedOnly ? 'user_id = ? AND deleted_at IS NOT NULL' : 'user_id = ? AND deleted_at IS NULL', whereArgs: [userId], orderBy: 'start_date DESC');
+  Future<List<BudgetEntity>> getBudgets(
+      {required String userId, bool deletedOnly = false}) async {
+    final rows = await _query('budgets',
+        where: deletedOnly
+            ? 'user_id = ? AND deleted_at IS NOT NULL'
+            : 'user_id = ? AND deleted_at IS NULL',
+        whereArgs: [userId],
+        orderBy: 'start_date DESC');
     return rows.map(BudgetEntity.fromMap).toList();
   }
 
-  Future<List<RecurringTransactionEntity>> getRecurringTransactions({required String userId, bool deletedOnly = false}) async {
-    final rows = await _query('recurring_transactions', where: deletedOnly ? 'user_id = ? AND deleted_at IS NOT NULL' : 'user_id = ? AND deleted_at IS NULL', whereArgs: [userId], orderBy: 'next_run_at ASC');
+  Future<List<RecurringTransactionEntity>> getRecurringTransactions(
+      {required String userId, bool deletedOnly = false}) async {
+    final rows = await _query('recurring_transactions',
+        where: deletedOnly
+            ? 'user_id = ? AND deleted_at IS NOT NULL'
+            : 'user_id = ? AND deleted_at IS NULL',
+        whereArgs: [userId],
+        orderBy: 'next_run_at ASC');
     return rows.map(RecurringTransactionEntity.fromMap).toList();
   }
 
-  Future<List<PaymentCardCredentialEntity>> getPaymentCardCredentials({required String userId, bool deletedOnly = false}) async {
-    final rows = await _query('payment_card_credentials', where: deletedOnly ? 'user_id = ? AND deleted_at IS NOT NULL' : 'user_id = ? AND deleted_at IS NULL', whereArgs: [userId], orderBy: 'bank_name COLLATE NOCASE ASC');
+  Future<List<PaymentCardCredentialEntity>> getPaymentCardCredentials(
+      {required String userId, bool deletedOnly = false}) async {
+    final rows = await _query('payment_card_credentials',
+        where: deletedOnly
+            ? 'user_id = ? AND deleted_at IS NOT NULL'
+            : 'user_id = ? AND deleted_at IS NULL',
+        whereArgs: [userId],
+        orderBy: 'bank_name COLLATE NOCASE ASC');
     return rows.map(PaymentCardCredentialEntity.fromMap).toList();
   }
 
-  Future<List<BankAccountCredentialEntity>> getBankAccountCredentials({required String userId, bool deletedOnly = false}) async {
-    final rows = await _query('bank_account_credentials', where: deletedOnly ? 'user_id = ? AND deleted_at IS NOT NULL' : 'user_id = ? AND deleted_at IS NULL', whereArgs: [userId], orderBy: 'bank_name COLLATE NOCASE ASC');
+  Future<List<BankAccountCredentialEntity>> getBankAccountCredentials(
+      {required String userId, bool deletedOnly = false}) async {
+    final rows = await _query('bank_account_credentials',
+        where: deletedOnly
+            ? 'user_id = ? AND deleted_at IS NOT NULL'
+            : 'user_id = ? AND deleted_at IS NULL',
+        whereArgs: [userId],
+        orderBy: 'bank_name COLLATE NOCASE ASC');
     return rows.map(BankAccountCredentialEntity.fromMap).toList();
   }
 
@@ -546,7 +758,8 @@ class AppDatabase {
     return rows.first['last_error'] as String?;
   }
 
-  Future<DateTime?> getLatestUpdatedAtForUser(String table, String userId, {String userColumn = 'user_id'}) async {
+  Future<DateTime?> getLatestUpdatedAtForUser(String table, String userId,
+      {String userColumn = 'user_id'}) async {
     final rows = await _query(
       table,
       columns: ['MAX(updated_at) AS updated_at'],
@@ -560,7 +773,8 @@ class AppDatabase {
     return value == null ? null : DateTime.parse(value);
   }
 
-  Future<void> deleteByUser(String table, String userId, {String userColumn = 'user_id'}) {
+  Future<void> deleteByUser(String table, String userId,
+      {String userColumn = 'user_id'}) {
     return _execute('DELETE FROM $table WHERE $userColumn = ?', [userId]);
   }
 
@@ -576,10 +790,15 @@ class AppDatabase {
     if (txn == null) {
       return _execute('DELETE FROM sync_outbox WHERE id = ?', [id]);
     }
-    return txn.rawDelete('DELETE FROM sync_outbox WHERE id = ?', [id]).then((_) {});
+    return txn
+        .rawDelete('DELETE FROM sync_outbox WHERE id = ?', [id]).then((_) {});
   }
 
-  Future<void> updateSyncOutboxStatus(SyncOutboxEntity entry, {required String status, required DateTime now, String? error, Transaction? txn}) {
+  Future<void> updateSyncOutboxStatus(SyncOutboxEntity entry,
+      {required String status,
+      required DateTime now,
+      String? error,
+      Transaction? txn}) {
     entry.status = status;
     entry.lastAttemptAt = now;
     entry.attempts += 1;
@@ -587,11 +806,16 @@ class AppDatabase {
     return _insert('sync_outbox', entry.toMap(includeId: true), txn: txn);
   }
 
-  Future<int> _insert(String table, Map<String, Object?> values, {Transaction? txn}) async {
+  Future<int> _insert(String table, Map<String, Object?> values,
+      {Transaction? txn}) async {
     if (txn == null) {
-      return _database.insert(table, values, conflictAlgorithm: ConflictAlgorithm.replace);
+      final id = await _database.insert(table, values,
+          conflictAlgorithm: ConflictAlgorithm.replace);
+      _changes.add(null);
+      return id;
     }
-    return txn.insert(table, values, conflictAlgorithm: ConflictAlgorithm.replace);
+    return txn.insert(table, values,
+        conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<List<Map<String, Object?>>> _query(
@@ -617,4 +841,3 @@ class AppDatabase {
     return _database.rawDelete(sql, arguments);
   }
 }
-

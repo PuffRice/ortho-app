@@ -81,8 +81,8 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
                 decoration: BoxDecoration(
                   gradient: RadialGradient(
                     colors: [
-                      AppColors.primaryViolet.withOpacity(0.35),
-                      AppColors.primaryDeep.withOpacity(0.0),
+                      AppColors.primaryViolet.withValues(alpha: 0.35),
+                      AppColors.primaryDeep.withValues(alpha: 0.0),
                     ],
                     radius: 0.8,
                   ),
@@ -154,9 +154,9 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.06),
+        color: Colors.white.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
       child: Row(
         children: [
@@ -164,7 +164,7 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: _categoryColor(category).withOpacity(0.25),
+              color: _categoryColor(category).withValues(alpha: 0.25),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(iconData, color: _categoryColor(category)),
@@ -350,7 +350,7 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
         name: name,
         type: selectedType,
         icon: selectedIconName,
-        color: selectedColor.value,
+        color: selectedColor.toARGB32(),
         sortOrder: sortOrder,
       ));
       _reloadCategories(cqrs);
@@ -492,7 +492,7 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
         name: name,
         type: selectedType,
         icon: selectedIconName,
-        color: selectedColor.value,
+        color: selectedColor.toARGB32(),
         sortOrder: sortOrder,
       ));
       _reloadCategories(cqrs);
@@ -513,6 +513,10 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
     final blockedReason = await _categoryDeleteBlockedReason(cqrs, category);
     if (blockedReason != null) {
       _showError(blockedReason);
+      return;
+    }
+
+    if (!mounted) {
       return;
     }
 
@@ -636,7 +640,7 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
       labelStyle: const TextStyle(color: AppColors.textMuted),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.white.withOpacity(0.12)),
+        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -666,33 +670,104 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
     return Wrap(
       spacing: 10,
       runSpacing: 10,
-      children: _presetColors.map((color) {
-        final isSelected = color.value == selectedColor.value;
-        return InkWell(
-          onTap: () => onSelected(color),
+      children: [
+        ..._presetColors.map((color) {
+          final isSelected = color.toARGB32() == selectedColor.toARGB32();
+          return InkWell(
+            onTap: () => onSelected(color),
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color:
+                      isSelected ? Colors.white : Colors.white.withValues(alpha: 0.2),
+                  width: isSelected ? 2 : 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.35),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }),
+        InkWell(
+          onTap: () async {
+            final color = await _pickCustomColor(selectedColor);
+            if (color != null) onSelected(color);
+          },
           borderRadius: BorderRadius.circular(20),
           child: Container(
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: color,
               shape: BoxShape.circle,
-              border: Border.all(
-                color:
-                    isSelected ? Colors.white : Colors.white.withOpacity(0.2),
-                width: isSelected ? 2 : 1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: color.withOpacity(0.35),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+              gradient: const SweepGradient(colors: [
+                Colors.red,
+                Colors.yellow,
+                Colors.green,
+                Colors.cyan,
+                Colors.blue,
+                Color(0xFFFF00FF),
+                Colors.red
+              ]),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.4)),
             ),
+            child: const Icon(Icons.colorize, color: Colors.white, size: 18),
           ),
-        );
-      }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Future<Color?> _pickCustomColor(Color initial) async {
+    var hsv = HSVColor.fromColor(initial);
+    return showDialog<Color>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          final color = hsv.toColor();
+          return AlertDialog(
+            backgroundColor: AppColors.bgSecondary,
+            title: const Text('Custom Color',
+                style: TextStyle(color: AppColors.textPrimary)),
+            content: Column(mainAxisSize: MainAxisSize.min, children: [
+              Container(
+                  height: 48,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                      color: color, borderRadius: BorderRadius.circular(10))),
+              Slider(
+                  value: hsv.hue,
+                  max: 360,
+                  onChanged: (v) => setDialogState(() => hsv = hsv.withHue(v))),
+              Slider(
+                  value: hsv.saturation,
+                  onChanged: (v) =>
+                      setDialogState(() => hsv = hsv.withSaturation(v))),
+              Slider(
+                  value: hsv.value,
+                  onChanged: (v) =>
+                      setDialogState(() => hsv = hsv.withValue(v))),
+            ]),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel')),
+              TextButton(
+                  onPressed: () => Navigator.pop(context, color),
+                  child: const Text('Use color')),
+            ],
+          );
+        },
+      ),
     );
   }
 
@@ -720,12 +795,12 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.08),
+                color: Colors.white.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
                   color: isSelected
                       ? AppColors.primaryViolet
-                      : Colors.white.withOpacity(0.1),
+                      : Colors.white.withValues(alpha: 0.1),
                   width: isSelected ? 2 : 1,
                 ),
               ),
@@ -744,10 +819,10 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.08),
+              color: Colors.white.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: Colors.white.withOpacity(0.1),
+                color: Colors.white.withValues(alpha: 0.1),
               ),
             ),
             child: const Icon(
@@ -824,12 +899,12 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
                                   borderRadius: BorderRadius.circular(14),
                                   child: Container(
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.08),
+                                      color: Colors.white.withValues(alpha: 0.08),
                                       borderRadius: BorderRadius.circular(14),
                                       border: Border.all(
                                         color: isSelected
                                             ? AppColors.primaryViolet
-                                            : Colors.white.withOpacity(0.1),
+                                            : Colors.white.withValues(alpha: 0.1),
                                         width: isSelected ? 2 : 1,
                                       ),
                                     ),

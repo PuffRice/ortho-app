@@ -13,10 +13,14 @@ class AddTransactionScreen extends StatefulWidget {
     super.key,
     this.initialTransaction,
     this.initialTransfer,
+    this.initialType,
   });
 
   final TransactionEntity? initialTransaction;
   final TransferEntity? initialTransfer;
+  /// Preselects the entry type (e.g. `'loan'`) when creating from a dedicated
+  /// entry point; ignored when editing an existing transaction/transfer.
+  final String? initialType;
 
   @override
   State<AddTransactionScreen> createState() => _AddTransactionScreenState();
@@ -30,6 +34,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   String? _selectedCategoryId;
 
   String _type = 'expense';
+  LoanDirection _loanDirection = LoanDirection.given;
+  final _counterpartyController = TextEditingController();
   DateTime _date = DateTime.now();
   bool _saving = false;
   Future<CqrsService>? _cqrsFuture;
@@ -63,15 +69,16 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       _selectedCategoryId = initialTransaction.categoryId;
       _amountController.text = initialTransaction.amount.toStringAsFixed(2);
       _noteController.text = initialTransaction.note ?? '';
-    }
-    final initialTransfer = widget.initialTransfer;
-    if (initialTransfer != null) {
+    } else if (widget.initialTransfer != null) {
+      final initialTransfer = widget.initialTransfer;
       _type = 'transfer';
-      _date = initialTransfer.date.toLocal();
+      _date = initialTransfer!.date.toLocal();
       _selectedAccountId = initialTransfer.fromAccountId;
       _selectedToAccountId = initialTransfer.toAccountId;
       _amountController.text = initialTransfer.amount.toStringAsFixed(2);
       _noteController.text = initialTransfer.note ?? '';
+    } else if (widget.initialType != null) {
+      _type = widget.initialType!;
     }
     _cqrsFuture = CqrsService.create();
     _profileFuture = UserIdentityService.instance.getProfile().then((profile) {
@@ -84,6 +91,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   void dispose() {
     _amountController.dispose();
     _noteController.dispose();
+    _counterpartyController.dispose();
     super.dispose();
   }
 
@@ -99,7 +107,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               ? 'Edit Transfer'
               : _isEditing
                   ? 'Edit Transaction'
-                  : 'Add Transaction',
+                  : _type == 'loan'
+                      ? 'Add Loan'
+                      : 'Add Transaction',
         ),
         actions: [
           if (_isEditing)
@@ -145,19 +155,42 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         if (_isEditingTransfer)
           _buildEditingTransferLabel()
         else
-          Row(
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
             children: [
               _buildTypeChip('expense', 'Expense'),
-              const SizedBox(width: 12),
               _buildTypeChip('income', 'Income'),
-              const SizedBox(width: 12),
               _buildTypeChip('transfer', 'Transfer'),
+              _buildTypeChip('loan', 'Loan'),
             ],
           ),
         const SizedBox(height: 20),
         if (_type == 'transfer') ...[
           _buildTransferIntro(),
           const SizedBox(height: 20),
+        ],
+        if (_type == 'loan') ...[
+          _buildLoanIntro(),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              _buildLoanDirectionChip(
+                LoanDirection.given,
+                'Lent money',
+                Icons.handshake_outlined,
+              ),
+              const SizedBox(width: 12),
+              _buildLoanDirectionChip(
+                LoanDirection.taken,
+                'Borrowed money',
+                Icons.account_balance_outlined,
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          _buildCounterpartyField(),
+          const SizedBox(height: 16),
         ],
         _buildAmountField(),
         const SizedBox(height: 20),
@@ -168,7 +201,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         const SizedBox(height: 16),
         if (_type == 'transfer')
           _buildTransferDestinationPicker(cqrs)
-        else
+        else if (_type == 'expense' || _type == 'income')
           _buildCategoryPicker(cqrs),
         const SizedBox(height: 16),
         _buildField(
@@ -240,7 +273,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       side: BorderSide(
         color: isSelected
             ? AppColors.primaryViolet
-            : Colors.white.withOpacity(0.14),
+            : Colors.white.withValues(alpha: 0.14),
       ),
       labelStyle: TextStyle(
         color: isSelected ? Colors.white : AppColors.textSecondary,
@@ -253,10 +286,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.primaryViolet.withOpacity(0.14),
+        color: AppColors.primaryViolet.withValues(alpha: 0.14),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: AppColors.primaryViolet.withOpacity(0.45),
+          color: AppColors.primaryViolet.withValues(alpha: 0.45),
         ),
       ),
       child: const Row(
@@ -287,6 +320,120 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildLoanIntro() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.accentOrange.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: AppColors.accentOrange.withValues(alpha: 0.4),
+        ),
+      ),
+      child: const Row(
+        children: [
+          CircleAvatar(
+            backgroundColor: AppColors.accentOrange,
+            child: Icon(Icons.handshake_outlined, color: Colors.white),
+          ),
+          SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Track a loan',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Loans show up in your history but never count as income or '
+                  'expense. Only the available balance moves.',
+                  style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoanDirectionChip(
+    LoanDirection value,
+    String label,
+    IconData icon,
+  ) {
+    final isSelected = _loanDirection == value;
+    return Expanded(
+      child: InkWell(
+        onTap: () {
+          setState(() {
+            _loanDirection = value;
+          });
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? AppColors.accentOrange.withValues(alpha: 0.2)
+                : Colors.white.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isSelected
+                  ? AppColors.accentOrange
+                  : Colors.white.withValues(alpha: 0.12),
+              width: isSelected ? 1.5 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                icon,
+                color: isSelected ? AppColors.accentOrange : Colors.white54,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : AppColors.textSecondary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCounterpartyField() {
+    return TextField(
+      controller: _counterpartyController,
+      keyboardType: TextInputType.name,
+      style: const TextStyle(color: Colors.white),
+      decoration: InputDecoration(
+        labelText: 'Counterparty (person or institution)',
+        labelStyle: const TextStyle(color: Colors.white70),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppColors.accentOrange),
+        ),
       ),
     );
   }
@@ -322,7 +469,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         labelStyle: const TextStyle(color: Colors.white70),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.15)),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
@@ -345,7 +492,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           width: double.infinity,
           decoration: BoxDecoration(
             border: Border(
-              bottom: BorderSide(color: Colors.white.withOpacity(0.2)),
+              bottom: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
             ),
           ),
           child: Row(
@@ -373,7 +520,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                   ),
                   decoration: InputDecoration(
                     hintText: '0',
-                    hintStyle: TextStyle(color: Colors.white.withOpacity(0.35)),
+                    hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35)),
                     border: InputBorder.none,
                     enabledBorder: InputBorder.none,
                     focusedBorder: InputBorder.none,
@@ -395,9 +542,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.06),
+          color: Colors.white.withValues(alpha: 0.06),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withOpacity(0.12)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
         ),
         child: Row(
           children: [
@@ -405,7 +552,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               width: 42,
               height: 42,
               decoration: BoxDecoration(
-                color: AppColors.primaryViolet.withOpacity(0.18),
+                color: AppColors.primaryViolet.withValues(alpha: 0.18),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(
@@ -463,14 +610,13 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               onPrimary: Colors.white,
               surface: AppColors.bgSecondary,
               onSurface: Colors.white,
-            ),
-            dialogBackgroundColor: AppColors.bgSecondary,
+            ), dialogTheme: DialogThemeData(backgroundColor: AppColors.bgSecondary),
           ),
           child: child!,
         );
       },
     );
-    if (pickedDate == null || !mounted) {
+    if (pickedDate == null || !context.mounted) {
       return;
     }
 
@@ -486,8 +632,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               onPrimary: Colors.white,
               surface: AppColors.bgSecondary,
               onSurface: Colors.white,
-            ),
-            dialogBackgroundColor: AppColors.bgSecondary,
+            ), dialogTheme: DialogThemeData(backgroundColor: AppColors.bgSecondary),
           ),
           child: child!,
         );
@@ -584,13 +729,13 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.primaryViolet.withOpacity(0.22)
-              : Colors.white.withOpacity(0.06),
+              ? AppColors.primaryViolet.withValues(alpha: 0.22)
+              : Colors.white.withValues(alpha: 0.06),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: isSelected
                 ? AppColors.primaryViolet
-                : Colors.white.withOpacity(0.12),
+                : Colors.white.withValues(alpha: 0.12),
             width: isSelected ? 1.5 : 1,
           ),
         ),
@@ -678,7 +823,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     );
   }
 
-  Widget _buildDestinationAccountOption(AccountEntity account, bool isSelected) {
+  Widget _buildDestinationAccountOption(
+      AccountEntity account, bool isSelected) {
     return InkWell(
       onTap: () => setState(() => _selectedToAccountId = account.accountId),
       borderRadius: BorderRadius.circular(14),
@@ -688,13 +834,13 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.primaryViolet.withOpacity(0.22)
-              : Colors.white.withOpacity(0.06),
+              ? AppColors.primaryViolet.withValues(alpha: 0.22)
+              : Colors.white.withValues(alpha: 0.06),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: isSelected
                 ? AppColors.primaryViolet
-                : Colors.white.withOpacity(0.12),
+                : Colors.white.withValues(alpha: 0.12),
             width: isSelected ? 1.5 : 1,
           ),
         ),
@@ -702,7 +848,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+              isSelected
+                  ? Icons.radio_button_checked
+                  : Icons.radio_button_unchecked,
               color: isSelected ? AppColors.primaryViolet : Colors.white54,
               size: 18,
             ),
@@ -711,10 +859,13 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(account.name,
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                    style: const TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 2),
-                Text('${account.type} - ${account.currentBalance.toStringAsFixed(2)}',
-                    style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
+                Text(
+                    '${account.type} - ${account.currentBalance.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                        color: AppColors.textMuted, fontSize: 12)),
               ],
             ),
           ],
@@ -783,7 +934,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           width: 28,
           height: 28,
           decoration: BoxDecoration(
-            color: color.withOpacity(0.22),
+            color: color.withValues(alpha: 0.22),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(
@@ -808,9 +959,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.06),
+        color: Colors.white.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withOpacity(0.12)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
       ),
       child: Text(
         message,
@@ -837,7 +988,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       labelStyle: const TextStyle(color: Colors.white70),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: Colors.white.withOpacity(0.15)),
+        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
@@ -853,24 +1004,33 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       return;
     }
     final amount = double.tryParse(_amountController.text.trim());
+    final isLoan = _type == 'loan';
     final accounts =
         await cqrs.bus.query<GetAccountsQuery, List<AccountEntity>>(
       GetAccountsQuery(userId: profile.userId),
     );
-    final categories = _type == 'transfer'
+    final categories = (_type == 'transfer' || isLoan)
         ? const <CategoryEntity>[]
         : await cqrs.bus.query<GetCategoriesQuery, List<CategoryEntity>>(
             GetCategoriesQuery(userId: profile.userId, type: _type),
           );
     final account = _accountById(accounts, _selectedAccountId);
     final category = _categoryById(categories, _selectedCategoryId);
-    final currency = widget.initialTransaction?.currency ?? 'BDT';
+    final currency = widget.initialTransaction?.currency ??
+        account?.currency ??
+        'BDT';
 
     if (amount == null || amount <= 0) {
       _showError('Enter a valid amount.');
       return;
     }
-    if (account == null || (_type != 'transfer' && category == null)) {
+    final counterparty = _counterpartyController.text.trim();
+    if (isLoan && counterparty.isEmpty) {
+      _showError('Enter a counterparty for the loan.');
+      return;
+    }
+    if (account == null ||
+        ((_type != 'transfer' && !isLoan) && category == null)) {
       _showError('Account and category are required.');
       return;
     }
@@ -896,7 +1056,20 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       );
 
       await cqrs.bus.execute(
-        _type == 'transfer'
+        isLoan && !_isEditing
+            ? CreateLoanCommand(
+                userId: profile.userId,
+                accountId: account.accountId,
+                direction: _loanDirection,
+                counterparty: counterparty,
+                amount: amount,
+                currency: account.currency,
+                date: _date,
+                note: _noteController.text.trim().isEmpty
+                    ? null
+                    : _noteController.text.trim(),
+              )
+            : _type == 'transfer'
             ? _isEditingTransfer
                 ? UpdateTransferCommand(
                     userId: profile.userId,
@@ -920,32 +1093,32 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                         : _noteController.text.trim(),
                   )
             : _isEditing
-            ? UpdateTransactionCommand(
-                userId: profile.userId,
-                transactionId: widget.initialTransaction!.transactionId,
-                accountId: account.accountId,
-                categoryId: category!.categoryId,
-                type: _type,
-                amount: amount,
-                currency: currency,
-                date: _date,
-                note: _noteController.text.trim().isEmpty
-                    ? null
-                    : _noteController.text.trim(),
-                isRecurring: widget.initialTransaction!.isRecurring,
-              )
-            : CreateTransactionCommand(
-                userId: profile.userId,
-                accountId: account.accountId,
-                categoryId: category!.categoryId,
-                type: _type,
-                amount: amount,
-                currency: currency,
-                date: _date,
-                note: _noteController.text.trim().isEmpty
-                    ? null
-                    : _noteController.text.trim(),
-              ),
+                ? UpdateTransactionCommand(
+                    userId: profile.userId,
+                    transactionId: widget.initialTransaction!.transactionId,
+                    accountId: account.accountId,
+                    categoryId: category!.categoryId,
+                    type: _type,
+                    amount: amount,
+                    currency: currency,
+                    date: _date,
+                    note: _noteController.text.trim().isEmpty
+                        ? null
+                        : _noteController.text.trim(),
+                    isRecurring: widget.initialTransaction!.isRecurring,
+                  )
+                : CreateTransactionCommand(
+                    userId: profile.userId,
+                    accountId: account.accountId,
+                    categoryId: category!.categoryId,
+                    type: _type,
+                    amount: amount,
+                    currency: currency,
+                    date: _date,
+                    note: _noteController.text.trim().isEmpty
+                        ? null
+                        : _noteController.text.trim(),
+                  ),
       );
 
       if (mounted) {

@@ -54,8 +54,8 @@ class _CredentialsScreenState extends State<CredentialsScreen> {
                 decoration: BoxDecoration(
                   gradient: RadialGradient(
                     colors: [
-                      AppColors.primaryViolet.withOpacity(0.35),
-                      AppColors.primaryDeep.withOpacity(0),
+                      AppColors.primaryViolet.withValues(alpha: 0.35),
+                      AppColors.primaryDeep.withValues(alpha: 0),
                     ],
                     radius: 0.8,
                   ),
@@ -226,10 +226,10 @@ class _CredentialsScreenState extends State<CredentialsScreen> {
             end: Alignment.bottomRight,
             colors: _cardGradient(card.network),
           ),
-          border: Border.all(color: Colors.white.withOpacity(0.14)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primaryDeep.withOpacity(0.30),
+              color: AppColors.primaryDeep.withValues(alpha: 0.30),
               blurRadius: 36,
               offset: const Offset(0, 18),
             ),
@@ -468,9 +468,9 @@ class _CredentialsScreenState extends State<CredentialsScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.12),
+        color: Colors.white.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.white.withOpacity(0.12)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
       ),
       child: Text(
         label,
@@ -687,9 +687,9 @@ class _CredentialsScreenState extends State<CredentialsScreen> {
 
   BoxDecoration _surfaceDecoration({double radius = 18}) {
     return BoxDecoration(
-      color: Colors.white.withOpacity(0.06),
+      color: Colors.white.withValues(alpha: 0.06),
       borderRadius: BorderRadius.circular(radius),
-      border: Border.all(color: Colors.white.withOpacity(0.08)),
+      border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
     );
   }
 
@@ -829,7 +829,9 @@ class _CardCredentialSheetState extends State<_CardCredentialSheet> {
         Navigator.of(context).pop(true);
       }
     } catch (error) {
-      _showSheetError(context, 'Unable to save card: $error');
+      if (mounted) {
+        _showSheetError(context, 'Unable to save card: $error');
+      }
     } finally {
       if (mounted) {
         setState(() => _saving = false);
@@ -860,7 +862,9 @@ class _CardCredentialSheetState extends State<_CardCredentialSheet> {
         Navigator.of(context).pop(true);
       }
     } catch (error) {
-      _showSheetError(context, 'Unable to delete card: $error');
+      if (mounted) {
+        _showSheetError(context, 'Unable to delete card: $error');
+      }
     } finally {
       if (mounted) {
         setState(() => _saving = false);
@@ -982,7 +986,9 @@ class _BankCredentialSheetState extends State<_BankCredentialSheet> {
         Navigator.of(context).pop(true);
       }
     } catch (error) {
-      _showSheetError(context, 'Unable to save bank account: $error');
+      if (mounted) {
+        _showSheetError(context, 'Unable to save bank account: $error');
+      }
     } finally {
       if (mounted) {
         setState(() => _saving = false);
@@ -1014,7 +1020,9 @@ class _BankCredentialSheetState extends State<_BankCredentialSheet> {
         Navigator.of(context).pop(true);
       }
     } catch (error) {
-      _showSheetError(context, 'Unable to delete bank account: $error');
+      if (mounted) {
+        _showSheetError(context, 'Unable to delete bank account: $error');
+      }
     } finally {
       if (mounted) {
         setState(() => _saving = false);
@@ -1143,10 +1151,10 @@ class _SheetField extends StatelessWidget {
         labelText: label,
         labelStyle: const TextStyle(color: AppColors.textMuted),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.06),
+        fillColor: Colors.white.withValues(alpha: 0.06),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.10)),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.10)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
@@ -1193,10 +1201,10 @@ class _SheetDropdown extends StatelessWidget {
         labelText: label,
         labelStyle: const TextStyle(color: AppColors.textMuted),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.06),
+        fillColor: Colors.white.withValues(alpha: 0.06),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.10)),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.10)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
@@ -1222,9 +1230,9 @@ class _LogoPicker extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.06),
+          color: Colors.white.withValues(alpha: 0.06),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withOpacity(0.10)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
         ),
         child: Row(
           children: [
@@ -1278,7 +1286,7 @@ class _ChipPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.black.withOpacity(0.22)
+      ..color = Colors.black.withValues(alpha: 0.22)
       ..strokeWidth = 1.2
       ..style = PaintingStyle.stroke;
     canvas.drawLine(

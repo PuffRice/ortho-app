@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'cqrs_bus.dart';
 import '../models/local_models.dart';
@@ -324,6 +325,7 @@ class CreateTransactionHandler
       ..date = command.date
       ..note = command.note
       ..isRecurring = command.isRecurring
+      ..receiptBytes = command.receiptBytes
       ..createdAt = now
       ..updatedAt = now;
 
@@ -415,6 +417,7 @@ class UpdateTransactionHandler
         ..note = command.note
         ..isRecurring = command.isRecurring
         ..updatedAt = DateTime.now();
+      if (command.receiptBytes != null) existing!.receiptBytes = command.receiptBytes;
 
       await _db.putTransaction(existing!, txn: txn);
       await _outboxWriter.enqueueInTxn(
@@ -937,6 +940,165 @@ class DeleteBankAccountCredentialHandler
   }
 }
 
+class CreateLoanHandler implements CommandHandler<CreateLoanCommand> {
+  CreateLoanHandler(this._db, this._outboxWriter);
+
+  final AppDatabase _db;
+  final SyncOutboxWriter _outboxWriter;
+
+  @override
+  Future<void> handle(CreateLoanCommand command) async {
+    final now = command.now ?? DateTime.now();
+    final loan = LoanEntity()
+      ..userId = command.userId
+      ..loanId = command.loanId ?? generateId()
+      ..accountId = command.accountId
+      ..direction = command.direction
+      ..counterparty = command.counterparty
+      ..amount = command.amount
+      ..currency = command.currency
+      ..date = command.date
+      ..settledAmount = 0
+      ..note = command.note
+      ..createdAt = now
+      ..updatedAt = now;
+
+    await _db.transaction((txn) async {
+      await _db.putLoan(loan, txn: txn);
+      await _outboxWriter.enqueueInTxn(
+        userId: command.userId,
+        entityType: 'loans',
+        entityId: loan.loanId,
+        payload: SyncPayloadMapper.loan(loan),
+        txn: txn,
+      );
+    });
+    // Loans never move account balances or income/expense totals; they only
+    // reduce the spendable ("available") amount shown alongside the balance.
+    SyncService.instance?.requestSync();
+  }
+}
+
+class SettleLoanHandler implements CommandHandler<SettleLoanCommand> {
+  SettleLoanHandler(this._db, this._summaryWriter, this._outboxWriter);
+
+  final AppDatabase _db;
+  final SummaryCacheWriter _summaryWriter;
+  final SyncOutboxWriter _outboxWriter;
+
+  @override
+  Future<void> handle(SettleLoanCommand command) async {
+    LoanEntity? loan;
+    TransactionEntity? repayment;
+    final now = DateTime.now();
+    await _db.transaction((txn) async {
+      loan = await _db.getLoanByUserAndLoanId(
+        command.userId,
+        command.loanId,
+      );
+      if (loan == null || loan!.deletedAt != null) {
+        return;
+      }
+
+      final repaymentAmount =
+          math.min<double>(command.amount, loan!.outstandingAmount);
+      if (repaymentAmount <= 0) return;
+      final settled = loan!.settledAmount + repaymentAmount;
+      loan!
+        ..settledAmount = settled.clamp(0, loan!.amount).toDouble()
+        ..updatedAt = now;
+      await _db.putLoan(loan!, txn: txn);
+      await _outboxWriter.enqueueInTxn(
+        userId: command.userId,
+        entityType: 'loans',
+        entityId: loan!.loanId,
+        payload: SyncPayloadMapper.loan(loan!),
+        txn: txn,
+      );
+      repayment = TransactionEntity()
+        ..userId = loan!.userId
+        ..accountId = loan!.accountId
+        ..categoryId = 'loan-repayment'
+        ..transactionId = generateId()
+        ..type = loan!.direction == LoanDirection.given
+            ? 'loan_repayment_received'
+            : 'loan_repayment_paid'
+        ..amount = repaymentAmount
+        ..currency = loan!.currency
+        ..date = now
+        ..note = loan!.direction == LoanDirection.given
+            ? 'Loan repayment from ${loan!.counterparty}'
+            : 'Loan repayment to ${loan!.counterparty}'
+        ..isRecurring = false
+        ..createdAt = now
+        ..updatedAt = now;
+      await _db.putTransaction(repayment!, txn: txn);
+      final account = await _db.getAccountByUserAndAccountId(
+        loan!.userId,
+        loan!.accountId,
+      );
+      if (account != null) {
+        account
+          ..currentBalance += loan!.direction == LoanDirection.given
+              ? repaymentAmount
+              : -repaymentAmount
+          ..updatedAt = now;
+        await _db.putAccount(account, txn: txn);
+      }
+      await _outboxWriter.enqueueInTxn(
+        userId: loan!.userId,
+        entityType: 'transactions',
+        entityId: repayment!.transactionId,
+        payload: SyncPayloadMapper.transaction(repayment!),
+        txn: txn,
+      );
+    });
+
+    if (loan != null && repayment != null) {
+      await _summaryWriter.rebuildForDate(loan!.userId, repayment!.date);
+      SyncService.instance?.requestSync();
+    }
+  }
+}
+
+class DeleteLoanHandler implements CommandHandler<DeleteLoanCommand> {
+  DeleteLoanHandler(this._db, this._outboxWriter);
+
+  final AppDatabase _db;
+  final SyncOutboxWriter _outboxWriter;
+
+  @override
+  Future<void> handle(DeleteLoanCommand command) async {
+    final now = command.now ?? DateTime.now();
+    LoanEntity? loan;
+    await _db.transaction((txn) async {
+      loan = await _db.getLoanByUserAndLoanId(
+        command.userId,
+        command.loanId,
+      );
+      if (loan == null || loan!.deletedAt != null) {
+        return;
+      }
+
+      loan!
+        ..deletedAt = now
+        ..updatedAt = now;
+      await _db.putLoan(loan!, txn: txn);
+      await _outboxWriter.enqueueInTxn(
+        userId: command.userId,
+        entityType: 'loans',
+        entityId: loan!.loanId,
+        payload: SyncPayloadMapper.loan(loan!),
+        txn: txn,
+      );
+    });
+
+    if (loan != null) {
+      SyncService.instance?.requestSync();
+    }
+  }
+}
+
 class GetAccountsHandler
     implements QueryHandler<GetAccountsQuery, List<AccountEntity>> {
   GetAccountsHandler(this._db);
@@ -1082,6 +1244,21 @@ class GetBankAccountCredentialsHandler
     GetBankAccountCredentialsQuery query,
   ) {
     return _db.getBankAccountCredentials(userId: query.userId);
+  }
+}
+
+class GetLoansHandler
+    implements QueryHandler<GetLoansQuery, List<LoanEntity>> {
+  GetLoansHandler(this._db);
+
+  final AppDatabase _db;
+
+  @override
+  Future<List<LoanEntity>> handle(GetLoansQuery query) {
+    return _db.getLoans(
+      userId: query.userId,
+      accountId: query.accountId,
+    );
   }
 }
 

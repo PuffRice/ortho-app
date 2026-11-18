@@ -7,6 +7,7 @@ import 'app_database.dart';
 
 import '../models/local_models.dart';
 import 'account_balance_repair_service.dart';
+import 'google_drive_backup_service.dart';
 import 'timestamp_repair_service.dart';
 import 'user_identity.dart';
 
@@ -23,6 +24,7 @@ class SyncService {
   StreamSubscription<List<ConnectivityResult>>? _subscription;
   List<ConnectivityResult>? _lastStatus;
   bool _isSyncing = false;
+  bool _syncRequested = false;
   final Set<String> _bootstrappedUsers = {};
 
   static Future<SyncService> initialize({
@@ -77,7 +79,10 @@ class SyncService {
     int limit = 10,
   }) async {
     final entries = await _db.getSyncOutboxEntries(
-      userId: userId, status: 'pending', orderBy: 'created_at ASC', limit: limit,
+      userId: userId,
+      status: 'pending',
+      orderBy: 'created_at ASC',
+      limit: limit,
     );
 
     return entries
@@ -136,7 +141,8 @@ class SyncService {
   }
 
   void requestSync() {
-    _trySync();
+    _syncRequested = true;
+    unawaited(_trySync());
   }
 
   Future<void> _trySync() async {
@@ -145,7 +151,15 @@ class SyncService {
     }
     _isSyncing = true;
     try {
-      await syncPending();
+      do {
+        _syncRequested = false;
+        await syncPending();
+      } while (_syncRequested);
+      try {
+        await GoogleDriveBackupService.instance.backupAfterSync(_db);
+      } catch (_) {
+        // Drive backup must never prevent a successful Supabase sync.
+      }
     } finally {
       _isSyncing = false;
     }
@@ -191,11 +205,17 @@ class SyncService {
   }
 
   Future<void> _markSynced(SyncOutboxEntity entry) async {
-    await _db.updateSyncOutboxStatus(entry, status: 'synced', now: DateTime.now());
+    // Successful mutations must leave the retry queue; retaining them forever
+    // made the local database grow without limit.
+    final id = entry.id;
+    if (id != null) {
+      await _db.deleteSyncOutboxEntry(id);
+    }
   }
 
   Future<void> _markFailed(SyncOutboxEntity entry, String message) async {
-    await _db.updateSyncOutboxStatus(entry, status: 'pending', now: DateTime.now(), error: message);
+    await _db.updateSyncOutboxStatus(entry,
+        status: 'pending', now: DateTime.now(), error: message);
   }
 
   bool _isOnline(List<ConnectivityResult>? status) {
@@ -223,6 +243,8 @@ class SyncService {
         return 'payment_card_credentials';
       case 'bank_account_credentials':
         return 'bank_account_credentials';
+      case 'loans':
+        return 'loans';
       default:
         return null;
     }
@@ -297,6 +319,7 @@ class SyncService {
       _db.getLatestUpdatedAtForUser('recurring_transactions', userId),
       _db.getLatestUpdatedAtForUser('payment_card_credentials', userId),
       _db.getLatestUpdatedAtForUser('bank_account_credentials', userId),
+      _db.getLatestUpdatedAtForUser('loans', userId),
     ]);
     return _maxDate(values);
   }
@@ -312,6 +335,7 @@ class SyncService {
       _fetchRemoteLatest('recurring_transactions', userId),
       _fetchRemoteLatest('payment_card_credentials', userId),
       _fetchRemoteLatest('bank_account_credentials', userId),
+      _fetchRemoteLatest('loans', userId),
     ]);
     return _maxDate(values);
   }
@@ -338,7 +362,19 @@ class SyncService {
   Future<void> _importRemoteSnapshot(String userId) async {
     final snapshot = await _fetchRemoteSnapshot(userId);
     await _db.transaction((txn) async {
-      for (final table in ['summary_cache', 'users', 'accounts', 'categories', 'transactions', 'transfers', 'budgets', 'recurring_transactions', 'payment_card_credentials', 'bank_account_credentials']) {
+      for (final table in [
+        'summary_cache',
+        'users',
+        'accounts',
+        'categories',
+        'transactions',
+        'transfers',
+        'budgets',
+        'recurring_transactions',
+        'payment_card_credentials',
+        'bank_account_credentials',
+        'loans'
+      ]) {
         await txn.rawDelete('DELETE FROM $table WHERE user_id = ?', [userId]);
       }
       if (snapshot.user != null) await _db.putUser(snapshot.user!, txn: txn);
@@ -350,6 +386,7 @@ class SyncService {
       await _db.putRecurringTransactions(snapshot.recurring, txn: txn);
       await _db.putPaymentCardCredentials(snapshot.paymentCards, txn: txn);
       await _db.putBankAccountCredentials(snapshot.bankCredentials, txn: txn);
+      await _db.putLoans(snapshot.loans, txn: txn);
     });
   }
 
@@ -378,6 +415,7 @@ class SyncService {
         .from('bank_account_credentials')
         .select()
         .eq('user_id', userId);
+    final loanRows = await _client.from('loans').select().eq('user_id', userId);
 
     final user = userRows.isNotEmpty ? _userFromRemote(userRows.first) : null;
 
@@ -391,6 +429,7 @@ class SyncService {
       recurring: _mapAll(recurringRows, _recurringFromRemote),
       paymentCards: _mapAll(paymentCardRows, _paymentCardFromRemote),
       bankCredentials: _mapAll(bankCredentialRows, _bankCredentialFromRemote),
+      loans: _mapAll(loanRows, _loanFromRemote),
     );
   }
 
@@ -541,6 +580,23 @@ class SyncService {
       ..deletedAt = _parseDate(row['deleted_at']);
   }
 
+  LoanEntity _loanFromRemote(Map<String, dynamic> row) {
+    return LoanEntity()
+      ..userId = row['user_id'] as String
+      ..loanId = row['id'] as String
+      ..accountId = row['account_id'] as String
+      ..direction = LoanDirection.fromName(row['direction'] as String?)
+      ..counterparty = row['counterparty'] as String
+      ..amount = _toDouble(row['amount'])
+      ..currency = row['currency'] as String
+      ..date = _requireDate(row['date'])
+      ..settledAmount = _toDouble(row['settled_amount'])
+      ..note = row['note'] as String?
+      ..createdAt = _requireDate(row['created_at'])
+      ..updatedAt = _requireDate(row['updated_at'])
+      ..deletedAt = _parseDate(row['deleted_at']);
+  }
+
   DateTime _requireDate(dynamic value) {
     final parsed = _parseDate(value);
     if (parsed == null) {
@@ -554,10 +610,10 @@ class SyncService {
       return null;
     }
     if (value is DateTime) {
-      return value;
+      return value.toLocal();
     }
     if (value is String) {
-      return DateTime.parse(value);
+      return DateTime.parse(value).toLocal();
     }
     return null;
   }
@@ -645,6 +701,7 @@ class _RemoteSnapshot {
     required this.recurring,
     required this.paymentCards,
     required this.bankCredentials,
+    required this.loans,
   });
 
   final UserEntity? user;
@@ -656,4 +713,5 @@ class _RemoteSnapshot {
   final List<RecurringTransactionEntity> recurring;
   final List<PaymentCardCredentialEntity> paymentCards;
   final List<BankAccountCredentialEntity> bankCredentials;
+  final List<LoanEntity> loans;
 }

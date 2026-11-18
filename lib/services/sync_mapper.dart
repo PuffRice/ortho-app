@@ -147,5 +147,23 @@ class SyncPayloadMapper {
     };
   }
 
+  static Map<String, dynamic> loan(LoanEntity loan) {
+    return {
+      'id': loan.loanId,
+      'user_id': loan.userId,
+      'account_id': loan.accountId,
+      'direction': loan.direction.name,
+      'counterparty': loan.counterparty,
+      'amount': loan.amount,
+      'currency': loan.currency,
+      'date': _iso(loan.date),
+      'settled_amount': loan.settledAmount,
+      'note': loan.note,
+      'created_at': _iso(loan.createdAt),
+      'updated_at': _iso(loan.updatedAt),
+      'deleted_at': _iso(loan.deletedAt),
+    };
+  }
+
   static String? _iso(DateTime? value) => value?.toUtc().toIso8601String();
 }

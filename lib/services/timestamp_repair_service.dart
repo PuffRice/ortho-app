@@ -17,19 +17,47 @@ class TimestampRepairService {
 
   Future<void> repairLocal({required String userId}) async {
     final user = await _db.getUserByUserId(userId);
-    if (user != null) await _db.putUser(_repairUser(user));
-    for (final entry in await _db.getAccounts(userId: userId, deletedOnly: false)) { await _db.putAccount(_repairAccount(entry)); }
-    for (final entry in await _db.getCategories(userId: userId, deletedOnly: false)) { await _db.putCategory(_repairCategory(entry)); }
-    for (final entry in await _db.getTransactions(userId: userId, limit: 1000000)) { await _db.putTransaction(_repairTransaction(entry)); }
-    for (final entry in await _db.getTransfers(userId: userId)) { await _db.putTransfer(_repairTransfer(entry)); }
-    for (final entry in await _db.getBudgets(userId: userId)) { await _db.putBudget(_repairBudget(entry)); }
-    for (final entry in await _db.getRecurringTransactions(userId: userId)) { await _db.putRecurring(_repairRecurring(entry)); }
-    for (final entry in await _db.getSyncOutboxEntries(userId: userId)) {
-        entry.createdAt = _repairDate(entry.createdAt) ?? entry.createdAt;
-        entry.lastAttemptAt = _repairNullableDate(entry.lastAttemptAt);
-        entry.payloadJson = _repairPayload(entry.payloadJson);
-        await _db.putSyncOutbox(entry);
+    if (user != null && _entityNeedsRepair(user)) {
+      await _db.putUser(_repairUser(user));
     }
+    for (final entry in await _db.getAccounts(userId: userId, deletedOnly: false)) {
+      if (_entityNeedsRepair(entry)) await _db.putAccount(_repairAccount(entry));
+    }
+    for (final entry in await _db.getCategories(userId: userId, deletedOnly: false)) {
+      if (_entityNeedsRepair(entry)) await _db.putCategory(_repairCategory(entry));
+    }
+    for (final entry in await _db.getTransactions(userId: userId, limit: 1000000)) {
+      if (_entityNeedsRepair(entry)) await _db.putTransaction(_repairTransaction(entry));
+    }
+    for (final entry in await _db.getTransfers(userId: userId)) {
+      if (_entityNeedsRepair(entry)) await _db.putTransfer(_repairTransfer(entry));
+    }
+    for (final entry in await _db.getBudgets(userId: userId)) {
+      if (_entityNeedsRepair(entry)) await _db.putBudget(_repairBudget(entry));
+    }
+    for (final entry in await _db.getRecurringTransactions(userId: userId)) {
+      if (_entityNeedsRepair(entry)) await _db.putRecurring(_repairRecurring(entry));
+    }
+    for (final entry in await _db.getSyncOutboxEntries(userId: userId)) {
+      final createdAt = _repairDate(entry.createdAt) ?? entry.createdAt;
+      final lastAttemptAt = _repairNullableDate(entry.lastAttemptAt);
+      final payloadJson = _repairPayload(entry.payloadJson);
+      if (createdAt == entry.createdAt &&
+          lastAttemptAt == entry.lastAttemptAt &&
+          payloadJson == entry.payloadJson) {
+        continue;
+      }
+      entry.createdAt = createdAt;
+      entry.lastAttemptAt = lastAttemptAt;
+      entry.payloadJson = payloadJson;
+      await _db.putSyncOutbox(entry);
+    }
+  }
+
+  bool _entityNeedsRepair(dynamic entity) {
+    return _repairDate(entity.createdAt) != null ||
+        _repairDate(entity.updatedAt) != null ||
+        _repairDate(entity.deletedAt) != null;
   }
 
   Future<void> repairRemote({required String userId}) async {

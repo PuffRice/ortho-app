@@ -79,3 +79,10 @@ class GetBankAccountCredentialsQuery
 
   final String userId;
 }
+
+class GetLoansQuery extends Query<List<LoanEntity>> {
+  const GetLoansQuery({required this.userId, this.accountId});
+
+  final String userId;
+  final String? accountId;
+}

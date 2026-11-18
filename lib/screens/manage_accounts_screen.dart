@@ -75,8 +75,8 @@ class _ManageAccountsScreenState extends State<ManageAccountsScreen> {
                 decoration: BoxDecoration(
                   gradient: RadialGradient(
                     colors: [
-                      AppColors.primaryViolet.withOpacity(0.35),
-                      AppColors.primaryDeep.withOpacity(0.0),
+                      AppColors.primaryViolet.withValues(alpha: 0.35),
+                      AppColors.primaryDeep.withValues(alpha: 0.0),
                     ],
                     radius: 0.8,
                   ),
@@ -147,9 +147,9 @@ class _ManageAccountsScreenState extends State<ManageAccountsScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.06),
+        color: Colors.white.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
       child: Row(
         children: [
@@ -157,7 +157,7 @@ class _ManageAccountsScreenState extends State<ManageAccountsScreen> {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.08),
+              color: Colors.white.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(12),
             ),
             child: _accountLogo(account.logoBase64, radius: 12),
@@ -497,6 +497,10 @@ class _ManageAccountsScreenState extends State<ManageAccountsScreen> {
       return;
     }
 
+    if (!mounted) {
+      return;
+    }
+
     final result = await showDialog<bool>(
       context: context,
       builder: (context) {
@@ -598,7 +602,7 @@ class _ManageAccountsScreenState extends State<ManageAccountsScreen> {
       labelStyle: const TextStyle(color: AppColors.textMuted),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.white.withOpacity(0.12)),
+        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -631,9 +635,9 @@ class _ManageAccountsScreenState extends State<ManageAccountsScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.06),
+        color: Colors.white.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: Row(
         children: [
@@ -641,7 +645,7 @@ class _ManageAccountsScreenState extends State<ManageAccountsScreen> {
             width: 52,
             height: 52,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.08),
+              color: Colors.white.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(14),
             ),
             child: _accountLogo(logoBase64, radius: 14),

@@ -42,15 +42,25 @@ class AccountBalanceRepairService {
       }
     }
 
+    final accountsToRepair = <AccountEntity>[];
+    for (final account in accounts) {
+      final expected = balances[account.accountId];
+      if (expected != null &&
+          (account.currentBalance - expected).abs() > _tolerance) {
+        accountsToRepair.add(account);
+      }
+    }
+
+    if (accountsToRepair.isEmpty) {
+      return 0;
+    }
+
     var repairedCount = 0;
     final now = DateTime.now();
     await _db.transaction((txn) async {
-      for (final account in accounts) {
+      for (final account in accountsToRepair) {
         final expected = balances[account.accountId];
-        if (expected == null ||
-            (account.currentBalance - expected).abs() <= _tolerance) {
-          continue;
-        }
+        if (expected == null) continue;
 
         account
           ..currentBalance = expected

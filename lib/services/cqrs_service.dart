@@ -76,6 +76,15 @@ class CqrsService {
     bus.registerCommandHandler<DeleteBankAccountCredentialCommand>(
       DeleteBankAccountCredentialHandler(db, outboxWriter),
     );
+    bus.registerCommandHandler<CreateLoanCommand>(
+      CreateLoanHandler(db, outboxWriter),
+    );
+    bus.registerCommandHandler<SettleLoanCommand>(
+      SettleLoanHandler(db, summaryWriter, outboxWriter),
+    );
+    bus.registerCommandHandler<DeleteLoanCommand>(
+      DeleteLoanHandler(db, outboxWriter),
+    );
 
     bus.registerQueryHandler<GetAccountsQuery, List<AccountEntity>>(
       GetAccountsHandler(db),
@@ -106,6 +115,9 @@ class CqrsService {
     bus.registerQueryHandler<GetBankAccountCredentialsQuery,
         List<BankAccountCredentialEntity>>(
       GetBankAccountCredentialsHandler(db),
+    );
+    bus.registerQueryHandler<GetLoansQuery, List<LoanEntity>>(
+      GetLoansHandler(db),
     );
 
     return CqrsService._(bus, db);

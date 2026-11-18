@@ -12,6 +12,7 @@ import 'screens/add_transaction_screen.dart';
 import 'screens/credentials_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/loans_screen.dart';
 import 'screens/manage_accounts_screen.dart';
 import 'screens/manage_categories_screen.dart';
 import 'screens/personal_information_screen.dart';
@@ -51,8 +52,8 @@ Future<void> _initializeSupabaseSyncInBackground({
 }) async {
   try {
     await SupabaseService().initialize(
-      supabaseUrl: SUPABASE_URL,
-      supabaseAnonKey: SUPABASE_ANON_KEY,
+      supabaseUrl: kSupabaseUrl,
+      supabaseAnonKey: kSupabaseAnonKey,
     );
     await SyncService.initialize(
       db: db,
@@ -71,8 +72,8 @@ Future<void> _initializeSupabaseSyncInBackground({
 }
 
 bool _supabaseConfigured() {
-  return SUPABASE_URL != 'YOUR_SUPABASE_URL' &&
-      SUPABASE_ANON_KEY != 'YOUR_SUPABASE_ANON_KEY';
+  return kSupabaseUrl != 'YOUR_SUPABASE_URL' &&
+      kSupabaseAnonKey != 'YOUR_SUPABASE_ANON_KEY';
 }
 
 class MainApp extends StatefulWidget {
@@ -127,6 +128,7 @@ class _MainAppState extends State<MainApp> {
         AppRoutes.manageAccounts: (_) => const ManageAccountsScreen(),
         AppRoutes.manageCategories: (_) => const ManageCategoriesScreen(),
         AppRoutes.personalInformation: (_) => const PersonalInformationScreen(),
+        AppRoutes.loans: (_) => const LoansScreen(),
       },
       home: FutureBuilder<void>(
         future: _bootstrapFuture,

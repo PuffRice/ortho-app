@@ -8,6 +8,7 @@ import '../services/cqrs_service.dart';
 import '../services/export_service.dart';
 import '../services/user_identity.dart';
 import 'add_transaction_screen.dart';
+import 'widgets/loan_actions_sheet.dart';
 
 class TransactionHistoryScreen extends StatefulWidget {
   const TransactionHistoryScreen({super.key});
@@ -45,7 +46,9 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
 
     final arguments = ModalRoute.of(context)?.settings.arguments;
     final initialType = arguments is String ? arguments : null;
-    if (initialType == 'income' || initialType == 'expense') {
+    if (initialType == 'income' ||
+        initialType == 'expense' ||
+        initialType == 'loan') {
       _type = initialType;
     }
   }
@@ -87,8 +90,8 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                 decoration: BoxDecoration(
                   gradient: RadialGradient(
                     colors: [
-                      AppColors.primaryViolet.withOpacity(0.35),
-                      AppColors.primaryDeep.withOpacity(0),
+                      AppColors.primaryViolet.withValues(alpha: 0.35),
+                      AppColors.primaryDeep.withValues(alpha: 0),
                     ],
                     radius: 0.8,
                   ),
@@ -116,9 +119,11 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
   Widget _buildContent(_TransactionHistoryData data) {
     final filteredTransactions = _filteredTransactions(data);
     final filteredTransfers = _filteredTransfers(data);
+    final filteredLoans = _filteredLoans(data);
     final entries = [
       ...filteredTransactions.map(_HistoryListItem.transaction),
       ...filteredTransfers.map(_HistoryListItem.transfer),
+      ...filteredLoans.map(_HistoryListItem.loan),
     ]..sort((a, b) => b.date.compareTo(a.date));
     return Stack(
       children: [
@@ -140,7 +145,9 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                 for (final entry in entries) ...[
                   entry.transaction != null
                       ? _buildTransactionTile(entry.transaction!, data)
-                      : _buildTransferTile(entry.transfer!, data),
+                      : entry.loan != null
+                          ? _buildLoanTile(entry.loan!, data)
+                          : _buildTransferTile(entry.transfer!, data),
                   const SizedBox(height: 10),
                 ],
             ],
@@ -149,7 +156,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
         if (_exporting)
           Positioned.fill(
             child: Container(
-              color: Colors.black.withOpacity(0.45),
+              color: Colors.black.withValues(alpha: 0.45),
               child: const Center(child: CircularProgressIndicator()),
             ),
           ),
@@ -182,10 +189,10 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                 icon: const Icon(Icons.close, color: AppColors.textMuted),
               ),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.06),
+        fillColor: Colors.white.withValues(alpha: 0.06),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.12)),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
@@ -233,6 +240,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
           DropdownMenuItem(value: 'income', child: Text('Income')),
           DropdownMenuItem(value: 'expense', child: Text('Expense')),
           DropdownMenuItem(value: 'transfer', child: Text('Transfer')),
+          DropdownMenuItem(value: 'loan', child: Text('Loan')),
         ],
         onChanged: (value) {
           setState(() {
@@ -314,9 +322,9 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
         constraints: const BoxConstraints(minWidth: 178),
         padding: const EdgeInsets.symmetric(horizontal: 14),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.06),
+          color: Colors.white.withValues(alpha: 0.06),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.white.withOpacity(0.12)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -373,7 +381,8 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
   ) {
     final category = data.categoryById[transaction.categoryId];
     final account = data.accountById[transaction.accountId];
-    final isPositive = transaction.type == 'income';
+    final isPositive = transaction.type == 'income' ||
+        transaction.type == 'loan_repayment_received';
     final color = category?.color != null
         ? Color(category!.color!)
         : isPositive
@@ -381,7 +390,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
             : AppColors.expenseNegative;
     final note = transaction.note?.trim();
     final title = note == null || note.isEmpty
-        ? category?.name ?? transaction.type
+        ? category?.name ?? _transactionTypeLabel(transaction.type)
         : note;
     final amount = _formatSignedMoney(
       isPositive ? transaction.amount : -transaction.amount,
@@ -396,9 +405,9 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.055),
+            color: Colors.white.withValues(alpha: 0.055),
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.white.withOpacity(0.07)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
           ),
           child: Row(
             children: [
@@ -406,7 +415,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.18),
+                  color: color.withValues(alpha: 0.18),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -432,7 +441,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                     ),
                     const SizedBox(height: 5),
                     Text(
-                      '${category?.name ?? transaction.type} | ${account?.name ?? 'Account'}',
+                      '${category?.name ?? _transactionTypeLabel(transaction.type)} | ${account?.name ?? 'Account'}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -469,7 +478,8 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
     );
   }
 
-  Widget _buildTransferTile(TransferEntity transfer, _TransactionHistoryData data) {
+  Widget _buildTransferTile(
+      TransferEntity transfer, _TransactionHistoryData data) {
     final from = data.accountById[transfer.fromAccountId]?.name ?? 'Account';
     final to = data.accountById[transfer.toAccountId]?.name ?? 'Account';
     return Material(
@@ -482,24 +492,114 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
           decoration: BoxDecoration(
             color: AppColors.primaryViolet.withValues(alpha: 0.09),
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: AppColors.primaryViolet.withValues(alpha: 0.22)),
+            border: Border.all(
+                color: AppColors.primaryViolet.withValues(alpha: 0.22)),
           ),
           child: Row(children: [
-        const CircleAvatar(
-          backgroundColor: AppColors.primaryViolet,
-          child: Icon(Icons.swap_horiz_rounded, color: Colors.white),
+            const CircleAvatar(
+              backgroundColor: AppColors.primaryViolet,
+              child: Icon(Icons.swap_horiz_rounded, color: Colors.white),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                  Text(
+                      transfer.note?.trim().isNotEmpty == true
+                          ? transfer.note!
+                          : 'Transfer',
+                      style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 4),
+                  Text('$from  →  $to',
+                      style: const TextStyle(
+                          color: AppColors.textMuted, fontSize: 12)),
+                  const SizedBox(height: 4),
+                  Text(_formatDateTime(transfer.date),
+                      style: const TextStyle(
+                          color: AppColors.textMuted, fontSize: 12)),
+                ])),
+            Text(transfer.amount.toStringAsFixed(2),
+                style: const TextStyle(
+                    color: AppColors.primaryViolet,
+                    fontWeight: FontWeight.w700)),
+          ]),
         ),
-        const SizedBox(width: 12),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(transfer.note?.trim().isNotEmpty == true ? transfer.note! : 'Transfer',
-              style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w700)),
-          const SizedBox(height: 4),
-          Text('$from  →  $to', style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
-          const SizedBox(height: 4),
-          Text(_formatDateTime(transfer.date), style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
-        ])),
-        Text(transfer.amount.toStringAsFixed(2),
-            style: const TextStyle(color: AppColors.primaryViolet, fontWeight: FontWeight.w700)),
+      ),
+    );
+  }
+
+  Widget _buildLoanTile(LoanEntity loan, _TransactionHistoryData data) {
+    final isGiven = loan.direction == LoanDirection.given;
+    final account = data.accountById[loan.accountId];
+    final note = loan.note?.trim();
+    final title = note == null || note.isEmpty
+        ? (isGiven
+            ? 'Loan to ${loan.counterparty}'
+            : 'Loan from ${loan.counterparty}')
+        : note;
+    final status = loan.isSettled
+        ? 'Settled'
+        : 'Outstanding ${_transactionCurrencyLabel(loan.currency)} ${loan.outstandingAmount.toStringAsFixed(2)}';
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _openLoanActions(loan),
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: AppColors.accentOrange.withValues(alpha: 0.09),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+                color: AppColors.accentOrange.withValues(alpha: 0.22)),
+          ),
+          child: Row(children: [
+            CircleAvatar(
+              backgroundColor:
+                  AppColors.accentOrange.withValues(alpha: 0.22),
+              child: Icon(
+                isGiven
+                    ? Icons.handshake_outlined
+                    : Icons.account_balance_outlined,
+                color: AppColors.accentOrange,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                  Text(title,
+                      style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 4),
+                  Text(
+                      '${isGiven ? 'Lent to' : 'Borrowed from'} '
+                      '${loan.counterparty} | ${account?.name ?? 'Account'}',
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          color: AppColors.textMuted, fontSize: 12)),
+                  const SizedBox(height: 4),
+                  Text(
+                      '${_formatDateTime(loan.date)} · $status',
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          color: AppColors.textMuted, fontSize: 12)),
+                ])),
+            Text(
+              _formatSignedMoney(
+                isGiven ? -loan.amount : loan.amount,
+                loan.currency,
+              ),
+              style: const TextStyle(
+                  color: AppColors.accentOrange,
+                  fontWeight: FontWeight.w700),
+            ),
           ]),
         ),
       ),
@@ -513,6 +613,22 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
       ),
     );
     if (updated == true && mounted) {
+      await _reload();
+    }
+  }
+
+  Future<void> _openLoanActions(LoanEntity loan) async {
+    final data = await _historyFuture;
+    if (data == null || !mounted) {
+      return;
+    }
+    final accountName = data.accountById[loan.accountId]?.name ?? 'Account';
+    final changed = await showLoanActionsSheet(
+      context: context,
+      loan: loan,
+      accountName: accountName,
+    );
+    if (changed && mounted) {
       await _reload();
     }
   }
@@ -557,7 +673,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.055),
+        color: Colors.white.withValues(alpha: 0.055),
         borderRadius: BorderRadius.circular(18),
       ),
       child: const Text(
@@ -660,9 +776,9 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.06),
+          color: Colors.white.withValues(alpha: 0.06),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withOpacity(0.12)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
         ),
         child: Row(
           children: [
@@ -670,7 +786,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
               width: 42,
               height: 42,
               decoration: BoxDecoration(
-                color: AppColors.primaryViolet.withOpacity(0.18),
+                color: AppColors.primaryViolet.withValues(alpha: 0.18),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: AppColors.primaryViolet, size: 20),
@@ -867,11 +983,11 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
       labelText: label,
       labelStyle: const TextStyle(color: AppColors.textMuted, fontSize: 12),
       filled: true,
-      fillColor: Colors.white.withOpacity(0.06),
+      fillColor: Colors.white.withValues(alpha: 0.06),
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: Colors.white.withOpacity(0.12)),
+        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
@@ -895,8 +1011,12 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
         await cqrs.bus.query<GetCategoriesQuery, List<CategoryEntity>>(
       GetCategoriesQuery(userId: profile.userId),
     );
-    final transfers = await cqrs.bus.query<GetTransfersQuery, List<TransferEntity>>(
+    final transfers =
+        await cqrs.bus.query<GetTransfersQuery, List<TransferEntity>>(
       GetTransfersQuery(userId: profile.userId),
+    );
+    final loans = await cqrs.bus.query<GetLoansQuery, List<LoanEntity>>(
+      GetLoansQuery(userId: profile.userId),
     );
 
     return _TransactionHistoryData(
@@ -904,6 +1024,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
       accounts: accounts,
       categories: categories,
       transfers: transfers,
+      loans: loans,
     );
   }
 
@@ -956,6 +1077,44 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
     }).toList();
   }
 
+  List<LoanEntity> _filteredLoans(_TransactionHistoryData data) {
+    if (_type != null && _type != 'loan') {
+      return const <LoanEntity>[];
+    }
+    if (_categoryId != null) {
+      return const <LoanEntity>[];
+    }
+    final normalizedQuery = _query.trim().toLowerCase();
+    return data.loans.where((loan) {
+      if (_accountId != null && loan.accountId != _accountId) {
+        return false;
+      }
+      if (_dateRange != null &&
+          (loan.date.isBefore(_dateRange!.start) ||
+              loan.date.isAfter(
+                _dateRange!.end
+                    .add(const Duration(days: 1))
+                    .subtract(const Duration(milliseconds: 1)),
+              ))) {
+        return false;
+      }
+      if (normalizedQuery.isEmpty) {
+        return true;
+      }
+      final counterparty = loan.counterparty.toLowerCase();
+      final searchable = [
+        loan.note,
+        loan.direction == LoanDirection.given ? 'given lent lent money' : 'taken borrowed',
+        loan.counterparty,
+        data.accountById[loan.accountId]?.name,
+        loan.currency,
+        loan.amount.toStringAsFixed(2),
+      ].whereType<String>().join(' ').toLowerCase();
+      return searchable.contains(normalizedQuery) ||
+          counterparty.contains(normalizedQuery);
+    }).toList();
+  }
+
   List<TransferEntity> _filteredTransfers(_TransactionHistoryData data) {
     if ((_type != null && _type != 'transfer') || _categoryId != null) {
       return const <TransferEntity>[];
@@ -964,14 +1123,21 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
     return data.transfers.where((transfer) {
       if (_accountId != null &&
           transfer.fromAccountId != _accountId &&
-          transfer.toAccountId != _accountId) return false;
+          transfer.toAccountId != _accountId) {
+        return false;
+      }
       if (_dateRange != null &&
           (transfer.date.isBefore(_dateRange!.start) ||
-              transfer.date.isAfter(_dateRange!.end.add(const Duration(days: 1))))) return false;
+              transfer.date
+                  .isAfter(_dateRange!.end.add(const Duration(days: 1))))) {
+        return false;
+      }
       if (query.isEmpty) return true;
       final from = data.accountById[transfer.fromAccountId]?.name ?? '';
       final to = data.accountById[transfer.toAccountId]?.name ?? '';
-      return '${transfer.note ?? ''} $from $to ${transfer.amount}'.toLowerCase().contains(query);
+      return '${transfer.note ?? ''} $from $to ${transfer.amount}'
+          .toLowerCase()
+          .contains(query);
     }).toList();
   }
 
@@ -990,8 +1156,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
               onPrimary: Colors.white,
               surface: AppColors.bgSecondary,
               onSurface: Colors.white,
-            ),
-            dialogBackgroundColor: AppColors.bgSecondary,
+            ), dialogTheme: DialogThemeData(backgroundColor: AppColors.bgSecondary),
           ),
           child: child!,
         );
@@ -1051,6 +1216,17 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
     return '$time | $date';
   }
 
+  String _transactionTypeLabel(String type) {
+    switch (type) {
+      case 'loan_repayment_received':
+        return 'Loan repayment received';
+      case 'loan_repayment_paid':
+        return 'Loan repayment paid';
+      default:
+        return type;
+    }
+  }
+
   String _formatShortDate(DateTime dateTime) {
     return MaterialLocalizations.of(context).formatShortDate(dateTime.toLocal());
   }
@@ -1062,12 +1238,14 @@ class _TransactionHistoryData {
     required this.accounts,
     required this.categories,
     required this.transfers,
+    required this.loans,
   });
 
   final List<TransactionEntity> transactions;
   final List<AccountEntity> accounts;
   final List<CategoryEntity> categories;
   final List<TransferEntity> transfers;
+  final List<LoanEntity> loans;
 
   Map<String, AccountEntity> get accountById {
     return {for (final account in accounts) account.accountId: account};
@@ -1083,6 +1261,7 @@ class _HistoryListItem {
     required this.date,
     this.transaction,
     this.transfer,
+    this.loan,
   });
 
   factory _HistoryListItem.transaction(TransactionEntity transaction) {
@@ -1093,7 +1272,12 @@ class _HistoryListItem {
     return _HistoryListItem._(date: transfer.date, transfer: transfer);
   }
 
+  factory _HistoryListItem.loan(LoanEntity loan) {
+    return _HistoryListItem._(date: loan.date, loan: loan);
+  }
+
   final DateTime date;
   final TransactionEntity? transaction;
   final TransferEntity? transfer;
+  final LoanEntity? loan;
 }

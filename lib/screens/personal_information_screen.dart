@@ -76,9 +76,9 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
                 decoration: BoxDecoration(
                   gradient: RadialGradient(
                     colors: [
-                      AppColors.primaryViolet.withOpacity(0.36),
-                      AppColors.accentPink.withOpacity(0.08),
-                      AppColors.primaryDeep.withOpacity(0.0),
+                      AppColors.primaryViolet.withValues(alpha: 0.36),
+                      AppColors.accentPink.withValues(alpha: 0.08),
+                      AppColors.primaryDeep.withValues(alpha: 0.0),
                     ],
                     stops: const [0, 0.42, 1],
                     radius: 0.82,
@@ -402,7 +402,7 @@ class _AvatarPicker extends StatelessWidget {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primaryPurple.withOpacity(0.32),
+                  color: AppColors.primaryPurple.withValues(alpha: 0.32),
                   blurRadius: 34,
                   offset: const Offset(0, 16),
                 ),
@@ -411,7 +411,7 @@ class _AvatarPicker extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.all(3),
               child: CircleAvatar(
-                backgroundColor: Colors.white.withOpacity(0.08),
+                backgroundColor: Colors.white.withValues(alpha: 0.08),
                 backgroundImage: image,
                 child: image == null
                     ? const Icon(
@@ -493,11 +493,11 @@ class _ProfileTextField extends StatelessWidget {
       decoration: InputDecoration(
         prefixIcon: Icon(icon, color: AppColors.textMuted),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.06),
+        fillColor: Colors.white.withValues(alpha: 0.06),
         errorStyle: const TextStyle(color: AppColors.accentCoral),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.09)),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.09)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
@@ -526,9 +526,9 @@ class _InfoCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.055),
+        color: Colors.white.withValues(alpha: 0.055),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

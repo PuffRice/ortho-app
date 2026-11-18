@@ -20,6 +20,7 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   String _selectedType = 'expense';
   String? _selectedCategoryId;
+  _ReportPeriod _reportPeriod = _ReportPeriod.month;
   Future<_DashboardData>? _dashboardFuture;
 
   Future<_DashboardData> get _dashboardData {
@@ -48,8 +49,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 decoration: BoxDecoration(
                   gradient: RadialGradient(
                     colors: [
-                      AppColors.primaryViolet.withOpacity(0.35),
-                      AppColors.primaryDeep.withOpacity(0),
+                      AppColors.primaryViolet.withValues(alpha: 0.35),
+                      AppColors.primaryDeep.withValues(alpha: 0),
                     ],
                     radius: 0.8,
                   ),
@@ -102,7 +103,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildContent(_DashboardData data) {
-    final typeData = data.forType(_selectedType, _selectedCategoryId);
+    final typeData = data.forType(
+      _selectedType,
+      _selectedCategoryId,
+      _reportPeriod,
+    );
     final typeColor = _selectedType == 'income'
         ? AppColors.incomePositive
         : AppColors.expenseNegative;
@@ -116,6 +121,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           _buildHeader(),
           const SizedBox(height: 18),
           _buildTypeToggle(),
+          const SizedBox(height: 12),
+          _buildPeriodSelector(),
           const SizedBox(height: 20),
           _buildSummaryStrip(typeData, typeColor),
           const SizedBox(height: 22),
@@ -170,14 +177,54 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.06),
+        color: Colors.white.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
       child: Row(
         children: [
           Expanded(child: _buildTypeButton('expense', 'Expense')),
           Expanded(child: _buildTypeButton('income', 'Income')),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPeriodSelector() {
+    return SizedBox(
+      height: 40,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          for (final period in _ReportPeriod.values) ...[
+            if (period != _ReportPeriod.values.first) const SizedBox(width: 8),
+            InkWell(
+              onTap: () => setState(() => _reportPeriod = period),
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: _reportPeriod == period
+                      ? AppColors.primaryViolet.withValues(alpha: 0.28)
+                      : Colors.white.withValues(alpha: 0.055),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: _reportPeriod == period
+                        ? AppColors.primaryViolet.withValues(alpha: 0.72)
+                        : Colors.white.withValues(alpha: 0.08),
+                  ),
+                ),
+                child: Text(period.label,
+                    style: TextStyle(
+                        color: _reportPeriod == period
+                            ? AppColors.textPrimary
+                            : AppColors.textMuted,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12)),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -203,8 +250,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           gradient: selected
               ? LinearGradient(
                   colors: [
-                    color.withOpacity(0.92),
-                    AppColors.primaryViolet.withOpacity(0.84),
+                    color.withValues(alpha: 0.92),
+                    AppColors.primaryViolet.withValues(alpha: 0.84),
                   ],
                 )
               : null,
@@ -227,7 +274,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       children: [
         Expanded(
           child: _buildMetricTile(
-            label: 'Total ${_selectedType == 'income' ? 'income' : 'expense'}',
+            label: '${_reportPeriod.label} ${_selectedType == 'income' ? 'income' : 'expense'}',
             value: _formatMoney(data.total, data.currency),
             icon: _selectedType == 'income'
                 ? Icons.trending_up_rounded
@@ -264,7 +311,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.18),
+              color: color.withValues(alpha: 0.18),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: color, size: 20),
@@ -320,7 +367,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           decoration: _surfaceDecoration(radius: 22),
           child: typeData.months.every((month) => month.total == 0)
               ? _buildEmptyState(
-                  'No ${_selectedType} history yet.',
+                  'No $_selectedType history yet.',
                   key: ValueKey(_monthlyChartKey),
                 )
               : BarChart(
@@ -368,13 +415,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: selected
-              ? AppColors.primaryViolet.withOpacity(0.28)
-              : Colors.white.withOpacity(0.055),
+              ? AppColors.primaryViolet.withValues(alpha: 0.28)
+              : Colors.white.withValues(alpha: 0.055),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: selected
-                ? AppColors.primaryViolet.withOpacity(0.72)
-                : Colors.white.withOpacity(0.08),
+                ? AppColors.primaryViolet.withValues(alpha: 0.72)
+                : Colors.white.withValues(alpha: 0.08),
           ),
         ),
         child: Text(
@@ -407,7 +454,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         drawVerticalLine: false,
         horizontalInterval: maxY / 4,
         getDrawingHorizontalLine: (value) => FlLine(
-          color: Colors.white.withOpacity(0.06),
+          color: Colors.white.withValues(alpha: 0.06),
           strokeWidth: 1,
         ),
       ),
@@ -469,9 +516,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   begin: Alignment.bottomCenter,
                   end: Alignment.topCenter,
                   colors: [
-                    color.withOpacity(0.54),
+                    color.withValues(alpha: 0.54),
                     color,
-                    AppColors.primaryViolet.withOpacity(0.92),
+                    AppColors.primaryViolet.withValues(alpha: 0.92),
                   ],
                 ),
               ),
@@ -486,8 +533,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSectionTitle(
-          'Top 5 categories',
-          'Share of total ${_selectedType == 'income' ? 'income' : 'expense'}',
+          'Top categories',
+          'Share of ${_reportPeriod.label.toLowerCase()}',
         ),
         const SizedBox(height: 12),
         if (typeData.topCategories.isEmpty)
@@ -513,7 +560,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.18),
+              color: color.withValues(alpha: 0.18),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Icon(category.icon, color: color, size: 21),
@@ -540,7 +587,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     minHeight: 6,
                     value: category.percent.clamp(0, 1),
                     color: color,
-                    backgroundColor: Colors.white.withOpacity(0.08),
+                    backgroundColor: Colors.white.withValues(alpha: 0.08),
                   ),
                 ),
               ],
@@ -611,7 +658,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.16),
+                  color: color.withValues(alpha: 0.16),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(budget.icon, color: color, size: 21),
@@ -660,7 +707,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               minHeight: 8,
               value: progress,
               color: color,
-              backgroundColor: Colors.white.withOpacity(0.08),
+              backgroundColor: Colors.white.withValues(alpha: 0.08),
             ),
           ),
           const SizedBox(height: 10),
@@ -748,12 +795,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   BoxDecoration _surfaceDecoration({double radius = 18}) {
     return BoxDecoration(
-      color: Colors.white.withOpacity(0.06),
+      color: Colors.white.withValues(alpha: 0.06),
       borderRadius: BorderRadius.circular(radius),
-      border: Border.all(color: Colors.white.withOpacity(0.08)),
+      border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       boxShadow: [
         BoxShadow(
-          color: AppColors.primaryDeep.withOpacity(0.10),
+          color: AppColors.primaryDeep.withValues(alpha: 0.10),
           blurRadius: 24,
           offset: const Offset(0, 14),
         ),
@@ -806,8 +853,13 @@ class _DashboardData {
   final List<CategoryEntity> categories;
   final List<BudgetEntity> budgets;
 
-  _TypeDashboardData forType(String type, String? categoryId) {
+  _TypeDashboardData forType(
+    String type,
+    String? categoryId,
+    _ReportPeriod period,
+  ) {
     final categoryById = _categoryById;
+    final window = _reportWindow(period);
     final filtered = transactions.where((transaction) {
       if (transaction.type != type) {
         return false;
@@ -815,10 +867,16 @@ class _DashboardData {
       if (categoryId != null && transaction.categoryId != categoryId) {
         return false;
       }
-      return true;
+      return window == null ||
+          (!transaction.date.isBefore(window.start) &&
+              transaction.date.isBefore(window.end));
     }).toList();
-    final allTypeTransactions =
-        transactions.where((transaction) => transaction.type == type).toList();
+    final allTypeTransactions = transactions.where((transaction) {
+      return transaction.type == type &&
+          (window == null ||
+              (!transaction.date.isBefore(window.start) &&
+                  transaction.date.isBefore(window.end)));
+    }).toList();
     final now = DateTime.now();
     final thisMonthStart = DateTime(now.year, now.month);
     final nextMonthStart = DateTime(now.year, now.month + 1);
@@ -1031,6 +1089,39 @@ class _DashboardData {
     ];
     return labels[month - 1];
   }
+
+  static _DateWindow? _reportWindow(_ReportPeriod period) {
+    final now = DateTime.now();
+    switch (period) {
+      case _ReportPeriod.month:
+        return _DateWindow(
+          start: DateTime(now.year, now.month),
+          end: DateTime(now.year, now.month + 1),
+        );
+      case _ReportPeriod.last3Months:
+        return _DateWindow(
+          start: DateTime(now.year, now.month - 2),
+          end: DateTime(now.year, now.month + 1),
+        );
+      case _ReportPeriod.year:
+        return _DateWindow(
+          start: DateTime(now.year),
+          end: DateTime(now.year + 1),
+        );
+      case _ReportPeriod.lifetime:
+        return null;
+    }
+  }
+}
+
+enum _ReportPeriod {
+  month('This month'),
+  last3Months('Last 3 months'),
+  year('This year'),
+  lifetime('Lifetime');
+
+  const _ReportPeriod(this.label);
+  final String label;
 }
 
 class _TypeDashboardData {

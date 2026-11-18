@@ -6,4 +6,5 @@ class AppRoutes {
   static const String manageAccounts = '/manage-accounts';
   static const String manageCategories = '/manage-categories';
   static const String personalInformation = '/personal-information';
+  static const String loans = '/loans';
 }

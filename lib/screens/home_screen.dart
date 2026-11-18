@@ -6,11 +6,14 @@ import '../config/category_icons.dart';
 import '../cqrs/queries.dart';
 import '../models/local_models.dart';
 import '../services/cqrs_service.dart';
+import '../services/app_database.dart';
 import '../services/local_db.dart';
 import '../services/user_identity.dart';
 import '../utils/date_time_utils.dart';
 import 'add_transaction_screen.dart';
+import 'loans_screen.dart';
 import 'transaction_history_screen.dart';
+import 'widgets/loan_actions_sheet.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,6 +27,10 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isAccountBalancesExpanded = false;
   Future<_HomeData>? _homeDataFuture;
   StreamSubscription<void>? _profileChangesSubscription;
+  StreamSubscription<void>? _databaseChangesSubscription;
+  Timer? _reloadDebounce;
+  bool _isReloading = false;
+  bool _reloadQueued = false;
 
   Future<_HomeData> get _homeData {
     return _homeDataFuture ??= _loadHomeData();
@@ -32,18 +39,21 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _homeDataFuture = _loadHomeData();
+    _startHomeLoad();
     _profileChangesSubscription =
         UserIdentityService.instance.profileChanges.listen((_) {
-      if (mounted) {
-        _reloadHomeData();
-      }
+      if (mounted) _scheduleHomeReload();
+    });
+    _databaseChangesSubscription = AppDatabase.changes.listen((_) {
+      if (mounted) _scheduleHomeReload();
     });
   }
 
   @override
   void dispose() {
+    _reloadDebounce?.cancel();
     _profileChangesSubscription?.cancel();
+    _databaseChangesSubscription?.cancel();
     super.dispose();
   }
 
@@ -63,8 +73,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 decoration: BoxDecoration(
                   gradient: RadialGradient(
                     colors: [
-                      AppColors.primaryViolet.withOpacity(0.35),
-                      AppColors.primaryDeep.withOpacity(0.0),
+                      AppColors.primaryViolet.withValues(alpha: 0.35),
+                      AppColors.primaryDeep.withValues(alpha: 0.0),
                     ],
                     radius: 0.8,
                   ),
@@ -76,7 +86,8 @@ class _HomeScreenState extends State<HomeScreen> {
             child: FutureBuilder<_HomeData>(
               future: _homeData,
               builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
+                if (snapshot.connectionState == ConnectionState.waiting &&
+                    !snapshot.hasData) {
                   return const Center(child: CircularProgressIndicator());
                 }
                 if (snapshot.hasError) {
@@ -135,9 +146,9 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        color: AppColors.accentCoral.withOpacity(0.10),
+        color: AppColors.accentCoral.withValues(alpha: 0.10),
         border: Border.all(
-          color: AppColors.accentCoral.withOpacity(0.24),
+          color: AppColors.accentCoral.withValues(alpha: 0.24),
         ),
       ),
       child: Text(
@@ -156,11 +167,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return RefreshIndicator(
       onRefresh: () async {
-        final next = _loadHomeData();
-        setState(() {
-          _homeDataFuture = next;
-        });
-        await next;
+        await _reloadHomeData();
       },
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -181,59 +188,37 @@ class _HomeScreenState extends State<HomeScreen> {
                 isCompact: isCompact,
               ),
               const SizedBox(height: 14),
-              isCompact
-                  ? Column(
-                      children: [
-                        _buildFinancialCard(
-                          icon: Icons.arrow_downward,
-                          iconColor: AppColors.incomePositive,
-                          label: 'Inflow this month',
-                          amount: data.inflowLabel,
-                          change: data.inflowChangeLabel,
-                          changeColor: AppColors.incomePositive,
-                          onTap: () => _openTransactionHistory('income'),
-                          isCompact: true,
-                        ),
-                        const SizedBox(height: 12),
-                        _buildFinancialCard(
-                          icon: Icons.arrow_upward,
-                          iconColor: AppColors.expenseNegative,
-                          label: 'Outflow this month',
-                          amount: data.outflowLabel,
-                          change: data.outflowChangeLabel,
-                          changeColor: AppColors.expenseNegative,
-                          onTap: () => _openTransactionHistory('expense'),
-                          isCompact: true,
-                        ),
-                      ],
-                    )
-                  : Row(
-                      children: [
-                        Expanded(
-                          child: _buildFinancialCard(
-                            icon: Icons.arrow_downward,
-                            iconColor: AppColors.incomePositive,
-                            label: 'Inflow this month',
-                            amount: data.inflowLabel,
-                            change: data.inflowChangeLabel,
-                            changeColor: AppColors.incomePositive,
-                            onTap: () => _openTransactionHistory('income'),
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: _buildFinancialCard(
-                            icon: Icons.arrow_upward,
-                            iconColor: AppColors.expenseNegative,
-                            label: 'Outflow this month',
-                            amount: data.outflowLabel,
-                            change: data.outflowChangeLabel,
-                            changeColor: AppColors.expenseNegative,
-                            onTap: () => _openTransactionHistory('expense'),
-                          ),
-                        ),
-                      ],
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildFinancialCard(
+                      icon: Icons.arrow_downward,
+                      iconColor: AppColors.incomePositive,
+                      label: 'Inflow this month',
+                      amount: data.inflowLabel,
+                      change: data.inflowChangeLabel,
+                      changeColor: AppColors.incomePositive,
+                      onTap: () => _openTransactionHistory('income'),
+                      isCompact: isCompact,
                     ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: _buildFinancialCard(
+                      icon: Icons.arrow_upward,
+                      iconColor: AppColors.expenseNegative,
+                      label: 'Outflow this month',
+                      amount: data.outflowLabel,
+                      change: data.outflowChangeLabel,
+                      changeColor: AppColors.expenseNegative,
+                      onTap: () => _openTransactionHistory('expense'),
+                      isCompact: isCompact,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              _buildLoansEntryCard(data, isCompact: isCompact),
               const SizedBox(height: 32),
               _buildTransactionHeader(),
               const SizedBox(height: 16),
@@ -244,6 +229,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   _buildTransactionItem(
                     transaction: transaction.transaction,
                     transfer: transaction.transfer,
+                    loan: transaction.loan,
                     description: transaction.description,
                     time: AppDateTime.formatTime(context, transaction.date),
                     date: AppDateTime.formatMediumDate(
@@ -304,6 +290,13 @@ class _HomeScreenState extends State<HomeScreen> {
       fallback: const <TransferEntity>[],
       label: 'recent transfers',
     );
+    final loans = await _loadSection<List<LoanEntity>>(
+      () => cqrs.bus.query<GetLoansQuery, List<LoanEntity>>(
+        GetLoansQuery(userId: profile.userId),
+      ),
+      fallback: const <LoanEntity>[],
+      label: 'loans',
+    );
     final monthTransactions = await _loadSection<List<TransactionEntity>>(
       () => cqrs.bus.query<GetTransactionsQuery, List<TransactionEntity>>(
         GetTransactionsQuery(
@@ -332,6 +325,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (categories.failed) categories.label,
       if (recentTransactions.failed) recentTransactions.label,
       if (recentTransfers.failed) recentTransfers.label,
+      if (loans.failed) loans.label,
       if (monthTransactions.failed) monthTransactions.label,
       if (previousMonthTransactions.failed) previousMonthTransactions.label,
     ];
@@ -356,11 +350,37 @@ class _HomeScreenState extends State<HomeScreen> {
           .whereType<_TransactionViewData>(),
     ]..sort((a, b) => b.date.compareTo(a.date));
 
+    final outstandingGivenByAccount = <String, double>{};
+    final outstandingTakenByAccount = <String, double>{};
+    var outstandingGivenTotal = 0.0;
+    var outstandingTakenTotal = 0.0;
+    for (final loan in loans.value) {
+      final outstanding = loan.outstandingAmount;
+      if (outstanding <= 0) {
+        continue;
+      }
+      final target = loan.direction == LoanDirection.given
+          ? outstandingGivenByAccount
+          : outstandingTakenByAccount;
+      target[loan.accountId] = (target[loan.accountId] ?? 0) + outstanding;
+      if (loan.direction == LoanDirection.given) {
+        outstandingGivenTotal += outstanding;
+      } else {
+        outstandingTakenTotal += outstanding;
+      }
+    }
+
     return _HomeData(
       displayName: user?.displayName ?? profile.displayName,
       activeBalanceLabel: _formatMoney(activeBalance, currency),
+      outstandingGivenTotal: outstandingGivenTotal,
+      outstandingTakenTotal: outstandingTakenTotal,
       accountBalances: accounts.value
-          .map(_accountBalanceView)
+          .map((account) => _accountBalanceView(
+                account,
+                outstandingGivenByAccount[account.accountId],
+                outstandingTakenByAccount[account.accountId],
+              ))
           .whereType<_AccountBalanceViewData>()
           .toList(),
       inflowLabel: _formatMoney(inflow, currency),
@@ -371,6 +391,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ? null
           : 'Some local data could not be loaded: ${failedSections.join(', ')}.',
       transactions: recentActivity.take(5).toList(),
+      accounts: accounts.value,
     );
   }
 
@@ -409,11 +430,53 @@ class _HomeScreenState extends State<HomeScreen> {
     return total;
   }
 
-  _AccountBalanceViewData? _accountBalanceView(AccountEntity account) {
+  _AccountBalanceViewData? _accountBalanceView(
+    AccountEntity account,
+    double? outstandingGiven,
+    double? outstandingTaken,
+  ) {
     try {
+      final hasLoans =
+          (outstandingGiven ?? 0) > 0 || (outstandingTaken ?? 0) > 0;
       return _AccountBalanceViewData(
         name: account.name,
         balanceLabel: _formatMoney(account.currentBalance, account.currency),
+        availableBalanceLabel: hasLoans
+            ? _formatMoney(
+                account.currentBalance -
+                    (outstandingGiven ?? 0) +
+                    (outstandingTaken ?? 0),
+                account.currency,
+              )
+            : null,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  _TransactionViewData? _safeLoanView(
+    LoanEntity loan,
+    List<AccountEntity> accounts,
+  ) {
+    try {
+      final isGiven = loan.direction == LoanDirection.given;
+      return _TransactionViewData(
+        transaction: null,
+        loan: loan,
+        description: isGiven
+            ? 'Loan to ${loan.counterparty}'
+            : 'Loan from ${loan.counterparty}',
+        date: loan.date,
+        amountLabel: _formatSignedMoney(
+          isGiven ? -loan.amount : loan.amount,
+          loan.currency,
+        ),
+        categoryName: isGiven ? 'Loan given' : 'Loan taken',
+        categoryIcon:
+            isGiven ? Icons.handshake_outlined : Icons.account_balance_outlined,
+        categoryColor: AppColors.accentOrange,
+        isPositive: !isGiven,
       );
     } catch (_) {
       return null;
@@ -462,7 +525,8 @@ class _HomeScreenState extends State<HomeScreen> {
         transfer: transfer,
         description: note == null || note.isEmpty ? 'Transfer' : note,
         date: transfer.date,
-        amountLabel: '${_transactionCurrencyLabel(currency)} ${transfer.amount.toStringAsFixed(2)}',
+        amountLabel:
+            '${_transactionCurrencyLabel(currency)} ${transfer.amount.toStringAsFixed(2)}',
         categoryName: '$from → $to',
         categoryIcon: Icons.swap_horiz_rounded,
         categoryColor: AppColors.primaryViolet,
@@ -479,9 +543,10 @@ class _HomeScreenState extends State<HomeScreen> {
     Map<String, CategoryEntity> categoryById,
   ) {
     final category = categoryById[transaction.categoryId];
-    final isPositive = transaction.type == 'income';
+    final isPositive = transaction.type == 'income' ||
+        transaction.type == 'loan_repayment_received';
     final signedAmount = isPositive ? transaction.amount : -transaction.amount;
-    final categoryName = category?.name ?? transaction.type;
+    final categoryName = category?.name ?? _transactionTypeLabel(transaction.type);
     return _TransactionViewData(
       transaction: transaction,
       description: _transactionDescription(transaction, categoryName),
@@ -503,6 +568,17 @@ class _HomeScreenState extends State<HomeScreen> {
       return note;
     }
     return categoryName;
+  }
+
+  String _transactionTypeLabel(String type) {
+    switch (type) {
+      case 'loan_repayment_received':
+        return 'Loan repayment received';
+      case 'loan_repayment_paid':
+        return 'Loan repayment paid';
+      default:
+        return type;
+    }
   }
 
   String _formatMoney(double amount, String currency) {
@@ -538,10 +614,56 @@ class _HomeScreenState extends State<HomeScreen> {
     return isPositive ? AppColors.incomePositive : AppColors.expenseNegative;
   }
 
-  void _reloadHomeData() {
-    setState(() {
-      _homeDataFuture = _loadHomeData();
+  void _scheduleHomeReload() {
+    _reloadDebounce?.cancel();
+    _reloadDebounce = Timer(const Duration(milliseconds: 250), () {
+      if (mounted) _reloadHomeData();
     });
+  }
+
+  Future<void> _reloadHomeData() async {
+    _reloadDebounce?.cancel();
+    if (_isReloading) {
+      _reloadQueued = true;
+      return;
+    }
+    final future = _startHomeLoad();
+    if (mounted) setState(() {});
+    try {
+      await future;
+    } catch (_) {
+      // FutureBuilder presents the load error; background refreshes must not
+      // surface an unhandled asynchronous exception.
+    }
+  }
+
+  Future<_HomeData> _startHomeLoad() {
+    _isReloading = true;
+    final future = _loadHomeData();
+    _homeDataFuture = future;
+    future.then(
+      (_) => _finishHomeLoad(),
+      onError: (_, __) => _finishHomeLoad(),
+    );
+    return future;
+  }
+
+  void _finishHomeLoad() {
+    if (!mounted) return;
+    _isReloading = false;
+    if (_reloadQueued) {
+      _reloadQueued = false;
+      _scheduleHomeReload();
+    }
+  }
+
+  Future<void> _openLoans() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const LoansScreen()),
+    );
+    if (mounted) {
+      _reloadHomeData();
+    }
   }
 
   void _openTransactionHistory([String? type]) {
@@ -595,6 +717,26 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _openLoanActions(LoanEntity loan) async {
+    final data = await _homeData;
+    if (!mounted) {
+      return;
+    }
+    final accountName = data.accounts
+        .where((account) => account.accountId == loan.accountId)
+        .map((account) => account.name)
+        .followedBy(const ['Account'])
+        .first;
+    final changed = await showLoanActionsSheet(
+      context: context,
+      loan: loan,
+      accountName: accountName,
+    );
+    if (changed && mounted) {
+      _reloadHomeData();
+    }
+  }
+
   Future<void> _openTransactionEditor(TransactionEntity transaction) async {
     final updated = await Navigator.of(context).push<bool>(
       PageRouteBuilder<bool>(
@@ -641,7 +783,7 @@ class _HomeScreenState extends State<HomeScreen> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: AppColors.primaryViolet.withOpacity(0.75),
+                  color: AppColors.primaryViolet.withValues(alpha: 0.75),
                   width: 2,
                 ),
                 color: Colors.transparent,
@@ -681,9 +823,9 @@ class _HomeScreenState extends State<HomeScreen> {
           height: 52,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: Colors.white.withOpacity(0.08),
+            color: Colors.white.withValues(alpha: 0.08),
             border: Border.all(
-              color: Colors.white.withOpacity(0.08),
+              color: Colors.white.withValues(alpha: 0.08),
               width: 1,
             ),
           ),
@@ -711,10 +853,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildActiveBalanceCard(
-    String activeBalanceLabel,
-    List<_AccountBalanceViewData> accountBalances,
-    {bool isCompact = false},
-  ) {
+      String activeBalanceLabel, List<_AccountBalanceViewData> accountBalances,
+      {bool isCompact = false}) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 260),
       curve: Curves.easeOutCubic,
@@ -726,7 +866,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primaryPurple.withOpacity(0.25),
+            color: AppColors.primaryPurple.withValues(alpha: 0.25),
             blurRadius: 60,
             offset: const Offset(0, 20),
           ),
@@ -750,9 +890,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      const Color(0xFF2A145A).withOpacity(0.42),
-                      const Color(0xFF3B1B7A).withOpacity(0.42),
-                      const Color(0xFF20113F).withOpacity(0.40),
+                      const Color(0xFF2A145A).withValues(alpha: 0.42),
+                      const Color(0xFF3B1B7A).withValues(alpha: 0.42),
+                      const Color(0xFF20113F).withValues(alpha: 0.40),
                     ],
                   ),
                 ),
@@ -773,10 +913,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildActiveBalanceCardContent(
-    String activeBalanceLabel,
-    List<_AccountBalanceViewData> accountBalances,
-    {bool isCompact = false},
-  ) {
+      String activeBalanceLabel, List<_AccountBalanceViewData> accountBalances,
+      {bool isCompact = false}) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -809,7 +947,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           height: isCompact ? 36 : 32,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: Colors.white.withOpacity(0.1),
+                            color: Colors.white.withValues(alpha: 0.1),
                           ),
                           child: Icon(
                             _isBalanceVisible
@@ -838,20 +976,9 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(width: 12),
             GestureDetector(
-              onTap: isCompact
-                  ? null
-                  : () {
-                      setState(() {
-                        _isAccountBalancesExpanded = !_isAccountBalancesExpanded;
-                      });
-                    },
-              onTap: () {
-                if (!isCompact) {
-                  setState(() {
-                    _isAccountBalancesExpanded = !_isAccountBalancesExpanded;
-                  });
-                }
-              },
+              onTap: () => setState(() {
+                _isAccountBalancesExpanded = !_isAccountBalancesExpanded;
+              }),
               child: Container(
                 width: isCompact ? 56 : 50,
                 height: isCompact ? 56 : 50,
@@ -868,18 +995,16 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.accentCoral.withOpacity(0.24),
+                      color: AppColors.accentCoral.withValues(alpha: 0.24),
                       blurRadius: 22,
                       offset: const Offset(0, 10),
                     ),
                   ],
                 ),
                 child: Icon(
-                  isCompact
-                      ? Icons.account_balance_wallet_outlined
-                      : _isAccountBalancesExpanded
-                          ? Icons.keyboard_arrow_up
-                          : Icons.wallet,
+                  _isAccountBalancesExpanded
+                      ? Icons.keyboard_arrow_up
+                      : Icons.account_balance_wallet_outlined,
                   color: AppColors.textPrimary,
                   size: isCompact ? 28 : 24,
                 ),
@@ -887,21 +1012,20 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
-        if (!isCompact)
-          AnimatedSize(
-            duration: const Duration(milliseconds: 260),
-            curve: Curves.easeOutCubic,
-            alignment: Alignment.topRight,
-            child: _isAccountBalancesExpanded
-                ? Align(
-                    alignment: Alignment.centerRight,
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 18),
-                      child: _buildAccountBalancesPanel(accountBalances),
-                    ),
-                  )
-                : const SizedBox.shrink(),
-          ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 260),
+          curve: Curves.easeOutCubic,
+          alignment: Alignment.topRight,
+          child: _isAccountBalancesExpanded
+              ? Align(
+                  alignment: Alignment.centerRight,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 18),
+                    child: _buildAccountBalancesPanel(accountBalances),
+                  ),
+                )
+              : const SizedBox.shrink(),
+        ),
       ],
     );
   }
@@ -916,6 +1040,9 @@ class _HomeScreenState extends State<HomeScreen> {
               (account) => _AccountBalanceViewData(
                 name: account.name,
                 balanceLabel: '****',
+                availableBalanceLabel: account.availableBalanceLabel == null
+                    ? null
+                    : '****',
               ),
             )
             .toList();
@@ -925,12 +1052,12 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.085),
+          color: Colors.white.withValues(alpha: 0.085),
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.white.withOpacity(0.12)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.16),
+              color: Colors.black.withValues(alpha: 0.16),
               blurRadius: 24,
               offset: const Offset(0, 12),
             ),
@@ -946,7 +1073,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   height: 28,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(10),
-                    color: AppColors.primaryViolet.withOpacity(0.24),
+                    color: AppColors.primaryViolet.withValues(alpha: 0.24),
                   ),
                   child: const Icon(
                     Icons.account_balance_wallet_outlined,
@@ -1000,51 +1127,157 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildAccountBalanceRow(_AccountBalanceViewData account) {
+    final showAvailable = account.availableBalanceLabel != null;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(14),
-        color: Colors.black.withOpacity(0.10),
-        border: Border.all(color: Colors.white.withOpacity(0.07)),
+        color: Colors.black.withValues(alpha: 0.10),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.incomePositive,
-            ),
+          Row(
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.incomePositive,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  account.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                account.balanceLabel,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.right,
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              account.name,
+          if (showAvailable) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Available ${account.availableBalanceLabel}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 12,
+                color: AppColors.accentOrange.withValues(alpha: 0.85),
+                fontSize: 11.5,
                 fontWeight: FontWeight.w600,
               ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Text(
-            account.balanceLabel,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.right,
-            style: const TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 13,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
+          ],
         ],
       ),
     );
+  }
+
+  Widget _buildLoansEntryCard(_HomeData data, {required bool isCompact}) {
+    final currency = _homeCurrency(data);
+    final hasLoans = data.outstandingGivenTotal > 0 ||
+        data.outstandingTakenTotal > 0;
+    final subtitle = hasLoans
+        ? '${_formatMoney(data.outstandingGivenTotal, currency)} lent out'
+            ' · ${_formatMoney(data.outstandingTakenTotal, currency)} borrowed'
+        : 'Track money you lent or borrowed';
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: _openLoans,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: EdgeInsets.all(isCompact ? 16 : 14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            color: AppColors.accentOrange.withValues(alpha: 0.10),
+            border: Border.all(
+              color: AppColors.accentOrange.withValues(alpha: 0.28),
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.accentOrange.withValues(alpha: 0.2),
+                ),
+                child: const Icon(
+                  Icons.handshake_outlined,
+                  color: AppColors.accentOrange,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Loans',
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: isCompact ? 14 : 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 11.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.accentOrange,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _homeCurrency(_HomeData data) {
+    for (final account in data.accounts) {
+      try {
+        return account.currency;
+      } catch (_) {
+        continue;
+      }
+    }
+    return 'BDT';
   }
 
   Widget _buildFinancialCard({
@@ -1066,9 +1299,9 @@ class _HomeScreenState extends State<HomeScreen> {
           padding: EdgeInsets.all(isCompact ? 18 : 16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
-            color: Colors.white.withOpacity(0.055),
+            color: Colors.white.withValues(alpha: 0.055),
             border: Border.all(
-              color: AppColors.primaryPurple.withOpacity(0.07),
+              color: AppColors.primaryPurple.withValues(alpha: 0.07),
               width: 1,
             ),
           ),
@@ -1083,9 +1316,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     height: isCompact ? 48 : 40,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: iconColor.withOpacity(0.2),
+                      color: iconColor.withValues(alpha: 0.2),
                     ),
-                    child: Icon(icon, color: iconColor, size: isCompact ? 24 : 20),
+                    child:
+                        Icon(icon, color: iconColor, size: isCompact ? 24 : 20),
                   ),
                   const Spacer(),
                   Container(
@@ -1095,7 +1329,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(6),
-                      color: changeColor.withOpacity(0.15),
+                      color: changeColor.withValues(alpha: 0.15),
                     ),
                     child: Text(
                       change,
@@ -1166,7 +1400,7 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-        color: Colors.white.withOpacity(0.055),
+        color: Colors.white.withValues(alpha: 0.055),
       ),
       child: const Text(
         'No transactions yet.',
@@ -1178,6 +1412,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildTransactionItem({
     required TransactionEntity? transaction,
     required TransferEntity? transfer,
+    required LoanEntity? loan,
     required String description,
     required String time,
     required String date,
@@ -1189,9 +1424,10 @@ class _HomeScreenState extends State<HomeScreen> {
     bool isTransfer = false,
   }) {
     final isCompact = MediaQuery.sizeOf(context).width < 600;
-    final amountColor =
-        isTransfer
-            ? AppColors.primaryViolet
+    final amountColor = isTransfer
+        ? AppColors.primaryViolet
+        : loan != null
+            ? AppColors.accentOrange
             : isPositive
                 ? AppColors.incomePositive
                 : AppColors.expenseNegative;
@@ -1203,13 +1439,15 @@ class _HomeScreenState extends State<HomeScreen> {
             ? () => _openTransactionEditor(transaction)
             : transfer != null
                 ? () => _openTransferEditor(transfer)
-                : null,
+                : loan != null
+                    ? () => _openLoanActions(loan)
+                    : null,
         borderRadius: BorderRadius.circular(20),
         child: Container(
           padding: EdgeInsets.all(isCompact ? 16 : 14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
-            color: Colors.white.withOpacity(0.055),
+            color: Colors.white.withValues(alpha: 0.055),
           ),
           height: isCompact ? 88 : 74,
           child: Row(
@@ -1219,7 +1457,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 height: isCompact ? 52 : 44,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: categoryColor.withOpacity(0.18),
+                  color: categoryColor.withValues(alpha: 0.18),
                 ),
                 child: Center(
                   child: Icon(
@@ -1292,6 +1530,8 @@ class _HomeData {
   const _HomeData({
     required this.displayName,
     required this.activeBalanceLabel,
+    required this.outstandingGivenTotal,
+    required this.outstandingTakenTotal,
     required this.accountBalances,
     required this.inflowLabel,
     required this.outflowLabel,
@@ -1299,10 +1539,14 @@ class _HomeData {
     required this.outflowChangeLabel,
     required this.loadWarning,
     required this.transactions,
+    required this.accounts,
   });
 
   final String displayName;
   final String activeBalanceLabel;
+  /// Cross-account sums of outstanding loan amounts.
+  final double outstandingGivenTotal;
+  final double outstandingTakenTotal;
   final List<_AccountBalanceViewData> accountBalances;
   final String inflowLabel;
   final String outflowLabel;
@@ -1310,16 +1554,20 @@ class _HomeData {
   final String outflowChangeLabel;
   final String? loadWarning;
   final List<_TransactionViewData> transactions;
+  final List<AccountEntity> accounts;
 }
 
 class _AccountBalanceViewData {
   const _AccountBalanceViewData({
     required this.name,
     required this.balanceLabel,
+    this.availableBalanceLabel,
   });
 
   final String name;
   final String balanceLabel;
+  /// Present when the account has outstanding loans.
+  final String? availableBalanceLabel;
 }
 
 class _SectionLoad<T> {
@@ -1338,6 +1586,7 @@ class _TransactionViewData {
   const _TransactionViewData({
     required this.transaction,
     this.transfer,
+    this.loan,
     required this.description,
     required this.date,
     required this.amountLabel,
@@ -1350,6 +1599,7 @@ class _TransactionViewData {
 
   final TransactionEntity? transaction;
   final TransferEntity? transfer;
+  final LoanEntity? loan;
   final String description;
   final DateTime date;
   final String amountLabel;

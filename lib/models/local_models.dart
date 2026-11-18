@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 class UserEntity {
   UserEntity();
 
@@ -89,7 +91,8 @@ class CategoryEntity {
         sortOrder = (map['sort_order'] as num?)?.toInt() ?? 0,
         createdAt = DateTime.parse(map['created_at'] as String),
         updatedAt = DateTime.parse(map['updated_at'] as String),
-        deletedAt = _parseNullableDate(map['deleted_at']);
+        deletedAt = _parseNullableDate(map['deleted_at']),
+        receiptBytes = map['receipt_bytes'] as Uint8List?;
 
   String userId = '';
   String categoryId = '';
@@ -101,6 +104,7 @@ class CategoryEntity {
   DateTime createdAt = DateTime.now();
   DateTime updatedAt = DateTime.now();
   DateTime? deletedAt;
+  Uint8List? receiptBytes;
 
   Map<String, Object?> toMap() {
     return {
@@ -114,6 +118,7 @@ class CategoryEntity {
       'created_at': createdAt.toUtc().toIso8601String(),
       'updated_at': updatedAt.toUtc().toIso8601String(),
       'deleted_at': deletedAt?.toUtc().toIso8601String(),
+      'receipt_bytes': receiptBytes,
     };
   }
 }
@@ -439,6 +444,75 @@ class SummaryCacheEntity {
   }
 }
 
+enum LoanDirection {
+  given,
+  taken;
+
+  static LoanDirection fromName(String? name) {
+    return name == 'taken' ? taken : given;
+  }
+
+  String get name => this == taken ? 'taken' : 'given';
+}
+
+class LoanEntity {
+  LoanEntity();
+
+  LoanEntity.fromMap(Map<String, Object?> map)
+      : userId = map['user_id'] as String,
+        loanId = map['loan_id'] as String,
+        accountId = map['account_id'] as String,
+        direction = LoanDirection.fromName(map['direction'] as String?),
+        counterparty = map['counterparty'] as String,
+        amount = _toDouble(map['amount']),
+        currency = map['currency'] as String,
+        date = DateTime.parse(map['date'] as String),
+        settledAmount = _toDouble(map['settled_amount']),
+        note = map['note'] as String?,
+        createdAt = DateTime.parse(map['created_at'] as String),
+        updatedAt = DateTime.parse(map['updated_at'] as String),
+        deletedAt = _parseNullableDate(map['deleted_at']);
+
+  String userId = '';
+  String accountId = '';
+  String loanId = '';
+  LoanDirection direction = LoanDirection.given;
+  String counterparty = '';
+  double amount = 0;
+  String currency = '';
+  DateTime date = DateTime.now();
+  double settledAmount = 0;
+  String? note;
+  DateTime createdAt = DateTime.now();
+  DateTime updatedAt = DateTime.now();
+  DateTime? deletedAt;
+
+  double get outstandingAmount {
+    final outstanding = amount - settledAmount;
+    return outstanding <= 0 ? 0 : outstanding;
+  }
+
+  bool get isSettled => outstandingAmount <= 0;
+
+  Map<String, Object?> toMap() {
+    return {
+      'user_id': userId,
+      'loan_id': loanId,
+      'account_id': accountId,
+      'direction': direction.name,
+      'counterparty': counterparty,
+      'amount': amount,
+      'currency': currency,
+      'date': date.toUtc().toIso8601String(),
+      'settled_amount': settledAmount,
+      'note': note,
+      'created_at': createdAt.toUtc().toIso8601String(),
+      'updated_at': updatedAt.toUtc().toIso8601String(),
+      'deleted_at': deletedAt?.toUtc().toIso8601String(),
+    };
+  }
+}
+
 class SyncOutboxEntity {
   SyncOutboxEntity();
 
@@ -500,3 +574,4 @@ double _toDouble(Object? value) {
   }
   return double.parse(value.toString());
 }
+

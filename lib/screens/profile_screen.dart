@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../config/app_colors.dart';
 import '../config/app_routes.dart';
 import '../models/local_models.dart';
 import '../services/local_db.dart';
+import '../services/google_drive_backup_service.dart';
 import '../services/supabase_service.dart';
 import '../services/sync_service.dart';
 import '../services/user_identity.dart';
+import 'widgets/help_topic.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -52,8 +55,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 decoration: BoxDecoration(
                   gradient: RadialGradient(
                     colors: [
-                      AppColors.primaryViolet.withOpacity(0.35),
-                      AppColors.primaryDeep.withOpacity(0.0),
+                      AppColors.primaryViolet.withValues(alpha: 0.35),
+                      AppColors.primaryDeep.withValues(alpha: 0.0),
                     ],
                     radius: 0.8,
                   ),
@@ -106,7 +109,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             children: [
                               CircleAvatar(
                                 radius: 50,
-                                backgroundColor: Colors.white.withOpacity(0.08),
+                                backgroundColor: Colors.white.withValues(alpha: 0.08),
                                 backgroundImage: _profileImage(user?.photoUrl),
                                 child: user?.photoUrl == null
                                     ? const Icon(
@@ -194,18 +197,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             .pushNamed(AppRoutes.manageCategories);
                       },
                     ),
-                    _buildProfileMenuItem(
-                      icon: Icons.language,
-                      title: 'Language',
-                      subtitle: 'English',
-                      onTap: () {},
-                    ),
-                    _buildProfileMenuItem(
-                      icon: Icons.brightness_4,
-                      title: 'Theme',
-                      subtitle: 'Dark mode',
-                      onTap: () {},
-                    ),
+                    _buildGoogleBackupMenuItem(),
 
                     const SizedBox(height: 24),
 
@@ -216,7 +208,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       icon: Icons.help_outline,
                       title: 'Help Center',
                       subtitle: 'FAQs & support',
-                      onTap: () {},
+                      onTap: _openHelpCenter,
                     ),
                     _buildProfileMenuItem(
                       icon: Icons.sync,
@@ -227,8 +219,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _buildProfileMenuItem(
                       icon: Icons.info_outline,
                       title: 'About Us',
-                      subtitle: 'App version 1.0.0',
-                      onTap: () {},
+                      subtitle: 'App version 1.0.4',
+                      onTap: _openAboutUs,
                     ),
 
                     const SizedBox(height: 24),
@@ -304,7 +296,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.08),
+                    color: Colors.white.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(icon, color: AppColors.textSecondary),
@@ -339,6 +331,244 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGoogleBackupMenuItem() {
+    return FutureBuilder<GoogleDriveBackupStatus>(
+      future: GoogleDriveBackupService.instance.status(),
+      builder: (context, snapshot) {
+        final backup = snapshot.data;
+        final subtitle = backup == null || !backup.connected
+            ? 'Optional — not connected'
+            : backup.sizeBytes == null
+                ? 'Connected • No backup yet'
+                : 'Connected • ${_formatBytes(backup.sizeBytes!)} • Last: ${_formatTimestamp(context, backup.modifiedAt)}';
+        return _buildProfileMenuItem(
+          icon: Icons.backup_outlined,
+          title: 'Google Drive Backup',
+          subtitle: subtitle,
+          onTap: _openGoogleBackup,
+        );
+      },
+    );
+  }
+
+  Future<void> _openGoogleBackup() async {
+    final backup = GoogleDriveBackupService.instance;
+    final status = await backup.status();
+    if (!mounted) return;
+    if (!status.connected) {
+      final remote = await backup.connect();
+      if (!mounted) return;
+      setState(() {});
+      if (remote != null) {
+        final restore = await _confirmRestore(remote);
+        if (restore == true) await _restoreGoogleBackup(remote);
+      } else {
+        _showInfo(
+            context, 'Google Drive connected. No existing backup was found.');
+      }
+      return;
+    }
+
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: AppColors.bgSecondary,
+      builder: (context) => SafeArea(
+        child: Wrap(children: [
+          if (status.modifiedAt != null)
+            ListTile(
+              leading:
+                  const Icon(Icons.schedule, color: AppColors.textSecondary),
+              title: const Text('Last backup',
+                  style: TextStyle(color: AppColors.textPrimary)),
+              subtitle: Text(
+                _formatTimestamp(context, status.modifiedAt),
+                style: const TextStyle(color: AppColors.textMuted),
+              ),
+            ),
+          ListTile(
+            leading:
+                const Icon(Icons.cloud_upload, color: AppColors.textPrimary),
+            title: const Text('Back up now',
+                style: TextStyle(color: AppColors.textPrimary)),
+            onTap: () => Navigator.pop(context, 'backup'),
+          ),
+          SwitchListTile(
+            value: status.automaticBackup,
+            title: const Text('Automatic backup after sync',
+                style: TextStyle(color: AppColors.textPrimary)),
+            onChanged: (value) {
+              Navigator.pop(context, value ? 'enable-auto' : 'disable-auto');
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.logout, color: Colors.redAccent),
+            title: const Text('Disconnect Google',
+                style: TextStyle(color: Colors.redAccent)),
+            onTap: () => Navigator.pop(context, 'disconnect'),
+          ),
+        ]),
+      ),
+    );
+    if (action == null || !mounted) return;
+    try {
+      if (action == 'backup') {
+        final db = await LocalDb.instance.open();
+        await backup.backupNow(db);
+        if (mounted) {
+          _showInfo(context, 'Backup completed.');
+        }
+      } else if (action == 'disconnect') {
+        await backup.disconnect();
+      } else {
+        await backup.setAutomaticBackup(action == 'enable-auto');
+      }
+      if (mounted) setState(() {});
+    } catch (error) {
+      if (mounted) _showInfo(context, error.toString());
+    }
+  }
+
+  Future<bool?> _confirmRestore(GoogleDriveRemoteBackup backup) {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.bgSecondary,
+        title: const Text('Restore backup?',
+            style: TextStyle(color: AppColors.textPrimary)),
+        content: Text(
+          'A Google Drive backup (${_formatBytes(backup.sizeBytes)}) was found. Restoring it will permanently overwrite all current data on this device.',
+          style: const TextStyle(color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Not now')),
+          TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Restore')),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _restoreGoogleBackup(GoogleDriveRemoteBackup backup) async {
+    try {
+      await GoogleDriveBackupService.instance.restore(backup);
+      if (!mounted) return;
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          backgroundColor: AppColors.bgSecondary,
+          title: const Text('Restore complete',
+              style: TextStyle(color: AppColors.textPrimary)),
+          content: const Text('Restart Ortho to safely load the restored data.',
+              style: TextStyle(color: AppColors.textSecondary)),
+          actions: [
+            TextButton(
+                onPressed: () => SystemNavigator.pop(),
+                child: const Text('Close app'))
+          ],
+        ),
+      );
+    } catch (error) {
+      if (mounted) _showInfo(context, error.toString());
+    }
+  }
+
+  String _formatBytes(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+
+  void _openHelpCenter() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.bgSecondary,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: const [
+              Text('Help Center',
+                  style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700)),
+              SizedBox(height: 16),
+              HelpTopic(
+                question: 'How is my data saved?',
+                answer:
+                    'Your data is stored securely on this device. If sync is enabled, changes are also sent to your connected Supabase account.',
+              ),
+              HelpTopic(
+                question: 'How do Google Drive backups work?',
+                answer:
+                    'Google Drive is optional. A backup is stored in the private app-data area of the Google account you connect. You can back up manually or after every successful sync.',
+              ),
+              HelpTopic(
+                question: 'How can I restore on a new device?',
+                answer:
+                    'Connect the same Google account from Google Drive Backup. If a backup is found, Ortho will ask whether you want to restore it and warn you before replacing local data.',
+              ),
+              HelpTopic(
+                question: 'Why is a transaction missing?',
+                answer:
+                    'Pull to refresh the Home screen. If sync is enabled, open Data Status and use Push or Download to check the latest data.',
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openAboutUs() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.bgSecondary,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: const [
+              Text('About Ortho',
+                  style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700)),
+              SizedBox(height: 14),
+              Text(
+                  'Ortho helps you track income, expenses, accounts, and budgets in one place.',
+                  style:
+                      TextStyle(color: AppColors.textSecondary, height: 1.45)),
+              SizedBox(height: 12),
+              Text(
+                  'Your financial data stays under your control with local SQLite storage, optional Supabase sync, and optional Google Drive backups.',
+                  style:
+                      TextStyle(color: AppColors.textSecondary, height: 1.45)),
+              SizedBox(height: 20),
+              Text('Version 1.0.4',
+                  style: TextStyle(
+                      color: AppColors.textMuted, fontWeight: FontWeight.w600)),
+            ],
           ),
         ),
       ),

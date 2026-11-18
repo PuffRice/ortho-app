@@ -1,4 +1,6 @@
 import 'cqrs_bus.dart';
+import '../models/local_models.dart';
+import 'dart:typed_data';
 
 class CreateUserCommand extends Command {
   const CreateUserCommand({
@@ -138,6 +140,7 @@ class CreateTransactionCommand extends Command {
     this.note,
     this.isRecurring = false,
     this.transactionId,
+    this.receiptBytes,
   });
 
   final String userId;
@@ -150,6 +153,7 @@ class CreateTransactionCommand extends Command {
   final String? note;
   final bool isRecurring;
   final String? transactionId;
+  final Uint8List? receiptBytes;
 }
 
 class UpdateTransactionCommand extends Command {
@@ -164,6 +168,7 @@ class UpdateTransactionCommand extends Command {
     required this.date,
     this.note,
     this.isRecurring = false,
+    this.receiptBytes,
   });
 
   final String userId;
@@ -176,6 +181,7 @@ class UpdateTransactionCommand extends Command {
   final DateTime date;
   final String? note;
   final bool isRecurring;
+  final Uint8List? receiptBytes;
 }
 
 class DeleteTransactionCommand extends Command {
@@ -280,6 +286,58 @@ class CreateRecurringTransactionCommand extends Command {
   final DateTime nextRunAt;
   final bool isActive;
   final String? recurringId;
+}
+
+class CreateLoanCommand extends Command {
+  const CreateLoanCommand({
+    required this.userId,
+    required this.accountId,
+    required this.direction,
+    required this.counterparty,
+    required this.amount,
+    required this.currency,
+    required this.date,
+    this.note,
+    this.loanId,
+    this.now,
+  });
+
+  final String userId;
+  final String accountId;
+  /// `given` = money lent to someone else, `taken` = money borrowed.
+  final LoanDirection direction;
+  final String counterparty;
+  final double amount;
+  final String currency;
+  final DateTime date;
+  final String? note;
+  final String? loanId;
+  final DateTime? now;
+}
+
+class SettleLoanCommand extends Command {
+  const SettleLoanCommand({
+    required this.userId,
+    required this.loanId,
+    required this.amount,
+  });
+
+  final String userId;
+  final String loanId;
+  /// Amount repaid on top of what is already settled.
+  final double amount;
+}
+
+class DeleteLoanCommand extends Command {
+  const DeleteLoanCommand({
+    required this.userId,
+    required this.loanId,
+    this.now,
+  });
+
+  final String userId;
+  final String loanId;
+  final DateTime? now;
 }
 
 class UpsertPaymentCardCredentialCommand extends Command {
