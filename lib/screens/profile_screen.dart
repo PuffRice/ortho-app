@@ -197,6 +197,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             .pushNamed(AppRoutes.manageCategories);
                       },
                     ),
+                    _buildProfileMenuItem(
+                      icon: Icons.swap_horiz,
+                      title: 'Transfer fees',
+                      subtitle: 'Choose an expense category for fees',
+                      onTap: () => Navigator.of(context).pushNamed(AppRoutes.transferFeeSettings),
+                    ),
                     _buildGoogleBackupMenuItem(),
 
                     const SizedBox(height: 24),

@@ -169,6 +169,7 @@ class UpdateTransactionCommand extends Command {
     this.note,
     this.isRecurring = false,
     this.receiptBytes,
+    this.removeReceipt = false,
   });
 
   final String userId;
@@ -182,6 +183,7 @@ class UpdateTransactionCommand extends Command {
   final String? note;
   final bool isRecurring;
   final Uint8List? receiptBytes;
+  final bool removeReceipt;
 }
 
 class DeleteTransactionCommand extends Command {
@@ -202,6 +204,7 @@ class CreateTransferCommand extends Command {
     required this.amount,
     required this.date,
     this.note,
+    this.fee = 0,
     this.transferId,
   });
 
@@ -211,6 +214,7 @@ class CreateTransferCommand extends Command {
   final double amount;
   final DateTime date;
   final String? note;
+  final double fee;
   final String? transferId;
 }
 
@@ -223,6 +227,7 @@ class UpdateTransferCommand extends Command {
     required this.amount,
     required this.date,
     this.note,
+    this.fee = 0,
   });
 
   final String userId;
@@ -232,6 +237,7 @@ class UpdateTransferCommand extends Command {
   final double amount;
   final DateTime date;
   final String? note;
+  final double fee;
 }
 
 class DeleteTransferCommand extends Command {

@@ -1,3 +1,4 @@
+import '../models/local_models.dart';
 import 'app_database.dart';
 import 'sync_mapper.dart';
 import 'sync_outbox.dart';
@@ -16,31 +17,12 @@ class AccountBalanceRepairService {
 
   Future<int> repair({required String userId}) async {
     final accounts = await _db.getAccounts(userId: userId);
-    final transactions = await _db.getTransactions(userId: userId, limit: 1000000);
-    final transfers = await _db.getTransfers(userId: userId);
-
+    final movements = await _db.getAccountMovementTotals(userId);
     final balances = <String, double>{
-      for (final account in accounts) account.accountId: account.openingBalance,
+      for (final account in accounts)
+        account.accountId:
+            account.openingBalance + (movements[account.accountId] ?? 0),
     };
-
-    for (final transaction in transactions) {
-      if (!balances.containsKey(transaction.accountId)) {
-        continue;
-      }
-      balances[transaction.accountId] = balances[transaction.accountId]! +
-          _transactionDelta(transaction.type, transaction.amount);
-    }
-
-    for (final transfer in transfers) {
-      if (balances.containsKey(transfer.fromAccountId)) {
-        balances[transfer.fromAccountId] =
-            balances[transfer.fromAccountId]! - transfer.amount;
-      }
-      if (balances.containsKey(transfer.toAccountId)) {
-        balances[transfer.toAccountId] =
-            balances[transfer.toAccountId]! + transfer.amount;
-      }
-    }
 
     final accountsToRepair = <AccountEntity>[];
     for (final account in accounts) {
@@ -56,7 +38,7 @@ class AccountBalanceRepairService {
     }
 
     var repairedCount = 0;
-    final now = DateTime.now();
+    final now = DateTime.now().toUtc();
     await _db.transaction((txn) async {
       for (final account in accountsToRepair) {
         final expected = balances[account.accountId];
@@ -80,13 +62,4 @@ class AccountBalanceRepairService {
     return repairedCount;
   }
 
-  double _transactionDelta(String type, double amount) {
-    if (type == 'income') {
-      return amount;
-    }
-    if (type == 'expense') {
-      return -amount;
-    }
-    return 0;
-  }
 }

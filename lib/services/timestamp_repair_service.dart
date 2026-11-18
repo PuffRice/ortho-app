@@ -26,8 +26,16 @@ class TimestampRepairService {
     for (final entry in await _db.getCategories(userId: userId, deletedOnly: false)) {
       if (_entityNeedsRepair(entry)) await _db.putCategory(_repairCategory(entry));
     }
-    for (final entry in await _db.getTransactions(userId: userId, limit: 1000000)) {
-      if (_entityNeedsRepair(entry)) await _db.putTransaction(_repairTransaction(entry));
+    for (final entry in await _db.getTransactions(
+      userId: userId, limit: 1000000, includeReceipts: false,
+    )) {
+      if (_entityNeedsRepair(entry)) {
+        // Fetch the blob only for a row that needs repair; preserve its receipt.
+        final full = await _db.getTransactionByUserAndTransactionId(
+          userId, entry.transactionId,
+        );
+        if (full != null) await _db.putTransaction(_repairTransaction(full));
+      }
     }
     for (final entry in await _db.getTransfers(userId: userId)) {
       if (_entityNeedsRepair(entry)) await _db.putTransfer(_repairTransfer(entry));

@@ -1,12 +1,20 @@
+import 'dart:typed_data';
+
+import 'package:image_picker/image_picker.dart';
+
 import 'package:financetracker/config/app_colors.dart';
 import 'package:financetracker/config/category_icons.dart';
 import 'package:flutter/material.dart';
 
+import '../config/app_routes.dart';
+import '../services/local_db.dart';
+import '../cqrs/handlers_sqlite.dart' show TransferFeeCategoryRequired;
 import '../cqrs/commands.dart';
 import '../cqrs/queries.dart';
 import '../models/local_models.dart';
 import '../services/cqrs_service.dart';
 import '../services/user_identity.dart';
+import 'widgets/receipt_viewer.dart';
 
 class AddTransactionScreen extends StatefulWidget {
   const AddTransactionScreen({
@@ -28,6 +36,13 @@ class AddTransactionScreen extends StatefulWidget {
 
 class _AddTransactionScreenState extends State<AddTransactionScreen> {
   final _amountController = TextEditingController();
+  final _feeController = TextEditingController();
+  Uint8List? _receiptBytes;
+  bool _receiptRemoved = false;
+  bool _receiptLoading = false;
+  bool _receiptLoadFailed = false;
+  bool _feeLoading = false;
+  bool _feeLoadFailed = false;
   final _noteController = TextEditingController();
   String? _selectedAccountId;
   String? _selectedToAccountId;
@@ -54,6 +69,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     });
   }
 
+  bool get _isLinkedFee => widget.initialTransaction?.transactionId.startsWith('transfer-fee:') ?? false;
+
   bool get _isEditing =>
       widget.initialTransaction != null || widget.initialTransfer != null;
   bool get _isEditingTransfer => widget.initialTransfer != null;
@@ -63,6 +80,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     super.initState();
     final initialTransaction = widget.initialTransaction;
     if (initialTransaction != null) {
+      _receiptBytes = initialTransaction.receiptBytes;
+      _loadReceipt(initialTransaction);
       _type = initialTransaction.type;
       _date = initialTransaction.date.toLocal();
       _selectedAccountId = initialTransaction.accountId;
@@ -70,9 +89,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       _amountController.text = initialTransaction.amount.toStringAsFixed(2);
       _noteController.text = initialTransaction.note ?? '';
     } else if (widget.initialTransfer != null) {
-      final initialTransfer = widget.initialTransfer;
+      final initialTransfer = widget.initialTransfer!;
       _type = 'transfer';
-      _date = initialTransfer!.date.toLocal();
+      _feeLoading = true;
+      _loadTransferFee(initialTransfer);
+      _date = initialTransfer.date.toLocal();
       _selectedAccountId = initialTransfer.fromAccountId;
       _selectedToAccountId = initialTransfer.toAccountId;
       _amountController.text = initialTransfer.amount.toStringAsFixed(2);
@@ -89,6 +110,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
   @override
   void dispose() {
+    _feeController.dispose();
     _amountController.dispose();
     _noteController.dispose();
     _counterpartyController.dispose();
@@ -112,7 +134,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                       : 'Add Transaction',
         ),
         actions: [
-          if (_isEditing)
+          if (_isEditing && !_isLinkedFee)
             IconButton(
               onPressed: _saving
                   ? null
@@ -192,7 +214,22 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           _buildCounterpartyField(),
           const SizedBox(height: 16),
         ],
+        if (_isLinkedFee) ...[
+          const Text('This expense belongs to a transfer. Edit that transfer to change or remove its fee.',
+            style: TextStyle(color: AppColors.textSecondary)),
+          TextButton(onPressed: _openLinkedTransfer, child: const Text('Edit linked transfer')),
+        ],
         _buildAmountField(),
+        if (_type == 'transfer') ...[
+          const SizedBox(height: 16),
+          _buildField(controller: _feeController, label: 'Transfer fee (optional)',
+            keyboardType: const TextInputType.numberWithOptions(decimal: true)),
+          if (_feeLoading) const LinearProgressIndicator(),
+          if (_feeLoadFailed) TextButton(onPressed: () => _loadTransferFee(widget.initialTransfer!),
+            child: const Text('Could not load fee. Tap to retry.')),
+          TextButton(onPressed: _saving ? null : () => Navigator.of(context).pushNamed(AppRoutes.transferFeeSettings),
+            child: const Text('Fee category settings')),
+        ],
         const SizedBox(height: 20),
         _buildAccountPicker(
           cqrs,
@@ -210,9 +247,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         ),
         const SizedBox(height: 16),
         _buildDatePicker(context),
+        if (_type == 'expense' || _type == 'income') _buildReceiptSection(),
         const SizedBox(height: 24),
         ElevatedButton(
-          onPressed: _saving ? null : () => _save(cqrs),
+          onPressed: _saving || _feeLoading || _feeLoadFailed || _receiptLoading || _receiptLoadFailed || _isLinkedFee ? null : () => _save(cqrs),
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.transparent,
             shadowColor: Colors.transparent,
@@ -997,7 +1035,132 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     );
   }
 
+  Future<void> _loadReceipt(TransactionEntity transaction) async {
+    _receiptLoading = true;
+    try {
+      final db = await LocalDb.instance.open();
+      final full = await db.getTransactionByUserAndTransactionId(transaction.userId, transaction.transactionId);
+      if (mounted) setState(() { _receiptBytes = full?.receiptBytes; _receiptLoadFailed = false; });
+    } catch (_) {
+      if (mounted) setState(() => _receiptLoadFailed = true);
+    } finally {
+      if (mounted) setState(() => _receiptLoading = false);
+    }
+  }
+
+  Future<void> _openLinkedTransfer() async {
+    try {
+      final transaction = widget.initialTransaction!;
+      final db = await LocalDb.instance.open();
+      final transfer = await db.getTransferByUserAndTransferId(transaction.userId,
+        transaction.transactionId.substring('transfer-fee:'.length));
+      if (!mounted) return;
+      if (transfer == null || transfer.deletedAt != null) {
+        _showError('The linked transfer is unavailable.');
+        return;
+      }
+      final changed = await Navigator.of(context).push<bool>(MaterialPageRoute(
+        builder: (_) => AddTransactionScreen(initialTransfer: transfer)));
+      if (changed == true && mounted) Navigator.of(context).pop(true);
+    } catch (error) {
+      if (mounted) _showError('Could not open transfer: $error');
+    }
+  }
+
+  Future<void> _loadTransferFee(TransferEntity transfer) async {
+    if (mounted) setState(() { _feeLoading = true; _feeLoadFailed = false; });
+    try {
+      final db = await LocalDb.instance.open();
+      final fee = await db.getTransactionByUserAndTransactionId(
+        transfer.userId, 'transfer-fee:${transfer.transferId}');
+      if (mounted) setState(() {
+        _feeController.text = fee == null || fee.deletedAt != null ? '' : fee.amount.toStringAsFixed(2);
+      });
+    } catch (_) {
+      if (mounted) setState(() => _feeLoadFailed = true);
+    } finally {
+      if (mounted) setState(() => _feeLoading = false);
+    }
+  }
+
+  Future<void> _showFeeCategoryError() async {
+    final open = await showDialog<bool>(context: context, builder: (context) => AlertDialog(
+      backgroundColor: AppColors.bgSecondary,
+      title: const Text('Set a fee category'),
+      content: const Text('Choose an existing expense category in Settings before saving a transfer with a fee.'),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+        TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Open settings')),
+      ],
+    ));
+    if (open == true && mounted) await Navigator.of(context).pushNamed(AppRoutes.transferFeeSettings);
+  }
+
+  Future<void> _pickReceipt(ImageSource source) async {
+    setState(() => _receiptLoading = true);
+    try {
+      final image = await ImagePicker().pickImage(source: source,
+        maxWidth: 1800, maxHeight: 1800, imageQuality: 85);
+      if (image == null) return;
+      final bytes = await image.readAsBytes();
+      if (bytes.length > 8 * 1024 * 1024) {
+        if (mounted) _showError('Choose a receipt image smaller than 8 MB.');
+        return;
+      }
+      if (mounted) setState(() { _receiptBytes = bytes; _receiptRemoved = false; _receiptLoadFailed = false; });
+    } catch (_) {
+      if (mounted) _showError('Could not open the image. Check camera or photo permissions and try again.');
+    } finally {
+      if (mounted) setState(() => _receiptLoading = false);
+    }
+  }
+
+  void _viewReceipt() {
+    final bytes = _receiptBytes;
+    if (bytes == null) return;
+    Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => ReceiptViewer(bytes: bytes)));
+  }
+
+  Widget _buildReceiptSection() => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    const SizedBox(height: 20),
+    if (_receiptLoadFailed) TextButton(onPressed: () => _loadReceipt(widget.initialTransaction!),
+      child: const Text('Could not load receipt. Tap to retry.')),
+    const Text('Receipt (optional)', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
+    const SizedBox(height: 8),
+    if (_receiptBytes != null) ...[
+      GestureDetector(onTap: _viewReceipt, child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Image.memory(_receiptBytes!, height: 150, width: double.infinity,
+          fit: BoxFit.cover, cacheWidth: 600,
+          errorBuilder: (_, __, ___) => const Text('Could not display this receipt.')))),
+      TextButton.icon(onPressed: _viewReceipt, icon: const Icon(Icons.zoom_in), label: const Text('View receipt')),
+      TextButton.icon(onPressed: _saving || _receiptLoading ? null : () => setState(() {
+        _receiptBytes = null; _receiptRemoved = true;
+      }), icon: const Icon(Icons.delete_outline), label: const Text('Remove receipt')),
+    ],
+    Wrap(spacing: 12, children: [
+      TextButton.icon(onPressed: _saving || _receiptLoading ? null : () => _pickReceipt(ImageSource.gallery),
+        icon: const Icon(Icons.photo_library_outlined), label: const Text('Choose image')),
+      TextButton.icon(onPressed: _saving || _receiptLoading ? null : () => _pickReceipt(ImageSource.camera),
+        icon: const Icon(Icons.camera_alt_outlined), label: const Text('Take photo')),
+    ]),
+    if (_receiptLoading) const LinearProgressIndicator(),
+  ]);
+
   Future<void> _save(CqrsService cqrs) async {
+    if (_saving || _feeLoading || _feeLoadFailed || _receiptLoading || _receiptLoadFailed || _isLinkedFee) return;
+    setState(() => _saving = true);
+    try {
+      await _saveValidated(cqrs);
+    } catch (error) {
+      if (mounted) _showError('Failed to save: $error');
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _saveValidated(CqrsService cqrs) async {
     final profile = _profile;
     if (profile == null) {
       _showError('User profile not ready yet.');
@@ -1020,7 +1183,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         account?.currency ??
         'BDT';
 
-    if (amount == null || amount <= 0) {
+    if (amount == null || !amount.isFinite || amount <= 0) {
       _showError('Enter a valid amount.');
       return;
     }
@@ -1041,6 +1204,23 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       return;
     }
 
+    final fee = _type == 'transfer' && _feeController.text.trim().isNotEmpty
+        ? double.tryParse(_feeController.text.trim()) : 0.0;
+    if (fee == null || !fee.isFinite || fee < 0) {
+      _showError('Enter a valid transfer fee (zero or greater).');
+      return;
+    }
+    if (_type == 'transfer' && fee > 0) {
+      final db = await LocalDb.instance.open();
+      final feeCategoryId = await db.getTransferFeeCategory(profile.userId);
+      final feeCategory = feeCategoryId == null ? null :
+          await db.getCategoryByUserAndCategoryId(profile.userId, feeCategoryId);
+      if (feeCategory == null || feeCategory.deletedAt != null || feeCategory.type != 'expense') {
+        if (mounted) await _showFeeCategoryError();
+        return;
+      }
+    }
+    if (!mounted) return;
     setState(() {
       _saving = true;
     });
@@ -1076,6 +1256,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                     transferId: widget.initialTransfer!.transferId,
                     fromAccountId: account.accountId,
                     toAccountId: toAccount!.accountId,
+                    fee: fee,
                     amount: amount,
                     date: _date,
                     note: _noteController.text.trim().isEmpty
@@ -1086,6 +1267,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                     userId: profile.userId,
                     fromAccountId: account.accountId,
                     toAccountId: toAccount!.accountId,
+                    fee: fee,
                     amount: amount,
                     date: _date,
                     note: _noteController.text.trim().isEmpty
@@ -1098,6 +1280,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                     transactionId: widget.initialTransaction!.transactionId,
                     accountId: account.accountId,
                     categoryId: category!.categoryId,
+                    receiptBytes: _receiptBytes,
                     type: _type,
                     amount: amount,
                     currency: currency,
@@ -1106,11 +1289,13 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                         ? null
                         : _noteController.text.trim(),
                     isRecurring: widget.initialTransaction!.isRecurring,
+                    removeReceipt: _receiptRemoved,
                   )
                 : CreateTransactionCommand(
                     userId: profile.userId,
                     accountId: account.accountId,
                     categoryId: category!.categoryId,
+                    receiptBytes: _receiptBytes,
                     type: _type,
                     amount: amount,
                     currency: currency,
@@ -1124,6 +1309,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       if (mounted) {
         Navigator.of(context).pop(true);
       }
+    } on TransferFeeCategoryRequired {
+      if (mounted) await _showFeeCategoryError();
     } catch (error) {
       _showError('Failed to save: $error');
     } finally {

@@ -91,8 +91,7 @@ class CategoryEntity {
         sortOrder = (map['sort_order'] as num?)?.toInt() ?? 0,
         createdAt = DateTime.parse(map['created_at'] as String),
         updatedAt = DateTime.parse(map['updated_at'] as String),
-        deletedAt = _parseNullableDate(map['deleted_at']),
-        receiptBytes = map['receipt_bytes'] as Uint8List?;
+        deletedAt = _parseNullableDate(map['deleted_at']);
 
   String userId = '';
   String categoryId = '';
@@ -104,7 +103,6 @@ class CategoryEntity {
   DateTime createdAt = DateTime.now();
   DateTime updatedAt = DateTime.now();
   DateTime? deletedAt;
-  Uint8List? receiptBytes;
 
   Map<String, Object?> toMap() {
     return {
@@ -118,7 +116,6 @@ class CategoryEntity {
       'created_at': createdAt.toUtc().toIso8601String(),
       'updated_at': updatedAt.toUtc().toIso8601String(),
       'deleted_at': deletedAt?.toUtc().toIso8601String(),
-      'receipt_bytes': receiptBytes,
     };
   }
 }
@@ -139,7 +136,9 @@ class TransactionEntity {
         isRecurring = (map['is_recurring'] as int? ?? 0) == 1,
         createdAt = DateTime.parse(map['created_at'] as String),
         updatedAt = DateTime.parse(map['updated_at'] as String),
-        deletedAt = _parseNullableDate(map['deleted_at']);
+        deletedAt = _parseNullableDate(map['deleted_at']),
+        receiptBytes = map['receipt_bytes'] as Uint8List?,
+        hasReceipt = map['has_receipt'] == 1 || map['receipt_bytes'] != null;
 
   String userId = '';
   String accountId = '';
@@ -154,6 +153,8 @@ class TransactionEntity {
   DateTime createdAt = DateTime.now();
   DateTime updatedAt = DateTime.now();
   DateTime? deletedAt;
+  Uint8List? receiptBytes;
+  bool hasReceipt = false;
 
   Map<String, Object?> toMap() {
     return {
@@ -170,6 +171,7 @@ class TransactionEntity {
       'created_at': createdAt.toUtc().toIso8601String(),
       'updated_at': updatedAt.toUtc().toIso8601String(),
       'deleted_at': deletedAt?.toUtc().toIso8601String(),
+      'receipt_bytes': receiptBytes,
     };
   }
 }

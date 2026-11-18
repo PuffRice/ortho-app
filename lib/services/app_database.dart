@@ -9,7 +9,7 @@ class AppDatabase {
   AppDatabase._(this._database);
 
   static const _dbName = 'financetracker.sqlite';
-  static const _dbVersion = 3;
+  static const _dbVersion = 4;
 
   final Database _database;
   DatabaseExecutor? _activeTransaction;
@@ -58,6 +58,7 @@ class AppDatabase {
   }
 
   static Future<void> _createSchema(Database db, int version) async {
+    await _createSettings(db);
     await db.execute('''
       CREATE TABLE users (
         user_id TEXT PRIMARY KEY,
@@ -277,11 +278,36 @@ class AppDatabase {
     await db.execute('CREATE INDEX idx_loans_date ON loans(date)');
   }
 
+  static Future<void> _createSettings(Database db) => db.execute('''
+    CREATE TABLE IF NOT EXISTS app_settings (
+      user_id TEXT NOT NULL, setting_key TEXT NOT NULL, value TEXT NOT NULL,
+      PRIMARY KEY (user_id, setting_key)
+    )
+  ''');
+
+  Future<String?> getTransferFeeCategory(String userId) async {
+    final rows = await _query('app_settings',
+      where: 'user_id = ? AND setting_key = ?',
+      whereArgs: [userId, 'transfer_fee_category']);
+    return rows.isEmpty ? null : rows.first['value'] as String;
+  }
+
+  Future<void> setTransferFeeCategory(String userId, String categoryId) async {
+    final category = await getCategoryByUserAndCategoryId(userId, categoryId);
+    if (category == null || category.deletedAt != null || category.type != 'expense') {
+      throw StateError('Choose an existing expense category.');
+    }
+    await _insert('app_settings', {
+      'user_id': userId, 'setting_key': 'transfer_fee_category', 'value': categoryId,
+    });
+  }
+
   static Future<void> _upgradeSchema(
     Database db,
     int oldVersion,
     int newVersion,
   ) async {
+    if (oldVersion < 4) await _createSettings(db);
     // v2: loan tracking. Loans live in their own table so they can be shown in
     // transaction lists without ever moving account balances or totals.
     if (oldVersion < 2) {
@@ -594,6 +620,29 @@ class AppDatabase {
     return rows.map(CategoryEntity.fromMap).toList();
   }
 
+  /// Aggregate in SQLite so startup never loads the history or receipt blobs.
+  Future<Map<String, double>> getAccountMovementTotals(String userId) async {
+    final executor = _activeTransaction ?? _database;
+    final rows = await executor.rawQuery('''
+      SELECT account_id, SUM(delta) AS total FROM (
+        SELECT account_id,
+          CASE type WHEN 'income' THEN amount WHEN 'expense' THEN -amount
+            ELSE 0 END AS delta
+        FROM transactions WHERE user_id = ? AND deleted_at IS NULL
+        UNION ALL
+        SELECT from_account_id, -amount FROM transfers
+        WHERE user_id = ? AND deleted_at IS NULL
+        UNION ALL
+        SELECT to_account_id, amount FROM transfers
+        WHERE user_id = ? AND deleted_at IS NULL
+      ) GROUP BY account_id
+    ''', [userId, userId, userId]);
+    return {
+      for (final row in rows)
+        row['account_id'] as String: (row['total'] as num).toDouble(),
+    };
+  }
+
   Future<List<TransactionEntity>> getTransactions({
     required String userId,
     String? accountId,
@@ -601,7 +650,8 @@ class AppDatabase {
     String? type,
     DateTime? start,
     DateTime? end,
-    int limit = 200,
+    int? limit = 200,
+    bool includeReceipts = false,
     bool deletedOnly = false,
   }) async {
     final clauses = <String>['user_id = ?'];
@@ -629,6 +679,12 @@ class AppDatabase {
     }
     final rows = await _query(
       'transactions',
+      columns: includeReceipts ? null : const [
+        'user_id', 'account_id', 'category_id', 'transaction_id', 'type',
+        'amount', 'currency', 'date', 'note', 'is_recurring',
+        'created_at', 'updated_at', 'deleted_at',
+        'receipt_bytes IS NOT NULL AS has_receipt',
+      ],
       where: clauses.join(' AND '),
       whereArgs: args,
       orderBy: 'date DESC',

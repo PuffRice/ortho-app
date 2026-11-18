@@ -362,31 +362,51 @@ class SyncService {
   Future<void> _importRemoteSnapshot(String userId) async {
     final snapshot = await _fetchRemoteSnapshot(userId);
     await _db.transaction((txn) async {
-      for (final table in [
-        'summary_cache',
-        'users',
-        'accounts',
-        'categories',
-        'transactions',
-        'transfers',
-        'budgets',
-        'recurring_transactions',
-        'payment_card_credentials',
-        'bank_account_credentials',
-        'loans'
-      ]) {
-        await txn.rawDelete('DELETE FROM $table WHERE user_id = ?', [userId]);
+      // Receipts are local/Drive data. Keep them in SQLite while replacing
+      // remote-owned rows, without loading image blobs into Dart memory.
+      await txn.execute('DROP TABLE IF EXISTS temp.local_receipts');
+      await txn.execute('''
+        CREATE TEMP TABLE local_receipts AS
+        SELECT transaction_id, receipt_bytes FROM transactions
+        WHERE user_id = ? AND receipt_bytes IS NOT NULL
+      ''', [userId]);
+      await txn.execute('CREATE INDEX local_receipts_id ON local_receipts(transaction_id)');
+      try {
+        for (final table in [
+          'summary_cache',
+          'users',
+          'accounts',
+          'categories',
+          'transactions',
+          'transfers',
+          'budgets',
+          'recurring_transactions',
+          'payment_card_credentials',
+          'bank_account_credentials',
+          'loans'
+        ]) {
+          await txn.rawDelete('DELETE FROM $table WHERE user_id = ?', [userId]);
+        }
+        if (snapshot.user != null) await _db.putUser(snapshot.user!, txn: txn);
+        await _db.putAccounts(snapshot.accounts, txn: txn);
+        await _db.putCategories(snapshot.categories, txn: txn);
+        await _db.putTransactions(snapshot.transactions, txn: txn);
+        await _db.putTransfers(snapshot.transfers, txn: txn);
+        await _db.putBudgets(snapshot.budgets, txn: txn);
+        await _db.putRecurringTransactions(snapshot.recurring, txn: txn);
+        await _db.putPaymentCardCredentials(snapshot.paymentCards, txn: txn);
+        await _db.putBankAccountCredentials(snapshot.bankCredentials, txn: txn);
+        await _db.putLoans(snapshot.loans, txn: txn);
+        await txn.execute('''
+          UPDATE transactions SET receipt_bytes = (
+            SELECT receipt_bytes FROM local_receipts
+            WHERE local_receipts.transaction_id = transactions.transaction_id
+          ) WHERE user_id = ? AND transaction_id IN
+            (SELECT transaction_id FROM local_receipts)
+        ''', [userId]);
+      } finally {
+        await txn.execute('DROP TABLE IF EXISTS temp.local_receipts');
       }
-      if (snapshot.user != null) await _db.putUser(snapshot.user!, txn: txn);
-      await _db.putAccounts(snapshot.accounts, txn: txn);
-      await _db.putCategories(snapshot.categories, txn: txn);
-      await _db.putTransactions(snapshot.transactions, txn: txn);
-      await _db.putTransfers(snapshot.transfers, txn: txn);
-      await _db.putBudgets(snapshot.budgets, txn: txn);
-      await _db.putRecurringTransactions(snapshot.recurring, txn: txn);
-      await _db.putPaymentCardCredentials(snapshot.paymentCards, txn: txn);
-      await _db.putBankAccountCredentials(snapshot.bankCredentials, txn: txn);
-      await _db.putLoans(snapshot.loans, txn: txn);
     });
   }
 

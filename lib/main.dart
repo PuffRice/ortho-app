@@ -13,6 +13,7 @@ import 'screens/credentials_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/loans_screen.dart';
+import 'screens/transfer_fee_settings_screen.dart';
 import 'screens/manage_accounts_screen.dart';
 import 'screens/manage_categories_screen.dart';
 import 'screens/personal_information_screen.dart';
@@ -85,22 +86,32 @@ class MainApp extends StatefulWidget {
 
 class _MainAppState extends State<MainApp> {
   late Future<void> _bootstrapFuture;
+  Future<void>? _initializationFuture;
+
+  Future<void> _bootstrap() {
+    // A timeout does not cancel SQLite work. Reuse pending initialization on
+    // retry so a slow device cannot start overlapping repairs or sync setup.
+    final initialization = _initializationFuture ??=
+        _initializeApp().onError((Object error, StackTrace stackTrace) {
+      _initializationFuture = null;
+      debugPrint('App initialization failed: $error');
+      Error.throwWithStackTrace(error, stackTrace);
+    });
+    return Future.wait<void>([
+      initialization,
+      Future<void>.delayed(const Duration(milliseconds: 1100)),
+    ]).then<void>((_) {}).timeout(const Duration(seconds: 30));
+  }
 
   @override
   void initState() {
     super.initState();
-    _bootstrapFuture = Future.wait<void>([
-      _initializeApp(),
-      Future<void>.delayed(const Duration(milliseconds: 1100)),
-    ]);
+    _bootstrapFuture = _bootstrap();
   }
 
   void _retryBootstrap() {
     setState(() {
-      _bootstrapFuture = Future.wait<void>([
-        _initializeApp(),
-        Future<void>.delayed(const Duration(milliseconds: 700)),
-      ]);
+      _bootstrapFuture = _bootstrap();
     });
   }
 
@@ -123,6 +134,7 @@ class _MainAppState extends State<MainApp> {
         ),
       ),
       routes: {
+        AppRoutes.transferFeeSettings: (_) => const TransferFeeSettingsScreen(),
         AppRoutes.addTransaction: (_) => const AddTransactionScreen(),
         AppRoutes.transactionHistory: (_) => const TransactionHistoryScreen(),
         AppRoutes.manageAccounts: (_) => const ManageAccountsScreen(),

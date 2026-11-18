@@ -7,6 +7,8 @@ import '../models/local_models.dart';
 import '../services/cqrs_service.dart';
 import '../services/export_service.dart';
 import '../services/user_identity.dart';
+import '../services/local_db.dart';
+import 'widgets/receipt_viewer.dart';
 import 'add_transaction_screen.dart';
 import 'widgets/loan_actions_sheet.dart';
 
@@ -451,7 +453,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      _formatDateTime(transaction.date),
+                      '${_formatDateTime(transaction.date)}${transaction.hasReceipt ? ' · Receipt attached' : ''}',
                       style: const TextStyle(
                         color: AppColors.textMuted,
                         fontSize: 12,
@@ -460,6 +462,10 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                   ],
                 ),
               ),
+              if (transaction.hasReceipt)
+                IconButton(tooltip: 'View receipt',
+                  icon: const Icon(Icons.receipt_long_outlined, color: AppColors.incomePositive),
+                  onPressed: () => _openReceipt(transaction)),
               const SizedBox(width: 10),
               Text(
                 amount,
@@ -630,6 +636,20 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
     );
     if (changed && mounted) {
       await _reload();
+    }
+  }
+
+  Future<void> _openReceipt(TransactionEntity transaction) async {
+    try {
+      final db = await LocalDb.instance.open();
+      final full = await db.getTransactionByUserAndTransactionId(transaction.userId, transaction.transactionId);
+      if (!mounted) return;
+      final bytes = full?.receiptBytes;
+      if (bytes == null) throw StateError('Receipt is unavailable.');
+      await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => ReceiptViewer(bytes: bytes)));
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not load this receipt. Try again.')));
     }
   }
 

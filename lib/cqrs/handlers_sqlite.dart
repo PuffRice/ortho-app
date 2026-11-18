@@ -378,6 +378,9 @@ class UpdateTransactionHandler
 
   @override
   Future<void> handle(UpdateTransactionCommand command) async {
+    if (command.transactionId.startsWith('transfer-fee:')) {
+      throw StateError('Edit or delete the linked transfer to change its fee.');
+    }
     TransactionEntity? existing;
     DateTime? previousDate;
 
@@ -417,7 +420,11 @@ class UpdateTransactionHandler
         ..note = command.note
         ..isRecurring = command.isRecurring
         ..updatedAt = DateTime.now();
-      if (command.receiptBytes != null) existing!.receiptBytes = command.receiptBytes;
+      if (command.removeReceipt) {
+        existing!.receiptBytes = null;
+      } else if (command.receiptBytes != null) {
+        existing!.receiptBytes = command.receiptBytes;
+      }
 
       await _db.putTransaction(existing!, txn: txn);
       await _outboxWriter.enqueueInTxn(
@@ -468,6 +475,9 @@ class DeleteTransactionHandler
 
   @override
   Future<void> handle(DeleteTransactionCommand command) async {
+    if (command.transactionId.startsWith('transfer-fee:')) {
+      throw StateError('Edit or delete the linked transfer to change its fee.');
+    }
     TransactionEntity? existing;
     DateTime? previousDate;
 
@@ -525,6 +535,79 @@ class DeleteTransactionHandler
   }
 }
 
+class TransferFeeCategoryRequired implements Exception {
+  @override
+  String toString() => 'Set a transfer fee category in Settings before saving a fee.';
+}
+
+class _TransferFeeWriter {
+  _TransferFeeWriter(this.db, this.outbox);
+  final AppDatabase db;
+  final SyncOutboxWriter outbox;
+
+  Future<List<DateTime>> write(TransferEntity transfer, double amount, dynamic txn) async {
+    if (!amount.isFinite || amount < 0) throw ArgumentError('Enter a valid fee.');
+    CategoryEntity? category;
+    if (amount > 0) {
+      final id = await db.getTransferFeeCategory(transfer.userId);
+      category = id == null ? null : await db.getCategoryByUserAndCategoryId(transfer.userId, id);
+      if (category == null || category.deletedAt != null || category.type != 'expense') {
+        throw TransferFeeCategoryRequired();
+      }
+    }
+    // Stable link survives backup and remote snapshots without a system category.
+    final id = 'transfer-fee:${transfer.transferId}';
+    final previous = await db.getTransactionByUserAndTransactionId(transfer.userId, id);
+    final dates = <DateTime>[];
+    final now = DateTime.now().toUtc();
+    if (previous != null && previous.deletedAt == null) {
+      final account = await db.getAccountByUserAndAccountId(transfer.userId, previous.accountId);
+      if (account != null) {
+        account.currentBalance += previous.amount;
+        account.updatedAt = now;
+        await _saveAccount(account, txn);
+      }
+      dates.add(previous.date);
+    }
+    if (amount == 0 && (previous == null || previous.deletedAt != null)) return dates;
+    final fee = previous ?? TransactionEntity();
+    fee
+      ..userId = transfer.userId
+      ..transactionId = id
+      ..updatedAt = now;
+    if (amount > 0) {
+      final account = await db.getAccountByUserAndAccountId(transfer.userId, transfer.fromAccountId);
+      if (account == null || account.deletedAt != null) throw StateError('Source account is unavailable.');
+      fee
+        ..accountId = account.accountId
+        ..categoryId = category!.categoryId
+        ..type = 'expense'
+        ..amount = amount
+        ..currency = account.currency
+        ..date = transfer.date
+        ..note = 'Transfer Fee'
+        ..deletedAt = null;
+      if (previous == null) fee.createdAt = now;
+      account.currentBalance -= amount;
+      account.updatedAt = now;
+      await _saveAccount(account, txn);
+      dates.add(fee.date);
+    } else {
+      fee.deletedAt = now;
+    }
+    await db.putTransaction(fee, txn: txn);
+    await outbox.enqueueInTxn(userId: fee.userId, entityType: 'transactions',
+      entityId: id, payload: SyncPayloadMapper.transaction(fee), txn: txn);
+    return dates;
+  }
+  Future<void> _saveAccount(AccountEntity account, dynamic txn) async {
+    await db.putAccount(account, txn: txn);
+    await outbox.enqueueInTxn(userId: account.userId, entityType: 'accounts',
+      entityId: account.accountId, payload: SyncPayloadMapper.account(account), txn: txn);
+  }
+
+}
+
 class CreateTransferHandler implements CommandHandler<CreateTransferCommand> {
   CreateTransferHandler(this._db, this._outboxWriter);
 
@@ -545,6 +628,8 @@ class CreateTransferHandler implements CommandHandler<CreateTransferCommand> {
       ..createdAt = now
       ..updatedAt = now;
 
+    final feeWriter = _TransferFeeWriter(_db, _outboxWriter);
+    final changedDates = <DateTime>[];
     await _db.transaction((txn) async {
       await _db.putTransfer(transfer, txn: txn);
       await _updateAccountBalance(command.userId, command.fromAccountId, -command.amount, txn);
@@ -556,7 +641,11 @@ class CreateTransferHandler implements CommandHandler<CreateTransferCommand> {
         payload: SyncPayloadMapper.transfer(transfer),
         txn: txn,
       );
+      changedDates.addAll(await feeWriter.write(transfer, command.fee, txn));
     });
+    for (final date in changedDates) {
+      await SummaryCacheWriter(_db).rebuildForDate(command.userId, date);
+    }
     SyncService.instance?.requestSync();
   }
 
@@ -582,6 +671,8 @@ class UpdateTransferHandler implements CommandHandler<UpdateTransferCommand> {
 
   @override
   Future<void> handle(UpdateTransferCommand command) async {
+    final feeWriter = _TransferFeeWriter(_db, _outboxWriter);
+    final changedDates = <DateTime>[];
     await _db.transaction((txn) async {
       final existing = await _db.getTransferByUserAndTransferId(
         command.userId,
@@ -629,7 +720,11 @@ class UpdateTransferHandler implements CommandHandler<UpdateTransferCommand> {
         payload: SyncPayloadMapper.transfer(existing),
         txn: txn,
       );
+      changedDates.addAll(await feeWriter.write(existing, command.fee, txn));
     });
+    for (final date in changedDates) {
+      await SummaryCacheWriter(_db).rebuildForDate(command.userId, date);
+    }
     SyncService.instance?.requestSync();
   }
 
@@ -655,6 +750,8 @@ class DeleteTransferHandler implements CommandHandler<DeleteTransferCommand> {
 
   @override
   Future<void> handle(DeleteTransferCommand command) async {
+    final feeWriter = _TransferFeeWriter(_db, _outboxWriter);
+    final changedDates = <DateTime>[];
     await _db.transaction((txn) async {
       final existing = await _db.getTransferByUserAndTransferId(
         command.userId,
@@ -686,7 +783,11 @@ class DeleteTransferHandler implements CommandHandler<DeleteTransferCommand> {
         payload: SyncPayloadMapper.transfer(existing),
         txn: txn,
       );
+      changedDates.addAll(await feeWriter.write(existing, 0, txn));
     });
+    for (final date in changedDates) {
+      await SummaryCacheWriter(_db).rebuildForDate(command.userId, date);
+    }
     SyncService.instance?.requestSync();
   }
 
@@ -1330,12 +1431,14 @@ class SummaryCacheWriter {
       start: startDate,
       end: endDate,
       type: 'income',
+      limit: null,
     ).then((income) async {
       final expense = await _db.getTransactions(
         userId: userId,
         start: startDate,
         end: endDate,
         type: 'expense',
+        limit: null,
       );
       return [...income, ...expense];
     });
